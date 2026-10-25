@@ -1,0 +1,67 @@
+/* Winter Challenge Results · page pour la télévision du centre
+   Même habillage que le site (style.css), mais tout est dimensionné en vh / vw pour remplir l'écran, sans défilement. */
+html, body { height: 100%; margin: 0; overflow: hidden; background: #fff; cursor: none; }
+body { display: flex; flex-direction: column; gap: 1.5vh; padding: 1.5vh 1.8vw 1.7vh; font-size: 2vh; line-height: 1.2; }
+
+.tv-top { display: flex; align-items: center; justify-content: space-between; flex: none; height: 6.4vh; }
+.tv-top img { height: 6vh; width: auto; display: block; }
+.tv-demo { background: var(--warn); color: var(--warn-ink); font-weight: 700; font-size: 1.9vh; padding: .7vh 1.8vh; border-radius: 999px; }
+
+/* Les cinq cartes */
+.tv-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.2vw; flex: none; }
+.tv-stat { min-width: 0; background: #fff; border: 1px solid var(--line); border-top: .7vh solid var(--sky); border-radius: 1.6vh; box-shadow: var(--shadow); padding: 1.2vh 1.1vw 1.3vh; }
+.tv-stat .label { font-size: 1.45vh; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); font-weight: 600; white-space: nowrap; }
+.tv-stat .value { font-size: 3.2vh; font-weight: 800; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: .3vh; }
+.tv-stat .value.long { font-size: 2.6vh; white-space: normal; line-height: 1.1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; margin-top: .5vh; }
+.tv-stat .note { font-size: 1.75vh; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tv-stat .live { font-size: 1.5vh; margin-left: .6vw; }
+
+/* Carte du classement : prend toute la place restante */
+.tv-card { flex: 1; min-height: 0; display: flex; flex-direction: column; background: #fff; border: 1px solid var(--line); border-radius: 1.8vh; box-shadow: var(--shadow); overflow: hidden; }
+.tv-title { display: flex; justify-content: space-between; align-items: center; gap: 2vw; flex: none; padding: 1.1vh 1.5vw; background: var(--sky-soft); border-bottom: .5vh solid var(--sky); }
+.tv-title h1 { margin: 0; font-size: 3.1vh; text-transform: uppercase; letter-spacing: .04em; font-weight: 700; white-space: nowrap; }
+.tv-title .meta { display: flex; align-items: center; gap: 2vw; font-size: 1.9vh; color: var(--ink-soft); font-weight: 600; white-space: nowrap; }
+.tv-legend i { display: inline-block; width: 1.8vh; height: 1.8vh; border-radius: .4vh; vertical-align: -.3vh; margin: 0 .5vh 0 1.2vw; }
+.tv-legend i:first-child { margin-left: 0; }
+.tv-legend i.c { background: var(--counted); border: 1px solid #9fcbe4; }
+.tv-legend i.r { background: var(--replace); border: 1px solid #e9a8a0; }
+#tv-page { color: var(--navy); font-weight: 800; }
+
+.tv-area { flex: 1; min-height: 0; overflow: hidden; }
+/* Fondu : le tableau et le titre s'effacent, puis la nouvelle page apparaît, ligne après ligne */
+.fadeable { transition: opacity .4s ease; }
+.fadeable.out { opacity: 0; }
+.tv-table tbody tr { animation: tv-row-in .55s ease-out both; animation-delay: calc(var(--i, 0) * 70ms); }
+@keyframes tv-row-in { from { opacity: 0; transform: translateY(1.4vh); } to { opacity: 1; transform: none; } }
+.tv-progress { flex: none; height: .8vh; background: var(--surface-2); }
+.tv-progress i { display: block; height: 100%; width: 0; background: var(--sky); }
+.tv-progress i.run { animation: tv-fill var(--dur, 5s) linear forwards; }
+@keyframes tv-fill { to { width: 100%; } }
+
+/* Tableau : la hauteur d'une ligne (--row-h) est calculée par le script pour remplir exactement la carte */
+.tv-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: calc(var(--row-h) * .4); }
+.tv-table th, .tv-table td {
+  height: var(--row-h); padding: 0 .3vw; text-align: center; border-bottom: 1px solid var(--line); white-space: nowrap; overflow: hidden;
+  position: static; min-width: 0;
+}
+.tv-table thead th { background: var(--sky-soft); color: var(--navy); font-size: min(calc(var(--row-h) * .3), 1.2vw); text-transform: uppercase; letter-spacing: .03em; font-weight: 700; border-bottom: .4vh solid var(--sky); }
+.tv-table tbody tr { cursor: default; }
+.tv-table tbody tr:hover td { background: transparent; }
+.tv-table tbody tr:last-child td { border-bottom: 0; }
+.tv-table td.name, .tv-table th.name { text-align: left; padding-left: .6vw; }
+.tv-table .rank { font-weight: 900; font-size: calc(var(--row-h) * .5); }
+.tv-table .rank span { display: inline-grid; place-items: center; min-width: calc(var(--row-h) * .78); height: calc(var(--row-h) * .78); border-radius: 50%; }
+.tv-table .r1 span { background: var(--sky); color: var(--navy); }
+.tv-table .r2 span, .tv-table .r3 span { background: var(--sky-soft); color: var(--navy); box-shadow: inset 0 0 0 .3vh var(--sky); }
+.tv-table .nm { font-weight: 800; font-size: calc(var(--row-h) * .48); overflow: hidden; text-overflow: ellipsis; display: block; }
+.tv-table .total { font-weight: 900; font-size: calc(var(--row-h) * .52); }
+.tv-table .evo { font-size: min(calc(var(--row-h) * .36), 1.6vw); }
+.tv-table .new { font-size: min(calc(var(--row-h) * .24), .9vw); }
+.tv-table .pt { min-width: 0; font-size: min(calc(var(--row-h) * .4), 1.9vw); }
+.tv-table tbody tr.top td { background: color-mix(in srgb, var(--sky-soft) 55%, #fff); }
+.tv-table tbody tr.top td.pt.counted { background: var(--counted); }
+.tv-table tbody tr.top td.pt.replace { background: var(--replace); }
+
+.tv-empty { display: grid; place-items: center; height: 100%; font-size: 3vh; color: var(--ink-soft); }
+
+@media (prefers-reduced-motion: reduce) { .tv-table tbody tr { animation: none; } }

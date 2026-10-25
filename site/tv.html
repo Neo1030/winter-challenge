@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Winter Challenge Results · Let's Golf</title>
+  <meta name="robots" content="noindex">
+  <meta name="color-scheme" content="light">
+  <link rel="icon" href="assets/favicon.png" type="image/png">
+  <link rel="preload" href="assets/fonts/figtree-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/style.css">
+  <link rel="stylesheet" href="assets/tv.css">
+</head>
+<body>
+  <header class="tv-top">
+    <img src="assets/logo-letsgolf.svg" width="246" height="44" alt="Let's Golf">
+    <span id="tv-demo" class="tv-demo" hidden>Données de démonstration</span>
+  </header>
+
+  <section id="tv-stats" class="tv-stats" aria-label="En bref"></section>
+
+  <section class="tv-card" aria-live="off">
+    <div class="tv-title">
+      <h1 id="tv-title" class="fadeable">Classement</h1>
+      <div class="meta">
+        <span class="tv-legend"><i class="c"></i>Résultat compté <i class="r"></i>Premier remplacé</span>
+        <span id="tv-page" class="fadeable"></span>
+      </div>
+    </div>
+    <div id="tv-area" class="tv-area fadeable"></div>
+    <div class="tv-progress"><i id="tv-bar"></i></div>
+  </section>
+
+  <script src="assets/tv.js"></script>
+</body>
+</html>

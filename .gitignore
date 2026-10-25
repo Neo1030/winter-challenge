@@ -1,0 +1,22 @@
+# Secrets
+.env
+
+# Données locales (classeurs, exports API : contiennent des noms et e-mails)
+data/
+*.xlsm
+*.xlsx
+*.csv
+
+# Données générées pour le site (régénérées par scripts/export_site_data.py)
+site/donnees/
+
+# Réglages locaux de l'éditeur (chemins de cet ordinateur)
+.claude/launch.json
+.claude/settings.local.json
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/

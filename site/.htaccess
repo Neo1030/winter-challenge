@@ -1,0 +1,13 @@
+# Réglages Apache pour Infomaniak (sans effet si le module n'existe pas)
+AddDefaultCharset UTF-8
+
+<IfModule mod_headers.c>
+  # Les joueurs doivent toujours voir les derniers résultats
+  <FilesMatch "saison\.json$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+</IfModule>
+
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE application/json text/css application/javascript text/html
+</IfModule>

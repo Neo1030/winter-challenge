@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Winter Challenge · Let's Golf</title>
+  <meta name="description" content="Classements, parcours de la semaine et résultats du Winter Challenge, le championnat hebdomadaire sur simulateur du Let's Golf, Performance & Fitting Center à Bussigny près de Lausanne.">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="color-scheme" content="light">
+  <link rel="icon" href="assets/favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="assets/favicon.png">
+  <link rel="preload" href="assets/fonts/figtree-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <a class="skip" href="#app">Aller au contenu</a>
+
+  <header class="site-header">
+    <div class="wrap">
+      <a class="logo" href="#/classement" aria-label="Let's Golf · Winter Challenge, retour au classement">
+        <img src="assets/logo-letsgolf.svg" width="246" height="44" alt="Let's Golf, toujours un coup d'avance">
+      </a>
+      <nav class="tabs" aria-label="Sections">
+        <a href="#/classement" data-route="classement">Classement</a>
+        <a href="#/parcours" data-route="parcours">Parcours</a>
+        <a href="#/semaines" data-route="semaines">Semaines</a>
+        <a href="#/joueurs" data-route="joueurs">Joueurs</a>
+        <a href="#/regles" data-route="regles">Règles</a>
+        <a class="pill-link" href="https://letsgolf.ch" rel="noopener">letsgolf.ch</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero" aria-labelledby="site-title">
+    <div class="wrap">
+      <span class="eyebrow">Performance &amp; Fitting Center · Bussigny</span>
+      <h1 id="site-title">Winter Challenge <span id="season-label" class="season"></span></h1>
+      <p>Le championnat hebdomadaire du Let's Golf : classements, parcours de la semaine et résultats, à consulter quand tu veux.</p>
+    </div>
+  </section>
+
+  <div id="demo-banner" class="demo" role="note" hidden>
+    <div class="wrap">Données de démonstration : les joueurs et les scores sont fictifs.</div>
+  </div>
+
+  <main id="app" class="wrap" tabindex="-1" aria-live="polite">
+    <p class="loading">Chargement du classement…</p>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <img src="assets/logo-letsgolf.svg" width="224" height="40" alt="Let's Golf">
+      <p>Centre indoor · Bussigny près de Lausanne · <a href="https://letsgolf.ch" rel="noopener">letsgolf.ch</a></p>
+      <p>Parcours et scores : <a href="https://simulatorgolftour.com" rel="noopener">Simulator Golf Tour</a> · <span id="updated"></span></p>
+    </div>
+  </footer>
+
+  <dialog id="player-dialog" aria-labelledby="player-name"></dialog>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>
