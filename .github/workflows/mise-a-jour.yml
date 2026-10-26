@@ -9,8 +9,9 @@ name: Mise à jour des résultats
 
 on:
   schedule:
-    - cron: "*/5 5-21 * * *"      # 05:00 à 21:55 UTC, couvre 08:00 à 22:00 heure d'été comme d'hiver
-    - cron: "0 22-23,0-4 * * *"   # le reste de la nuit, une fois par heure
+    - cron: "3-58/5 5-21 * * *"   # minutes 3, 8, 13… de 05:00 à 21:59 UTC (couvre 08:00 à 22:00 heure de Suisse, été comme hiver)
+    - cron: "18 22-23,0-4 * * *"  # le reste de la nuit, une fois par heure
+    # GitHub déconseille les minutes rondes (00, 05…), plus chargées, et ne garantit pas l'heure : voir site/LISEZ-MOI.md
   workflow_dispatch:               # bouton « Run workflow » dans l'onglet Actions, lance tout de suite
     inputs:
       forcer_envoi:

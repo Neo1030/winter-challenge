@@ -20,8 +20,9 @@ class CreneauTest(unittest.TestCase):
             self.assertTrue(decide(at(h, m))[0], (h, m))
 
     def test_nuit_une_fois_par_heure(self):
-        self.assertTrue(decide(at(22, 0))[0])
-        self.assertTrue(decide(at(2, 3))[0])
+        self.assertTrue(decide(at(22, 18))[0])
+        self.assertTrue(decide(at(2, 18))[0])
+        self.assertFalse(decide(at(2, 3))[0])
         self.assertFalse(decide(at(2, 35))[0])
         self.assertFalse(decide(at(7, 55))[0])
         self.assertFalse(decide(at(22, 30))[0])
@@ -30,7 +31,7 @@ class CreneauTest(unittest.TestCase):
         self.assertTrue(decide(at(2, 35), forced=True)[0])
 
     def test_entretien_une_fois_par_nuit(self):
-        self.assertTrue(decide(at(3, 0))[1])
+        self.assertTrue(decide(at(3, 18))[1])
         self.assertFalse(decide(at(3, 30))[1])
         self.assertFalse(decide(at(12, 0))[1])
 

@@ -1,6 +1,7 @@
 """Dit si la mise à jour automatique doit tourner maintenant (heure de Suisse, été et hiver compris).
 
-GitHub lance la tâche toutes les 5 minutes en journée et toutes les heures la nuit, en heure UTC.
+GitHub lance la tâche aux minutes 3, 8, 13… en journée et à la minute 18 la nuit, en heure UTC (GitHub déconseille
+les minutes rondes : 00, 05, 10…, plus chargées).
 Ce script décale tout sur l'heure de Zurich : toutes les 5 minutes de 08:00 à 21:59, puis une fois par heure.
 
 Écrit « lancer=oui » ou « lancer=non » dans le fichier GITHUB_OUTPUT (ou à l'écran hors de GitHub),
@@ -13,15 +14,15 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 DAY_START, DAY_END = 8, 22      # de 08:00 inclus à 22:00 exclu : toutes les 5 minutes
-NIGHT_MINUTES = 5               # la nuit : seulement dans les 5 premières minutes de l'heure
+NIGHT_WINDOW = range(15, 20)    # la nuit : une fois par heure, entre :15 et :19 (le déclenchement tombe à :18)
 KEEPALIVE_HOUR = 3
 
 
 def decide(now, forced=False):
     """now : datetime à l'heure de Zurich. Retourne (lancer, entretien)."""
     day = DAY_START <= now.hour < DAY_END
-    run = forced or day or now.minute < NIGHT_MINUTES
-    keepalive = now.hour == KEEPALIVE_HOUR and now.minute < NIGHT_MINUTES
+    run = forced or day or now.minute in NIGHT_WINDOW
+    keepalive = now.hour == KEEPALIVE_HOUR and now.minute in NIGHT_WINDOW
     return run, keepalive
 
 

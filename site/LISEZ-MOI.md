@@ -73,8 +73,16 @@ Pour essayer : onglet **Actions → Mise à jour des résultats → Run workflow
 `config/prochain_parcours.json` : il doit être **commité et poussé** pour être pris en compte (la tâche se relance alors toute seule).
 
 Une tâche planifiée est désactivée par GitHub après 60 jours sans activité dans le dépôt ; une étape d'entretien la réactive
-chaque nuit pour éviter cela. Les rythmes de GitHub ne sont pas garantis à la minute : un lancement peut avoir quelques minutes
-de retard, parfois plus aux heures chargées.
+chaque nuit pour éviter cela.
+
+**Fiabilité (constat du 26.10.2026)** : la planification de GitHub n'est pas garantie. Sa documentation dit que l'événement « can be
+delayed during periods of high loads » et que « some queued jobs may be dropped »
+([docs.github.com](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows)). Des
+utilisateurs rapportent des exécutions manquantes ou en retard de plusieurs heures
+([discussion #185355](https://github.com/orgs/community/discussions/185355),
+[#210111](https://github.com/orgs/community/discussions/210111)). Ici, aucune exécution planifiée n'a démarré pendant plus d'une
+heure après la mise en service. Pour une mise à jour fiable toutes les 5 minutes, il faut un déclencheur externe qui appelle
+`workflow_dispatch` (voir ci-dessous), la planification de GitHub ne servant plus que de filet de sécurité.
 
 ## Aller plus loin (plus tard)
 
