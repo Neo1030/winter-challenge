@@ -5,6 +5,8 @@ AddDefaultCharset UTF-8
   # Les joueurs doivent toujours voir les derniers résultats
   <FilesMatch "saison\.json$">
     Header set Cache-Control "no-cache, must-revalidate"
+    # Une zone web de lecteur d'affichage (iframe isolée) lit le fichier comme venant d'un autre site : on l'autorise
+    Header set Access-Control-Allow-Origin "*"
   </FilesMatch>
 </IfModule>
 

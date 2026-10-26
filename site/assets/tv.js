@@ -1,18 +1,19 @@
 /* Winter Challenge Results · page pour la télévision du centre.
    Fait défiler les classements tout seul : Hommes net, Hommes brut, Femmes net, Femmes brut, Seniors net, Seniors brut,
    par pages qui remplissent tout l'écran. Lit donnees/saison.json et le relit chaque minute.
-   Réglages dans l'adresse :  tv.html?duree=8  (secondes par page)   tv.html?lignes=5  (lignes par page au maximum) */
+   Écrit pour les anciens navigateurs des lecteurs d'affichage (Zebrix…) : pas de « ?. » ni de « ?? ».
+   Réglages dans l'adresse :  tv.html?duree=15  (secondes par page, 10 par défaut)   tv.html?lignes=5  (lignes par page au maximum) */
 (() => {
   "use strict";
 
   const $ = (sel) => document.querySelector(sel);
-  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const num = (n) => (n == null ? "–" : String(n).replace(/\B(?=(\d{3})+(?!\d))/g, "'"));
   const day = (iso) => (iso ? iso.slice(0, 10).split("-").reverse().join(".") : "");
   const pl = (n, word) => `${n} ${word}${n > 1 ? "s" : ""}`;
 
   const params = new URLSearchParams(location.search);
-  const DURATION = Math.max(2, Number(params.get("duree")) || 5) * 1000;
+  const DURATION = Math.max(2, Number(params.get("duree")) || 10) * 1000;
   const MAX_ROWS = Number(params.get("lignes")) || 0;
   const REFRESH = 60 * 1000;
 
@@ -165,7 +166,7 @@
     try { if ("wakeLock" in navigator) await navigator.wakeLock.request("screen"); } catch (e) { /* facultatif */ }
   }
   document.addEventListener("visibilitychange", () => { if (!document.hidden) keepAwake(); });
-  const fullscreen = () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.());
+  const fullscreen = () => (document.fullscreenElement ? document.exitFullscreen() : (document.documentElement.requestFullscreen && document.documentElement.requestFullscreen()));
   document.addEventListener("dblclick", fullscreen);
   document.addEventListener("keydown", (e) => { if (e.key === "f" || e.key === "F") fullscreen(); });
 

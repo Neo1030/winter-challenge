@@ -12,6 +12,16 @@
   <link rel="stylesheet" href="assets/tv.css">
 </head>
 <body>
+  <script>
+    /* Diagnostic pour les lecteurs anciens (écrit sans syntaxe récente) : tv.html?debug=1 */
+    (function () {
+      if (location.search.indexOf("debug") < 0) return;
+      var box = document.createElement("pre"); box.id = "tv-debug";
+      box.appendChild(document.createTextNode(navigator.userAgent + "\n" + window.innerWidth + "x" + window.innerHeight));
+      document.documentElement.appendChild(box);
+      window.onerror = function (msg, src, line) { box.appendChild(document.createTextNode("\nERREUR : " + msg + " (" + String(src).split("/").pop() + ":" + line + ")")); };
+    })();
+  </script>
   <header class="tv-top">
     <img src="assets/logo-letsgolf.svg" width="246" height="44" alt="Let's Golf">
     <span id="tv-demo" class="tv-demo" hidden>Données de démonstration</span>

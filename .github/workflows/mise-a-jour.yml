@@ -1,0 +1,78 @@
+# Met à jour les résultats du site : lit l'API SGT, recalcule, envoie donnees/saison.json chez Infomaniak.
+#
+# Rythme (heure de Suisse) : toutes les 5 minutes de 08:00 à 22:00, puis une fois par heure la nuit.
+# GitHub travaille en UTC : on le laisse se déclencher large, et scripts/creneau.py décide selon l'heure de Zurich.
+#
+# INACTIVE tant que la variable de dépôt MISE_A_JOUR_ACTIVE n'est pas « true » (voir site/LISEZ-MOI.md, « Mise à jour automatique »).
+# Les identifiants sont des « secrets » du dépôt, saisis dans GitHub, jamais dans le code.
+name: Mise à jour des résultats
+
+on:
+  schedule:
+    - cron: "*/5 5-21 * * *"      # 05:00 à 21:55 UTC, couvre 08:00 à 22:00 heure d'été comme d'hiver
+    - cron: "0 22-23,0-4 * * *"   # le reste de la nuit, une fois par heure
+  workflow_dispatch:               # bouton « Run workflow » dans l'onglet Actions, lance tout de suite
+  push:
+    branches: [main]
+    paths: [config/prochain_parcours.json]   # nouveau parcours choisi : on met le site à jour tout de suite
+
+# Un seul envoi à la fois ; si un envoi est encore en cours, le suivant attend
+concurrency:
+  group: mise-a-jour-resultats
+  cancel-in-progress: false
+
+# Droits minimaux : lire le code, et (pour l'entretien ci-dessous) gérer les tâches du dépôt
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  mise-a-jour:
+    if: vars.MISE_A_JOUR_ACTIVE == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SGT_CLUB_URL: ${{ vars.SGT_CLUB_URL }}
+      SGT_USERNAME: ${{ secrets.SGT_USERNAME }}
+      SGT_PASSWORD: ${{ secrets.SGT_PASSWORD }}
+      FTP_USER: ${{ vars.FTP_USER }}
+      FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+      SGT_TOURS: ${{ vars.SGT_TOURS }}   # par exemple « 3910:Hommes 3911:Femmes 3912:Seniors »
+      SITE_URL: https://winterchallenge.letsgolf.ch
+      FORCER: ${{ github.event_name != 'schedule' }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
+
+      - name: Est-ce le bon moment ?
+        id: creneau
+        run: python3 scripts/creneau.py
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        if: steps.creneau.outputs.lancer == 'oui'
+        with:
+          python-version: "3.12"
+
+      - name: Installer la seule dépendance
+        if: steps.creneau.outputs.lancer == 'oui'
+        run: pip install openpyxl==3.1.5
+
+      - name: Calculer les classements depuis SGT
+        if: steps.creneau.outputs.lancer == 'oui'
+        run: |
+          set -eu
+          args=()
+          for tour in $SGT_TOURS; do args+=(--tour "$tour"); done
+          [ ${#args[@]} -gt 0 ] || { echo "SGT_TOURS est vide (variable de dépôt)"; exit 1; }
+          python3 scripts/export_site_data.py "${args[@]}"
+
+      - name: Envoyer chez Infomaniak (seulement si les résultats ont changé)
+        if: steps.creneau.outputs.lancer == 'oui'
+        run: python3 scripts/deploy_ftps.py --donnees-seules --si-change
+
+      # GitHub désactive une tâche planifiée après 60 jours sans activité dans le dépôt.
+      # Une fois par nuit, on la « réactive » : elle l'est déjà, mais cela remet le compteur à zéro.
+      - name: Entretien (empêche la désactivation automatique)
+        if: steps.creneau.outputs.entretien == 'oui'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/mise-a-jour.yml/enable"

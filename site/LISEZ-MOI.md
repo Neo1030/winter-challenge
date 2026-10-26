@@ -43,19 +43,41 @@ Les intitulés exacts du Manager Infomaniak peuvent varier un peu ; le principe 
 1. **Sous-domaine** : dans le Manager, sur l'hébergement web du domaine letsgolf.ch, ajoute le site
    `winterchallenge.letsgolf.ch` avec son propre dossier. Si la zone DNS de letsgolf.ch est chez Infomaniak, l'adresse
    est créée automatiquement. Active le certificat SSL gratuit (Let's Encrypt) pour avoir le https.
-2. **Envoi des fichiers** : avec un client SFTP ou FTP (Cyberduck, FileZilla), envoie **le contenu** du dossier `site/`
-   dans le dossier du sous-domaine (`index.html`, `.htaccess`, `assets/` et `donnees/`). Les identifiants FTP/SFTP se créent
-   dans le Manager.
-3. **Chaque semaine** : régénère `saison.json` (commande ci-dessus), puis remplace ce seul fichier sur le serveur.
+2. **Accès FTP** : dans le Manager (FTP / SSH), crée un utilisateur de type **FTP** (et non « FTP + SSH », qui ouvre tout
+   l'hébergement) limité au dossier du sous-domaine.
+3. **Envoi des fichiers** : `python3 scripts/deploy_ftps.py` envoie le contenu de `site/` en FTPS (le mot de passe est demandé au
+   clavier). `--essai` liste les fichiers sans rien envoyer ; `--donnees-seules` n'envoie que `saison.json`.
+4. **Chaque semaine** : régénère `saison.json` (commande ci-dessus) et envoie-le, ou laisse la mise à jour automatique le faire.
 
 Pour intégrer la page au site Let's Golf existant, il suffit de copier le dossier tel quel dans un sous-dossier : tous les
 chemins sont relatifs.
 
+## Mise à jour automatique (GitHub Actions)
+
+La tâche `.github/workflows/mise-a-jour.yml` lit l'API SGT, recalcule les classements et envoie `saison.json` chez Infomaniak
+**seulement si les résultats ont changé**. Rythme, heure de Suisse : toutes les 5 minutes de 08:00 à 22:00, puis une fois par
+heure la nuit (`scripts/creneau.py` gère l'heure d'été). Elle est **inactive tant qu'on ne l'active pas**.
+
+Dans GitHub, **Settings → Secrets and variables → Actions** :
+
+| Type | Nom | Contenu |
+|---|---|---|
+| Secret | `SGT_USERNAME`, `SGT_PASSWORD` | compte administrateur SGT dédié à l'automate |
+| Secret | `FTP_PASSWORD` | mot de passe de l'utilisateur FTP limité au dossier du site |
+| Variable | `SGT_CLUB_URL` | nom du club dans l'adresse SGT (voir `.env.example`) |
+| Variable | `FTP_USER` | `x12b2_winterchallenge` |
+| Variable | `SGT_TOURS` | les tours et leur catégorie, par exemple `3910:Hommes 3911:Femmes 3912:Seniors` |
+| Variable | `MISE_A_JOUR_ACTIVE` | `true` pour **allumer** la tâche (à créer en dernier ; supprime-la ou mets `false` pour l'éteindre) |
+
+Pour essayer : onglet **Actions → Mise à jour des résultats → Run workflow**. Le parcours de la semaine vient de
+`config/prochain_parcours.json` : il doit être **commité et poussé** pour être pris en compte (la tâche se relance alors toute seule).
+
+Une tâche planifiée est désactivée par GitHub après 60 jours sans activité dans le dépôt ; une étape d'entretien la réactive
+chaque nuit pour éviter cela. Les rythmes de GitHub ne sont pas garantis à la minute : un lancement peut avoir quelques minutes
+de retard, parfois plus aux heures chargées.
+
 ## Aller plus loin (plus tard)
 
-- **Mise à jour automatique** : lancer l'export à intervalles réguliers (toutes les heures, par exemple) depuis un
-  ordinateur toujours allumé, un serveur ou GitHub Actions, puis envoyer `saison.json` en SFTP. Les identifiants SGT et SFTP
-  seraient alors des secrets, jamais écrits dans le dépôt.
 - **Vote pour le prochain parcours, inscriptions** : c'est là qu'une base de données (Supabase, par exemple) deviendrait utile.
 
 ## Page pour la télévision du centre (`tv.html`)
@@ -64,13 +86,13 @@ Une page à part, indépendante du site des joueurs, à afficher sur l'écran du
 Elle lit le même fichier `saison.json`, mais n'affiche que le logo, cinq cartes (semaine, prochain parcours, joueurs, meilleur net,
 meilleur brut) et le classement, qui occupe tout le reste de l'écran.
 
-- **Défilement automatique** toutes les 5 secondes : Hommes net, Hommes brut, Femmes net, Femmes brut, Seniors net, Seniors brut,
+- **Défilement automatique** toutes les 10 secondes : Hommes net, Hommes brut, Femmes net, Femmes brut, Seniors net, Seniors brut,
   puis on recommence. Chaque classement est coupé en pages équilibrées qui remplissent l'écran (par exemple 30 hommes en 3 pages de 10,
   plutôt que 10 + 10 + 10 lignes serrées ou 10 + 10 + 1). En Full HD, une page compte une dizaine de lignes ; le nombre de lignes et
   de semaines affichées s'adapte tout seul à la taille de l'écran.
 - **Fondu** entre deux pages : le tableau s'efface, puis la nouvelle page apparaît ligne après ligne. Une barre fine en bas de la
   carte montre le temps restant avant la page suivante.
-- **Réglages dans l'adresse** : `tv.html?duree=8` (secondes par page), `tv.html?lignes=5` (5 lignes au maximum par page).
+- **Réglages dans l'adresse** : `tv.html?duree=15` (secondes par page, 10 par défaut), `tv.html?lignes=5` (5 lignes au maximum par page).
 - **Mise en place** : ouvrir l'adresse dans le navigateur de la télévision ou d'un mini-PC, puis plein écran avec F11, la touche F
   ou un double-clic. Pour un affichage permanent, Chrome peut se lancer en mode kiosque :
   `chrome --kiosk https://winterchallenge.letsgolf.ch/tv.html`.
