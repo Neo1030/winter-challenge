@@ -12,6 +12,7 @@ import argparse
 import json
 import os
 import sys
+import urllib.request
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from build_workbook import read_players_file  # noqa: E402
@@ -34,13 +35,25 @@ def next_course_from_config(path=parcours.NEXT_FILE):
     if not os.path.exists(path):
         return None
     with open(path, encoding="utf-8") as f:
-        c = json.load(f)
-    return {
-        "nom": c["name"], "lieu": c.get("location"), "semaine": c.get("week"), "neuf": c.get("nine"), "par": c.get("par"),
-        "difficulte": c.get("difficulty"), "styles": c.get("styles", []), "longueur_jaune_m": c.get("yellow_length_m"),
-        "vent": c.get("wind"), "description": c.get("description"), "lien_carte": c.get("scorecard_url"),
-        "lien_video": c.get("video_url"), "choisi_le": c.get("chosen_on"),
-    }
+        return parcours.site_course(json.load(f))
+
+
+def published_settings(site_url=None, path="site/donnees/saison.json"):
+    """Réglages de tournois déjà publiés {id de tournoi: réglages} : on ne relit pas chez SGT un tournoi terminé.
+
+    Source : le fichier en ligne (SITE_URL) quand on tourne chez GitHub, sinon le fichier local. Sans fichier : rien.
+    """
+    try:
+        if site_url:
+            with urllib.request.urlopen(site_url.rstrip("/") + "/donnees/saison.json", timeout=20) as r:
+                published = json.load(r)
+        else:
+            with open(path, encoding="utf-8") as f:
+                published = json.load(f)
+    except (OSError, ValueError):
+        return {}
+    return {e["tournoi_id"]: e["reglages"] for entries in (published.get("parcours") or {}).values()
+            for e in entries if e.get("statut") == "terminee" and e.get("reglages") and e.get("tournoi_id")}
 
 
 def main():
@@ -61,7 +74,8 @@ def main():
             if not args.tour:
                 sys.exit("Indique au moins un tour : --tour 3910:Hommes")
             client = SgtClient.from_env()
-            tours = [client.fetch_tour(int(t.partition(":")[0]), t.partition(":")[2] or t) for t in args.tour]
+            known = published_settings(os.environ.get("SITE_URL"), args.sortie)
+            tours = [client.fetch_tour(int(t.partition(":")[0]), t.partition(":")[2] or t, known) for t in args.tour]
     except SgtApiError as e:
         sys.exit(f"Erreur API : {e}")
 
@@ -70,7 +84,8 @@ def main():
     next_course = dict(DEMO_COURSE) if args.demo else next_course_from_config()
     if args.demo and next_course:
         next_course["semaine"] = max(w.number for w in season.weeks) + 1  # le parcours choisi est celui de la prochaine semaine
-    data = build_site_data(season, args.saison, next_course, demo=args.demo)
+    data = build_site_data(season, args.saison, next_course, demo=args.demo,
+                           history=[] if args.demo else parcours.read_history())
 
     os.makedirs(os.path.dirname(args.sortie), exist_ok=True)
     with open(args.sortie, "w", encoding="utf-8") as f:

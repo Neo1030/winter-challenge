@@ -24,7 +24,7 @@
   const STATS = [["eagles", "eagles"], ["birdies", "birdies"], ["pars", "pars"], ["bogeys", "bogeys"]];
 
   let data = null;
-  const state = { kind: "net", cat: null, q: "" };
+  const state = { kind: "net", cat: null, q: "", pcat: null };
 
   /* ---------- Routage : #/classement?cat=Femmes&kind=brut ---------- */
   function parseHash() {
@@ -296,43 +296,89 @@
   }
   dialog.addEventListener("click", (e) => { if (e.target === dialog) dialog.close(); });
 
-  /* ---------- Parcours de la semaine ---------- */
-  function viewCourse() {
-    const c = data.parcours_semaine;
-    const week = latestWeek();
-    if (!c) {
-      app.innerHTML = `<h2>Parcours de la semaine</h2><p class="empty">Le prochain parcours sera annoncé bientôt.</p>`;
-      return;
-    }
-    const diff = c.difficulte == null ? null : c.difficulte <= 3 ? "facile" : c.difficulte <= 6 ? "moyen" : "difficile";
-    const current = week && c.semaine === week.numero;
-    const status = current && week.statut === "en_cours" ? " · en cours" : week && c.semaine > week.numero ? " · à venir" : "";
-    const nine = c.longueur_jaune_m ? Math.round(c.longueur_jaune_m / 2 / 10) * 10 : null;
+  /* ---------- Parcours : semaine en cours, semaine suivante et historique, une catégorie à la fois ---------- */
+  const key = (s) => String(s ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const tr = (map, v) => (v == null ? null : map[key(v)] ?? String(v));
+  const FIRMNESS = { soft: "Souple", medium: "Moyen", middle: "Moyen", firm: "Ferme", hard: "Dur" };
+  const TEES = { white: "Blanc", yellow: "Jaune", blue: "Bleu", black: "Noir", red: "Rouge", gold: "Or", green: "Vert", orange: "Orange", silver: "Argent" };
+  const WINDS = { nowind: "Aucun vent", calm: "Calme", breezy: "Brise légère", gusty: "Rafales", windy: "Venteux" };
+  const WEATHER = { clear: "Dégagé", sunny: "Ensoleillé", cloudy: "Nuageux", partlycloudy: "Peu nuageux", overcast: "Couvert", rain: "Pluie", rainy: "Pluie", fog: "Brouillard", foggy: "Brouillard" };
+  const DAYS = { monday: "lundi", tuesday: "mardi", wednesday: "mercredi", thursday: "jeudi", friday: "vendredi", saturday: "samedi", sunday: "dimanche" };
+  const PUTTING = { normal: "Normal", nogimmes: "Sans gimmie", nogimmies: "Sans gimmie" };
+  const metres = (v) => { // les distances de SGT sont en pieds : on les affiche en mètres
+    const m = /^(\d+(?:\.\d+)?)\s*(?:feet|ft)$/i.exec(String(v ?? "").trim());
+    return m ? `${dec(Number(m[1]) * 0.3048)} m` : v;
+  };
+
+  /* Les réglages du parcours, sous forme de [titre, valeur, note] */
+  function courseParams(e) {
+    const r = e.reglages || {};
+    const rows = [
+      ["Départ", e.depart ? tr(TEES, e.depart) : null, r.pente ? `pente ${r.pente} · cotation ${r.cotation ?? "–"}` : null],
+      ["On joue", e.neuf ? NINE[e.neuf] ?? e.neuf : null, e.par ? `par ${e.par}` : null],
+      ["Longueur", e.longueur_jaune_m ? `${num(e.longueur_jaune_m)} m` : null, e.longueur_jaune_m ? "18 trous, départ jaune" : null],
+      ["Stimp", r.stimp ?? null, "vitesse des greens"],
+      ["Greens", tr(FIRMNESS, r.greens)],
+      ["Fairways", tr(FIRMNESS, r.fairways)],
+      ["Vent", r.vent ? tr(WINDS, r.vent) : e.vent ? tr(WINDS, e.vent) : null, r.vent ? null : e.vent ? "conseillé" : null],
+      ["Météo", tr(WEATHER, r.meteo)],
+      ["Drapeaux", r.drapeaux ? tr(DAYS, r.drapeaux) : null],
+      ["Gimmies", r.gimmies ? metres(r.gimmies) : null],
+      ["Putting", tr(PUTTING, r.putting)],
+    ];
+    return rows.filter(([, v]) => v != null && v !== "");
+  }
+  const factsHtml = (e) => courseParams(e).map(([l, v, n]) =>
+    `<div class="fact"><div class="label">${esc(l)}</div><div class="value">${esc(v)}</div>${n ? `<div class="note">${esc(n)}</div>` : ""}</div>`).join("");
+  const chipsHtml = (e) => courseParams(e).map(([l, v]) => `<span><b>${esc(l)}</b> ${esc(v)}</span>`).join("");
+
+  /* Grande fiche : semaine en cours ou semaine suivante */
+  function courseCard(e, kicker) {
+    const diff = e.difficulte == null ? null : e.difficulte <= 3 ? "facile" : e.difficulte <= 6 ? "moyen" : "difficile";
+    const facts = factsHtml(e) + (diff ? `<div class="fact"><div class="label">Difficulté</div><div class="value">${e.difficulte}/10</div><div class="note">${diff}</div></div>` : "");
+    return `<article class="card course">
+      <div class="course-head"><span class="kicker">${esc(kicker)}</span><h2>${esc(e.nom)}</h2><p>${esc(e.lieu || "")}${e.debut ? `${e.lieu ? " · " : ""}du ${day(e.debut)} au ${day(e.fin)}` : ""}</p></div>
+      <div class="course-body">
+        ${facts ? `<div class="facts">${facts}</div>` : ""}
+        ${e.description ? `<p>${esc(e.description)}</p>` : ""}
+        ${e.styles?.length ? `<div class="tags">${e.styles.map((s) => `<span class="tag">${esc(STYLES[s] ?? s)}</span>`).join("")}</div>` : ""}
+        ${e.lien_carte ? `<figure class="scorecard"><a href="${esc(e.lien_carte)}" target="_blank" rel="noopener" title="Ouvrir la carte en grand">
+          <img src="${esc(e.lien_carte)}" alt="Carte de score de ${esc(e.nom)} : longueurs par départ, pars et index des trous" loading="lazy" referrerpolicy="no-referrer"></a>
+          <figcaption>Carte de score · Simulator Golf Tour · touche l'image pour l'agrandir</figcaption></figure>` : ""}
+        ${e.lien_video ? `<div class="actions"><a class="btn" href="${esc(e.lien_video)}" target="_blank" rel="noopener">Voir le survol du parcours</a></div>` : ""}
+      </div></article>`;
+  }
+
+  function viewCourse(params) {
+    const byCat = data.parcours || {};
+    const cats = Object.keys(byCat).length ? Object.keys(byCat) : data.categories.map((c) => c.nom);
+    const cat = cats.includes(params.cat || state.pcat) ? params.cat || state.pcat : cats[0];
+    state.pcat = cat;
+    const entries = [...(byCat[cat] || [])];
+    const current = entries.filter((e) => e.statut === "en_cours").pop();
+    const lastNo = Math.max(0, ...entries.filter((e) => e.statut !== "a_venir").map((e) => e.semaine));
+    let next = entries.find((e) => e.statut === "a_venir");
+    const chosen = data.parcours_semaine;  // parcours choisi par le capitaine, pas encore créé chez SGT
+    if (!next && chosen && chosen.semaine > lastNo) next = { ...chosen, statut: "a_venir", depart: null, reglages: null };
+    const history = entries.filter((e) => e.statut === "terminee").sort((a, b) => b.semaine - a.semaine);
+
     app.innerHTML = `
-      <h2>Parcours de la semaine</h2>
-      <p class="sub">Tout ce qu'il faut savoir avant de jouer ton tour.</p>
-      <article class="card course">
-        <div class="course-head"><span class="kicker">Semaine WC${esc(c.semaine ?? week?.numero)}${status}</span>
-          <h2>${esc(c.nom)}</h2><p>${esc(c.lieu)}</p></div>
-        <div class="course-body">
-          <div class="facts">
-            ${c.par ? `<div class="fact"><div class="label">Par</div><div class="value">${c.par}</div><div class="note">18 trous</div></div>` : ""}
-            ${c.neuf ? `<div class="fact"><div class="label">On joue</div><div class="value">${esc(NINE[c.neuf] ?? c.neuf)}</div><div class="note">9 trous</div></div>` : ""}
-            ${c.longueur_jaune_m ? `<div class="fact"><div class="label">Longueur</div><div class="value">${num(c.longueur_jaune_m)} m</div><div class="note">18 trous, départ jaune (≈ ${num(nine)} m pour 9 trous)</div></div>` : ""}
-            ${diff ? `<div class="fact"><div class="label">Difficulté</div><div class="value">${c.difficulte}/10</div><div class="note">${diff}</div></div>` : ""}
-            ${c.vent ? `<div class="fact"><div class="label">Vent conseillé</div><div class="value">${esc(WIND[c.vent] ?? c.vent)}</div></div>` : ""}
-          </div>
-          ${c.description ? `<p>${esc(c.description)}</p>` : ""}
-          ${c.styles?.length ? `<div class="tags">${c.styles.map((s) => `<span class="tag">${esc(STYLES[s] ?? s)}</span>`).join("")}</div>` : ""}
-          ${c.lien_carte ? `<figure class="scorecard"><a href="${esc(c.lien_carte)}" target="_blank" rel="noopener" title="Ouvrir la carte en grand">
-            <img src="${esc(c.lien_carte)}" alt="Carte de score de ${esc(c.nom)} : longueurs par départ, pars et index des trous" loading="lazy" referrerpolicy="no-referrer"></a>
-            <figcaption>Carte de score · Simulator Golf Tour · touche l'image pour l'agrandir</figcaption></figure>` : ""}
-          ${c.lien_video ? `<div class="actions"><a class="btn" href="${esc(c.lien_video)}" target="_blank" rel="noopener">Voir le survol du parcours</a></div>` : ""}
-        </div>
-      </article>
-      <p class="sub" style="margin-top:16px">${current && week.statut === "en_cours"
-        ? `Joue ton tour sur Simulator Golf Tour avant la fin de la semaine (jusqu'au ${day(week.fin)}) : jusqu'à ${data.regles.tentatives} tentatives, la meilleure compte.`
-        : `Ce parcours sera celui de la semaine WC${esc(c.semaine)} : jusqu'à ${data.regles.tentatives} tentatives, la meilleure compte.`}</p>`;
+      <h2>Parcours</h2>
+      <p class="sub">Les réglages de la semaine, le parcours à venir et ceux déjà joués. Chaque catégorie a son propre tournoi.</p>
+      <div class="toolbar"><div class="chips" role="group" aria-label="Catégorie">${cats.map((c) =>
+        `<button type="button" data-pcat="${esc(c)}" aria-pressed="${c === cat}">${esc(c)}</button>`).join("")}</div></div>
+      ${current ? `<section><h3>Cette semaine</h3>${courseCard(current, `Semaine WC${current.semaine} · en cours`)}
+        <p class="sub" style="margin-top:12px">Joue ton tour sur Simulator Golf Tour avant la fin de la semaine (jusqu'au ${day(current.fin)}) : jusqu'à ${data.regles.tentatives} tentatives, la meilleure compte.</p></section>`
+        : `<section><h3>Cette semaine</h3><p class="empty">Aucun tournoi en cours pour les ${esc(cat)}.</p></section>`}
+      ${next ? `<section><h3>Semaine prochaine</h3>${courseCard(next, `Semaine WC${next.semaine} · à venir`)}</section>` : ""}
+      ${history.length ? `<section><h3>Historique</h3><div class="grid history">${history.map((e) => `
+        <article class="card week">
+          <header><span class="no">WC${e.semaine}</span><span class="badge">Terminée</span></header>
+          <div class="course-name">${esc(e.nom)}</div><div class="dates">${day(e.debut)} au ${day(e.fin)}</div>
+          <div class="mini">${chipsHtml(e)}</div>
+          ${e.lien_carte ? `<div class="note"><a href="${esc(e.lien_carte)}" target="_blank" rel="noopener">Carte de score</a></div>` : ""}
+        </article>`).join("")}</div></section>` : ""}`;
+    app.querySelectorAll("[data-pcat]").forEach((b) => b.addEventListener("click", () => { go("parcours", { cat: b.dataset.pcat }); render(); }));
     guardScorecard();
   }
 

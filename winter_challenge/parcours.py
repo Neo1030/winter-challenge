@@ -21,6 +21,7 @@ CARD_URL = "https://simulatorgolftour.com/public/assets/courseImages/scorecards/
 CACHE = "data/parcours_sgt.json"
 PLAYED_FILE = "config/parcours_joues.txt"
 NEXT_FILE = "config/prochain_parcours.json"
+HISTORY_FILE = "config/historique_parcours.json"
 
 STYLES = ["Beginner", "Coastal", "Desert", "Fantasy", "Heathland", "Historic", "Links", "Mountain", "Parkland",
           "Training", "Tropical", "Major Venue", "Tour Stop"]
@@ -189,7 +190,7 @@ def select(courses: list, *, difficulty=None, style_groups=None, zones=None, pla
 
 
 def choose(course: Course, week: int, nine: str, played_path: str = PLAYED_FILE, next_path: str = NEXT_FILE,
-           extra: dict | None = None) -> dict:
+           extra: dict | None = None, history_path: str = HISTORY_FILE) -> dict:
     """Enregistre le prochain parcours ; le précédent « prochain parcours » passe dans la liste des parcours joués."""
     os.makedirs(os.path.dirname(next_path), exist_ok=True)
     previous = None
@@ -206,4 +207,26 @@ def choose(course: Course, week: int, nine: str, played_path: str = PLAYED_FILE,
     record.update({k: v for k, v in (extra or {}).items() if v is not None})
     with open(next_path, "w", encoding="utf-8") as f:
         json.dump(record, f, ensure_ascii=False, indent=1)
+    # Archive : le site affiche l'historique des parcours (longueur, description…), que SGT ne donne pas
+    history = [h for h in read_history(history_path) if h.get("week") != week]
+    history.append(record)
+    with open(history_path, "w", encoding="utf-8") as f:
+        json.dump(sorted(history, key=lambda h: h.get("week") or 0), f, ensure_ascii=False, indent=1)
     return record
+
+
+def read_history(path: str = HISTORY_FILE) -> list:
+    if not os.path.exists(path):
+        return []
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def site_course(c: dict) -> dict:
+    """Un parcours choisi (clés anglaises du fichier de config) avec les clés en français lues par le site."""
+    return {
+        "nom": c["name"], "lieu": c.get("location"), "semaine": c.get("week"), "neuf": c.get("nine"), "par": c.get("par"),
+        "difficulte": c.get("difficulty"), "styles": c.get("styles", []), "longueur_jaune_m": c.get("yellow_length_m"),
+        "vent": c.get("wind"), "description": c.get("description"), "lien_carte": c.get("scorecard_url"),
+        "lien_video": c.get("video_url"), "choisi_le": c.get("chosen_on"),
+    }

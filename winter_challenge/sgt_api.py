@@ -12,6 +12,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+from .sgt_page import fetch_settings
+
 BASE_URL = "https://simulatorgolftour.com/sgt-api/club-admin"
 
 
@@ -75,7 +77,10 @@ class SgtClient:
         if not self.api_key:
             raise SgtApiError("Pas de clé API : appelle login() d'abord")
         params["api-key"] = self.api_key
-        return self._send(urllib.request.Request(self._url(endpoint, params)))
+        res = self._send(urllib.request.Request(self._url(endpoint, params)))
+        if isinstance(res, str):  # SGT répond parfois par un simple message au lieu de données
+            raise SgtApiError(f"Réponse inattendue sur {endpoint} : {res[:120]}")
+        return res
 
     # Clé API (valable 24 h à la création, 1 h après un refresh)
     def login(self, username: str, password: str) -> str:
@@ -117,8 +122,13 @@ class SgtClient:
     def registrations(self, tournament_id: int):
         return self._get("registrations/view", tournamentId=tournament_id)
 
-    def fetch_tour(self, tour_id: int, label: str) -> dict:
-        """Tout ce qu'il faut pour un tour : membres et, pour chaque tournoi, les scorecards."""
+    def fetch_tour(self, tour_id: int, label: str, known_settings: dict | None = None) -> dict:
+        """Tout ce qu'il faut pour un tour : membres et, pour chaque tournoi, les scorecards, statistiques et réglages.
+
+        known_settings : {id de tournoi: réglages} déjà publiés. Un tournoi terminé ne change plus : on ne relit
+        pas sa page chez SGT, on reprend ce qu'on a.
+        """
+        known_settings = known_settings or {}
         info = next((t for t in self.tours() if t["tourId"] == tour_id), None)
         if info is None:
             raise SgtApiError(f"Tour {tour_id} introuvable dans ce club")
@@ -129,6 +139,8 @@ class SgtClient:
                 t["stats"] = self.tournament_stats(t["tournamentId"])
             except SgtApiError:
                 t["stats"] = None
+            known = known_settings.get(t["tournamentId"])
+            t["reglages"] = known if known and t["status"] == "Completed" else fetch_settings(t["tournamentId"])
         return {
             "tour_id": tour_id,
             "label": label,

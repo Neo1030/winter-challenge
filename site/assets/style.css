@@ -193,7 +193,10 @@ tbody tr:hover .sticky-1, tbody tr:hover .sticky-2 { background: var(--surface-2
 .btn:hover { filter: brightness(1.1); }
 
 /* Semaines */
-.weeks { grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); }
+.weeks, .history { grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); }
+.week .mini b { color: var(--ink); font-weight: 600; }
+.week .note { margin-top: 10px; font-size: .85rem; }
+#app section + section { margin-top: 28px; }
 .week { padding: 18px 20px; }
 .week header { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
 .week .no { font-size: 1.2rem; font-weight: 800; }

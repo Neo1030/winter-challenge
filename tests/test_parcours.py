@@ -82,17 +82,21 @@ class ParcoursTest(unittest.TestCase):
     def test_choisir_et_historique(self):
         with tempfile.TemporaryDirectory() as tmp:
             played, nxt = os.path.join(tmp, "joues.txt"), os.path.join(tmp, "next.json")
+            hist = os.path.join(tmp, "historique.json")
             with open(played, "w", encoding="utf-8") as f:
                 f.write("# commentaire\nKauri Cliffs\n")
             first = next(c for c in self.courses if c.name == "Alpes GC")
             second = next(c for c in self.courses if c.name == "Cote Links")
-            p.choose(first, 3, "Front", played, nxt)
+            p.choose(first, 3, "Front", played, nxt, history_path=hist)
             self.assertEqual(p.read_played(played), {"kauri cliffs"})  # le premier choix n'est pas encore « joué »
-            record = p.choose(second, 4, "Back", played, nxt)
+            record = p.choose(second, 4, "Back", played, nxt, history_path=hist)
             self.assertEqual(p.read_played(played), {"kauri cliffs", "alpes gc"})
             with open(nxt, encoding="utf-8") as f:
                 self.assertEqual(json.load(f)["name"], "Cote Links")
             self.assertEqual(record["week"], 4)
+            self.assertEqual([(h["week"], h["name"]) for h in p.read_history(hist)], [(3, "Alpes GC"), (4, "Cote Links")])
+            p.choose(first, 3, "Back", played, nxt, history_path=hist)  # on change d'avis : la semaine 3 est remplacée
+            self.assertEqual([h["nine"] for h in p.read_history(hist) if h["week"] == 3], ["Back"])
 
     def test_lecture_du_fichier_joues_reel(self):
         played = p.read_played(os.path.join(os.path.dirname(__file__), "..", "config", "parcours_joues.txt"))

@@ -121,6 +121,16 @@ meilleur brut) et le classement, qui occupe tout le reste de l'écran.
   **Unités à confirmer** : l'API ne les donne pas. On suppose des yards pour les drives et des pieds pour les distances au
   drapeau (documentation du site SGT) ; la conversion est dans `winter_challenge/stats.py` (`YARD_M`, `FOOT_M`).
   Pour vérifier : comparer un drive ou une distance de `saison.json` avec ce que SGT affiche pour le même tournoi.
+- La page « Parcours » a trois sous-onglets (Hommes, Femmes, Seniors, un tournoi chacun) : la **semaine en cours**, la **semaine
+  prochaine** (tournoi déjà créé chez SGT, sinon le parcours choisi avec le skill) et l'**historique** des semaines terminées.
+  Chaque parcours montre ses réglages : départ, pente et cotation, neuf joué et par, stimp, fermeté des greens et des fairways,
+  vent, météo, positions des drapeaux, gimmies (en mètres) et putting.
+  **D'où ça vient :** l'API de club ne donne pas ces réglages. Ils sont lus sur la page publique du tournoi
+  (`simulatorgolftour.com/tournament/<id>`, bloc « Round settings », code dans `winter_challenge/sgt_page.py`). C'est une lecture
+  de page, donc plus fragile qu'une API : si SGT change sa page, les réglages disparaissent du site (le reste continue).
+  Pour ne pas solliciter SGT toutes les 5 minutes, un tournoi terminé n'est pas relu : ses réglages sont repris du fichier déjà publié.
+  La longueur, la description et la vidéo viennent de l'archive `config/historique_parcours.json`, remplie par le skill
+  `choix-parcours` à chaque parcours choisi (SGT ne les donne pas).
 - La page « Parcours » affiche **directement l'image de la carte de score** du parcours de la semaine (longueurs par départ, pars,
   index des trous). L'image est chargée depuis simulatorgolftour.com : elle appartient à SGT et à ses concepteurs. Si SGT la rend
   indisponible, la page affiche un bouton qui ouvre la carte chez SGT. Pour ne plus dépendre d'eux, on pourrait en garder une

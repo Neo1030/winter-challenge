@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from .parcours import CARD_URL, normalize, site_course
 from .scoring import COUNT_LABELS
 from .season import Season
 from .stats import rank_of
@@ -122,8 +123,44 @@ def _players(season: Season) -> list:
     return out
 
 
+STATUS = {"Completed": "terminee", "In Progress": "en_cours"}  # tout le reste : tournoi créé, pas encore commencé
+DETAIL_KEYS = ("lieu", "difficulte", "styles", "description", "vent", "lien_video", "longueur_jaune_m")
+
+
+def _courses(season: Season, history: list, next_course: dict | None) -> dict:
+    """Parcours de chaque catégorie, semaine par semaine : réglages lus chez SGT, neuf joué, par, longueur.
+
+    Les infos du capitaine (longueur, description, vidéo…) viennent de l'archive des parcours choisis, par nom de parcours
+    et numéro de semaine. Le site n'en montre que trois groupes : la semaine en cours, la suivante et l'historique.
+    """
+    chosen = [site_course(h) for h in history] + ([next_course] if next_course else [])
+    out = {}
+    for category in dict.fromkeys(season.labels + [w.category for w in season.weeks]):
+        entries = []
+        for w in sorted((w for w in season.weeks if w.category == category), key=lambda w: w.number):
+            attempts = [a for a in season.attempts if a.week == w.number and a.category == category]
+            sections = [a.section for a in attempts if a.section != "All"] or [a.section for a in attempts]
+            nine = max(set(sections), key=sections.count) if sections else None
+            par = None
+            if attempts:
+                pars = attempts[0].pars
+                par = sum(pars[:9] if nine == "Front" else pars[9:] if nine == "Back" else pars)
+            settings = dict(w.settings or {})
+            info = next((c for c in chosen if c.get("semaine") == w.number and normalize(c["nom"]) == normalize(w.course)), None)
+            entry = {"semaine": w.number, "tournoi_id": w.tournament_id, "nom": w.course, "parcours_id": w.course_id,
+                     "debut": w.start, "fin": w.end, "statut": STATUS.get(w.status, "a_venir"),
+                     "neuf": nine or (info or {}).get("neuf"), "par": par,
+                     "depart": settings.get("depart") or (attempts[0].tee if attempts else None) or None,
+                     "reglages": settings or None,
+                     "lien_carte": CARD_URL.format(id=w.course_id) if w.course_id else None}
+            entry.update({k: info.get(k) for k in DETAIL_KEYS if info and info.get(k) is not None})
+            entries.append(entry)
+        out[category] = entries
+    return out
+
+
 def build_site_data(season: Season, season_label: str, next_course: dict | None = None, demo: bool = False,
-                    now: datetime | None = None) -> dict:
+                    now: datetime | None = None, history: list | None = None) -> dict:
     categories = list(dict.fromkeys(p.category for p in season.players))
     return {
         "genere_le": (now or datetime.now()).isoformat(timespec="minutes"),
@@ -135,4 +172,5 @@ def build_site_data(season: Season, season_label: str, next_course: dict | None 
         "semaines": _week_summaries(season),
         "joueurs": _players(season),
         "parcours_semaine": next_course,
+        "parcours": _courses(season, history or [], next_course),
     }
