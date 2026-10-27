@@ -1,8 +1,8 @@
 /* Winter Challenge Results · page pour la télévision du centre.
    Fait défiler les classements tout seul : Hommes net, Hommes brut, Femmes net, Femmes brut, Seniors net, Seniors brut,
-   par pages qui remplissent tout l'écran. Lit donnees/saison.json et le relit chaque minute.
+   puis ceux du Short Game, par pages qui remplissent tout l'écran. Lit donnees/saison.json et le relit chaque minute.
    Écrit pour les anciens navigateurs des lecteurs d'affichage (Zebrix…) : pas de « ?. » ni de « ?? ».
-   Réglages dans l'adresse :  tv.html?duree=15  (secondes par page, 10 par défaut)   tv.html?lignes=5  (lignes par page au maximum) */
+   Réglages dans l'adresse :  tv.html?duree=15  (secondes par page, 8 par défaut)   tv.html?lignes=5  (lignes par page au maximum) */
 (() => {
   "use strict";
 
@@ -13,7 +13,7 @@
   const pl = (n, word) => `${n} ${word}${n > 1 ? "s" : ""}`;
 
   const params = new URLSearchParams(location.search);
-  const DURATION = Math.max(2, Number(params.get("duree")) || 10) * 1000;
+  const DURATION = Math.max(2, Number(params.get("duree")) || 8) * 1000;
   const MAX_ROWS = Number(params.get("lignes")) || 0;
   const REFRESH = 60 * 1000;
   const ROW_VH = 0.062;                                          // hauteur visée d'une ligne, en part de la hauteur de l'écran
@@ -21,39 +21,45 @@
   const area = $("#tv-area");
   const bar = $("#tv-bar");
   let data = null;
+  let comps = [];       // les compétitions : le Winter Challenge (racine du fichier), puis les autres (Short Game…)
+  let shown = null;     // compétition dont les cartes du haut sont affichées
   let slides = [];
   let index = 0;
   let timer = null;
 
-  /* ---------- Les cinq cartes ---------- */
-  const latestWeek = () => data.semaines[data.semaines.length - 1];
+  /* ---------- Les cinq cartes (celles de la compétition affichée) ---------- */
+  const isWC = (c) => c.prefixe === "WC";
 
-  function leader(kind) {
+  function leader(c, kind) {
     let best = null;
-    for (const c of data.categories) {
-      const r = c.classement[kind].find((x) => x.rang === 1);
-      if (r && (!best || r.total > best.total)) best = { name: r.joueur, total: r.total, cat: c.nom };
+    for (const cat of c.categories) {
+      const r = cat.classement[kind].find((x) => x.rang === 1);
+      if (r && (!best || r.total > best.total)) best = { name: r.joueur, total: r.total, cat: cat.nom };
     }
     return best;
   }
 
-  function renderStats() {
-    const week = latestWeek();
-    const pc = data.parcours_semaine;
-    const upcoming = pc && pc.semaine > week.numero;
-    const course = upcoming ? pc.nom : week.parcours;
-    const place = pc && (upcoming || pc.semaine === week.numero) ? pc.lieu : "";
-    const multi = data.categories.length > 1;
+  function renderStats(c) {
+    shown = c;
+    const weeks = c.semaines;
+    const week = weeks[weeks.length - 1];
+    const pc = c.parcours_semaine;
+    const upcoming = pc && week && pc.semaine > week.numero;
+    const course = upcoming ? pc.nom : week ? week.parcours : "–";
+    const place = pc && week && (upcoming || pc.semaine === week.numero) ? pc.lieu : "";
+    const multi = c.categories.length > 1;
+    const word = isWC(c) ? "semaine" : "mois";
     const best = (kind) => {
-      const b = leader(kind);
+      const b = leader(c, kind);
       return b ? [esc(b.name), `${multi ? esc(b.cat) + " · " : ""}${num(b.total)} points`] : ["–", "Pas encore de résultat"];
     };
     const [netName, netNote] = best("net");
     const [brutName, brutNote] = best("brut");
     const cards = [
-      ["Semaine", `WC${week.numero}${week.statut === "en_cours" ? ' <span class="live">en cours</span>' : ""}`, (week.fin <= week.debut ? `le ${day(week.debut)}` : `du ${day(week.debut)} au ${day(week.fin)}`)],
+      [isWC(c) ? "Semaine" : "Mois", week ? `${c.prefixe}${week.numero}${week.statut === "en_cours" ? ' <span class="live">en cours</span>' : ""}` : "–",
+        week ? (week.fin <= week.debut ? `le ${day(week.debut)}` : `du ${day(week.debut)} au ${day(week.fin)}`) : ""],
       [upcoming ? "Prochain parcours" : "Parcours", esc(course), esc(place)],
-      ["Joueurs", data.joueurs.length, `${pl(data.semaines.length, "semaine")} jouée${data.semaines.length > 1 ? "s" : ""}`],
+      ["Joueurs", c.joueurs.length, `${weeks.length} ${weeks.length > 1 && word === "semaine" ? "semaines" : word} ${(isWC(c) ? ["jouée", "jouées"] : ["joué", "joués"])[weeks.length > 1 ? 1 : 0]}`],
       ["Meilleur net", netName, netNote],
       ["Meilleur brut", brutName, brutNote],
     ];
@@ -92,15 +98,17 @@
   function buildSlides() {
     const cap = rowsFit();
     const out = [];
-    for (const c of data.categories) {
-      for (const kind of ["net", "brut"]) {
-        const rows = c.classement[kind].filter((r) => r.rang);
-        if (!rows.length) continue;
-        const pages = Math.ceil(rows.length / cap);
-        const per = Math.ceil(rows.length / pages);              // pages équilibrées : 7 + 7 + 7 plutôt que 10 + 10 + 1
-        for (let p = 0; p < pages; p++) out.push({ cat: c.nom, kind, page: p + 1, pages, per, rows: rows.slice(p * per, (p + 1) * per) });
+    comps.forEach((comp, ci) => {
+      for (const c of comp.categories) {
+        for (const kind of ["net", "brut"]) {
+          const rows = c.classement[kind].filter((r) => r.rang);
+          if (!rows.length) continue;
+          const pages = Math.ceil(rows.length / cap);
+          const per = Math.ceil(rows.length / pages);              // pages équilibrées : 7 + 7 + 7 plutôt que 10 + 10 + 1
+          for (let p = 0; p < pages; p++) out.push({ ci, comp: comp.nom, cat: c.nom, kind, page: p + 1, pages, per, rows: rows.slice(p * per, (p + 1) * per) });
+        }
       }
-    }
+    });
     slides = out;
   }
 
@@ -113,15 +121,17 @@
   };
 
   function drawSlide(s) {
-    const weeks = data.semaines.map((w) => w.numero).sort((a, b) => b - a).slice(0, weeksFit());
+    const comp = comps[s.ci];
+    if (shown !== comp) renderStats(comp);                       // les cartes du haut suivent la compétition du classement affiché
+    const weeks = comp.semaines.map((w) => w.numero).sort((a, b) => b - a).slice(0, weeksFit());
     const rowH = rowHeight();
-    const multi = data.categories.length > 1;
-    $("#tv-title").textContent = `Classement ${s.kind === "net" ? "net Stableford" : "brut"}${multi ? " · " + s.cat : ""}`;
+    const multi = comp.categories.length > 1;
+    $("#tv-title").textContent = `${comps.length > 1 ? comp.nom + " · " : ""}Classement ${s.kind === "net" ? "net Stableford" : "brut"}${multi ? " · " + s.cat : ""}`;
     $("#tv-page").textContent = s.pages > 1 ? `Page ${s.page} / ${s.pages}` : "";
     area.innerHTML = `<table class="tv-table" style="--row-h:${rowH}px">
       <colgroup>${COLS.map((w) => `<col style="width:${(w * rowH).toFixed(1)}px">`).join("")}${weeks.map(() => "<col>").join("")}</colgroup>
       <thead><tr><th scope="col">#</th><th scope="col">Évol.</th><th class="name" scope="col">Joueur</th><th scope="col">Hdc</th><th scope="col">Total</th>
-        ${weeks.map((w) => `<th class="wk" scope="col">WC${w}</th>`).join("")}</tr></thead>
+        ${weeks.map((w) => `<th class="wk" scope="col">${comp.prefixe}${w}</th>`).join("")}</tr></thead>
       <tbody>${s.rows.map((r, i) => `<tr class="${r.rang <= 3 ? "top" : ""}" style="--i:${i}">
         <td class="rank ${r.rang <= 3 ? "r" + r.rang : ""}"><span>${r.rang}</span></td><td>${evo(r.evolution)}</td>
         <td class="name"><span class="nm">${esc(r.joueur)}</span></td><td>${r.hdc_actuel}</td><td class="total">${num(r.total)}</td>
@@ -167,10 +177,12 @@
       if (!first && data && json.genere_le === data.genere_le) return;   // rien de nouveau
       const here = slides[index];
       data = json;
-      if (!data.semaines.length) { slides = []; show(0); return; }
-      renderStats();
+      comps = [json].concat(json.competitions_autres || []);
+      shown = null;
+      if (!comps.some((c) => c.semaines.length)) { slides = []; show(0); return; }
+      renderStats(comps[0]);
       buildSlides();
-      const same = here && slides.findIndex((s) => s.cat === here.cat && s.kind === here.kind && s.page === here.page);
+      const same = here && slides.findIndex((s) => s.ci === here.ci && s.cat === here.cat && s.kind === here.kind && s.page === here.page);
       if (first) { show(0); loop(); } else { index = same >= 0 ? same : Math.min(index, slides.length - 1); drawSlide(slides[index]); }
     } catch (e) {
       if (first) area.innerHTML = '<div class="tv-empty">Résultats momentanément indisponibles…</div>';  // sinon, on garde l'affichage actuel
@@ -189,7 +201,7 @@
   let resizing;
   window.addEventListener("resize", () => {
     clearTimeout(resizing);
-    resizing = setTimeout(() => { if (data && data.semaines.length) { buildSlides(); show(Math.min(index, slides.length - 1)); } }, 300);
+    resizing = setTimeout(() => { if (data && comps.length) { buildSlides(); show(Math.min(index, slides.length - 1)); } }, 300);
   });
 
   keepAwake();

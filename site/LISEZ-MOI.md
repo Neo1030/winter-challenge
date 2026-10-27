@@ -26,6 +26,17 @@ python3 scripts/export_site_data.py --depuis-fichier data/sgt_demo_site.json --d
 python3 scripts/serve_site.py                                                           # puis http://127.0.0.1:8765
 ```
 
+## Données de démonstration (60 joueurs au Winter Challenge, 20 au Short Game)
+
+```bash
+python3 scripts/simulate_season.py ~/Downloads/Winter-Challenge_2k26_WC18.xlsm --site --short-game 20   # scores fictifs -> data/sgt_demo_site.json
+python3 scripts/export_site_data.py --depuis-fichier data/sgt_demo_site.json --demo --sortie data/saison_demo.json
+PORT=8766 python3 scripts/serve_site.py --demo      # puis http://127.0.0.1:8766 et http://127.0.0.1:8766/tv.html
+```
+
+Les données fictives restent dans `data/` : le site normal (port 8765) et le déploiement n'y touchent jamais. La démonstration se
+place dans la dernière semaine simulée (12 semaines Winter Challenge, 4 mois de Short Game).
+
 ## Mettre à jour les données
 
 ```bash
@@ -96,13 +107,15 @@ Une page à part, indépendante du site des joueurs, à afficher sur l'écran du
 Elle lit le même fichier `saison.json`, mais n'affiche que le logo, cinq cartes (semaine, prochain parcours, joueurs, meilleur net,
 meilleur brut) et le classement, qui occupe tout le reste de l'écran.
 
-- **Défilement automatique** toutes les 10 secondes : Hommes net, Hommes brut, Femmes net, Femmes brut, Seniors net, Seniors brut,
-  puis on recommence. Chaque classement est coupé en pages équilibrées qui remplissent l'écran (par exemple 30 hommes en 3 pages de 10,
+- **Défilement automatique** toutes les 8 secondes : Hommes net, Hommes brut, Femmes net, Femmes brut, Seniors net, Seniors brut
+  (Winter Challenge, colonnes WC1, WC2…), puis le Short Game (colonnes SG1, SG2…), puis on recommence. Les cinq cartes du haut
+  suivent la compétition affichée (semaine ou mois, parcours, joueurs, meilleurs net et brut). Un classement sans résultat
+  n'apparaît pas. Chaque classement est coupé en pages équilibrées qui remplissent l'écran (par exemple 30 hommes en 3 pages de 10,
   plutôt que 10 + 10 + 10 lignes serrées ou 10 + 10 + 1). En Full HD, une page compte une dizaine de lignes ; le nombre de lignes et
   de semaines affichées s'adapte tout seul à la taille de l'écran.
 - **Fondu** entre deux pages : le tableau s'efface, puis la nouvelle page apparaît ligne après ligne. Une barre fine en bas de la
   carte montre le temps restant avant la page suivante.
-- **Réglages dans l'adresse** : `tv.html?duree=15` (secondes par page, 10 par défaut), `tv.html?lignes=5` (5 lignes au maximum par page).
+- **Réglages dans l'adresse** : `tv.html?duree=15` (secondes par page, 8 par défaut), `tv.html?lignes=5` (5 lignes au maximum par page).
 - **Mise en place** : ouvrir l'adresse dans le navigateur de la télévision ou d'un mini-PC, puis plein écran avec F11, la touche F
   ou un double-clic. Pour un affichage permanent, Chrome peut se lancer en mode kiosque :
   `chrome --kiosk https://winterchallenge.letsgolf.ch/tv.html`.
@@ -126,7 +139,7 @@ meilleur brut) et le classement, qui occupe tout le reste de l'écran.
   (10.35 ft = 3.16 m, SGT écrit 3.04 m). Le site affiche la conversion exacte, avec la valeur d'origine en dessous.
 - **Classement** : sous le tableau, cinq tuiles comme sur SGT (FIR, GIR, distance de drive, proximité GIR, putts rentrés) donnent le
   meilleur de la catégorie pour la semaine choisie. Les données viennent de `tournaments/stats` (les ex æquo sont tous cités).
-- **Compétitions** : le Winter Challenge et le Short Game (une manche par mois) ont chacun leur onglet de choix en haut des pages
+- **Compétitions** : le Winter Challenge et le Short Game (un tournoi par mois, SG1, SG2… : le site et la TV parlent de « mois ») ont chacun leur onglet de choix en haut des pages
   Classement, Parcours, Semaines et Joueurs.
 - **La semaine en cours** se juge aux dates de **début** des tournois, pas à leur statut ni à leur date de fin : chez SGT, tous les
   tournois restent « In Progress » (on rattrape jusqu'en mars). La semaine en cours est celle qui a commencé aujourd'hui, ou la plus

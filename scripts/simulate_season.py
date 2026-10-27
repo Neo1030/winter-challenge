@@ -2,7 +2,8 @@
 
 Usage :
   python3 scripts/simulate_season.py chemin/ancien.xlsm          # écrit data/sgt_simule.json (1 catégorie, 22 joueurs)
-  python3 scripts/simulate_season.py chemin/ancien.xlsm --site   # écrit data/sgt_demo_site.json (3 catégories)
+  python3 scripts/simulate_season.py chemin/ancien.xlsm --site   # écrit data/sgt_demo_site.json (3 catégories, 60 joueurs)
+  python3 scripts/simulate_season.py chemin/ancien.xlsm --site --short-game 20   # + un Short Game mensuel de 20 joueurs
   python3 scripts/build_workbook.py --depuis-fichier data/sgt_simule.json --sortie Winter-Challenge_Simulation.xlsx
 
 Les parcours (pars et index des trous) viennent de la feuille Courses de l'ancien classeur.
@@ -94,6 +95,19 @@ def simulate_tour(rng, courses, players, tour_id, label, weeks, card_start):
     }, card_id
 
 
+def simulate_short_game(rng, courses, players, tour_id, card_start, months=4):
+    """Un tour Short Game fictif : un tournoi par mois, sur un parcours de petit jeu (9 trous), en « Mixte »."""
+    tour, card_id = simulate_tour(rng, courses, players, tour_id, "Mixte", months, card_start)
+    starts = [date(2026, 10, 23), date(2026, 11, 1), date(2026, 12, 1), date(2027, 1, 1)]
+    for i, t in enumerate(tour["tournaments"]):
+        start = starts[i] if i < len(starts) else date(2027, 1 + i - 3, 1)
+        t["name"] = f"Short Game {start:%m.%Y}"
+        t["start_date"] = f"{start} 00:00:00"
+        t["end_date"] = f"{start + timedelta(days=29)} 00:00:00"
+    tour["competition"] = "Short Game"
+    return tour, card_id
+
+
 def check_range(tours):
     """Contrôle de la plage des scores, trou par trou."""
     for tour in tours:
@@ -112,6 +126,7 @@ def main():
     parser.add_argument("--semaines", type=int)
     parser.add_argument("--graine", type=int, default=42)
     parser.add_argument("--site", action="store_true", help="3 catégories et pseudos fictifs, pour la démonstration du site")
+    parser.add_argument("--short-game", type=int, default=0, metavar="N", help="avec --site : ajoute un Short Game de N joueurs (parmi les 60)")
     parser.add_argument("--sortie")
     args = parser.parse_args()
 
@@ -126,6 +141,11 @@ def main():
         for i, (label, count, (low, high)) in enumerate(SITE_CATEGORIES, start=1):
             players = {pseudos.pop(): rng.randint(low, high) for _ in range(count)}
             tour, card_id = simulate_tour(rng, courses, players, 9000 + i, label, weeks, card_id)
+            tours.append(tour)
+        if args.short_game:
+            everyone = [n for t in tours for n in (m["user_name"] for m in t["members"][1:])]
+            picked = {n: rng.randint(3, 30) for n in rng.sample(everyone, args.short_game)}
+            tour, card_id = simulate_short_game(rng, courses, picked, 9100, card_id)
             tours.append(tour)
         out = args.sortie or "data/sgt_demo_site.json"
     else:

@@ -16,7 +16,7 @@ import json
 import os
 import sys
 import urllib.request
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -87,6 +87,7 @@ def main():
     parser.add_argument("--saison", default="2026-2027")
     parser.add_argument("--sortie", default="site/donnees/saison.json")
     parser.add_argument("--joueurs", metavar="CSV")
+    parser.add_argument("--aujourdhui", metavar="AAAA-MM-JJ", help="date du jour à utiliser (démonstration : 2 jours après le début du dernier tournoi)")
     parser.add_argument("--demo", action="store_true", help="marque les données comme fictives et ajoute un parcours d'exemple")
     args = parser.parse_args()
 
@@ -110,6 +111,10 @@ def main():
 
     overrides = read_players_file(args.joueurs) if args.joueurs else None
     today = datetime.now(ZoneInfo("Europe/Zurich")).date()  # la semaine en cours se juge à la date du jour, heure de Suisse
+    if args.aujourdhui:
+        today = date.fromisoformat(args.aujourdhui)
+    elif args.depuis_fichier and args.demo:  # démonstration : on se place dans la dernière semaine simulée
+        today = max(date.fromisoformat(t["start_date"][:10]) for tour in tours for t in tour["tournaments"]) + timedelta(days=2)
     groups = {}
     for tour in tours:
         groups.setdefault(tour.get("competition") or "Winter Challenge", []).append(tour)
@@ -129,7 +134,7 @@ def main():
         json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
     print(f"{len(data['joueurs'])} joueurs, {len(data['semaines'])} semaines, {len(data['categories'])} catégories -> {args.sortie}")
     for other in data["competitions_autres"]:
-        print(f"  + {other['nom']} : {len(other['joueurs'])} joueurs, {len(other['semaines'])} manches")
+        print(f"  + {other['nom']} : {len(other['joueurs'])} joueurs, {len(other['semaines'])} mois")
 
 
 if __name__ == "__main__":
