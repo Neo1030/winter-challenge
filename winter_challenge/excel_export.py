@@ -84,7 +84,7 @@ def write_ranking(wb: Workbook, season: Season, kind: str, title: str, season_la
 
 def write_results(wb: Workbook, season: Season):
     ws = wb.create_sheet("Résultats")
-    headers = (["Semaine", "Catégorie", "Joueur", "N° tentative", "Parcours", "Départ", "Trous"]
+    headers = (["Semaine", "Catégorie", "Joueur", "Parcours", "Départ", "Trous"]
                + [f"T{i}" for i in range(1, 19)]
                + ["Brut", "Net", "Stableford brut", "Stableford net", "Points bruts", "Points nets",
                   "Hdc avant", "Hdc après"] + FR_COUNTS + ["Statut"])
@@ -92,7 +92,7 @@ def write_results(wb: Workbook, season: Season):
     style_header(ws, 1, 1, len(headers))
     for a in sorted(season.attempts, key=lambda a: (a.week, a.category, a.player, a.number)):
         res = a.result
-        row = [f"WC{a.week}", a.category, a.player, a.number, a.course, a.tee, a.section] + [s or None for s in a.scores]
+        row = [f"WC{a.week}", a.category, a.player, a.course, a.tee, a.section] + [s or None for s in a.scores]
         if res:
             row += [res.gross_total, res.net_total, res.stableford_gross, res.stableford_net, res.points_gross,
                     res.points_net, res.hcp_before, res.hcp_after]
@@ -106,16 +106,16 @@ def write_results(wb: Workbook, season: Season):
         elif a.status != "Non retenu":
             for c in range(1, len(headers) + 1):
                 ws.cell(ws.max_row, c).font = GREY_FONT
-    set_widths(ws, {"A": 9, "B": 12, "C": 18, "D": 11, "E": 28, "F": 10, "G": 8})
+    set_widths(ws, {"A": 9, "B": 12, "C": 18, "D": 28, "E": 10, "F": 8})
     for i in range(18):
-        ws.column_dimensions[get_column_letter(8 + i)].width = 4.5
+        ws.column_dimensions[get_column_letter(7 + i)].width = 4.5
     ws.freeze_panes = "D2"
     ws.auto_filter.ref = ws.dimensions
 
 
 def write_weeks(wb: Workbook, season: Season):
     ws = wb.create_sheet("Semaines")
-    headers = ["Semaine", "Tour", "Tournoi SGT", "Nom SGT", "Parcours", "Début", "Fin", "Statut", "Joueurs", "Tentatives",
+    headers = ["Semaine", "Tour", "Tournoi SGT", "Nom SGT", "Parcours", "Début", "Fin", "Statut", "Joueurs",
                "Meilleur Stableford brut", "Joueur(s)", "Meilleur Stableford net", "Joueur(s)"] + FR_COUNTS
     ws.append(headers)
     style_header(ws, 1, 1, len(headers))
@@ -123,7 +123,7 @@ def write_weeks(wb: Workbook, season: Season):
         attempts = [a for a in season.attempts if a.week == w.number and a.category == w.category]
         retained = [a for (cat, _, wk), a in season.best.items() if wk == w.number and cat == w.category]
         row = [f"WC{w.number}", w.category, w.tournament_id, w.name, w.course, w.start, w.end,
-               STATUS_FR_WEEK.get(w.status, w.status), len({a.player for a in attempts}), len(attempts)]
+               STATUS_FR_WEEK.get(w.status, w.status), len({a.player for a in attempts})]
         for kind in ("stableford_gross", "stableford_net"):
             best = max((getattr(a.result, kind) for a in retained), default=None)
             who = ", ".join(sorted(a.player for a in retained if getattr(a.result, kind) == best)) if retained else ""
@@ -151,14 +151,13 @@ def write_params(wb: Workbook, season: Season, season_label: str, tours: list):
         ("Saison", season_label),
         ("Tours SGT utilisés", ", ".join(f"{t['tour_id']} ({t['name']} → {t['label']})" for t in tours)),
         ("Résultats comptés au classement", season.best_n),
-        ("Tentatives par semaine", season.max_attempts),
         ("Fichier généré le", datetime.now().strftime("%d.%m.%Y %H:%M")),
         ("", ""),
         ("Comment lire les classements", ""),
         ("Vert", "résultat compté parmi les meilleurs"),
         ("Rouge", "plus petit résultat compté : le premier à être remplacé (le plus ancien à égalité)"),
         ("Points", "100 + (Stableford − 36) × 10 sur 18 trous, − 18 sur 9 trous, minimum 30"),
-        ("Tentative retenue", "meilleur Stableford net de la semaine (à égalité, la plus récente)"),
+        ("Un tour par semaine", "un seul tour par joueur et par semaine ; ses Stableford brut et net donnent les points bruts et nets"),
         ("Handicap de jeu", "+1 sous 100 points nets, sinon − (points − 100) / 10, mis à jour à la fin de chaque semaine"),
         ("Handicap de départ", "50 % du handicap réel (fichier joueurs, sinon handicap fixé par le club dans SGT)"),
         ("", ""),
@@ -166,9 +165,9 @@ def write_params(wb: Workbook, season: Season, season_label: str, tours: list):
     ]
     for r in rows:
         ws.append(list(r))
-    ws["A7"].font = Font(bold=True)
-    ws["A15"].font = Font(italic=True)
-    ws["B8"].fill, ws["B9"].fill = COUNTED_FILL, REPLACED_FILL
+    ws["A6"].font = Font(bold=True)
+    ws["A14"].font = Font(italic=True)
+    ws["B7"].fill, ws["B8"].fill = COUNTED_FILL, REPLACED_FILL
     set_widths(ws, {"A": 34, "B": 100})
 
 

@@ -23,8 +23,14 @@
   const NINE = { Front: "trous 1 à 9", Back: "trous 10 à 18", All: "les 18 trous" };
   const STATS = [["eagles", "eagles"], ["birdies", "birdies"], ["pars", "pars"], ["bogeys", "bogeys"]];
 
-  let data = null;
-  const state = { kind: "net", cat: null, q: "", pcat: null };
+  let raw = null;     // le fichier de données tel quel
+  let comps = [];     // les compétitions : le Winter Challenge (à la racine du fichier), puis les autres (Short Game…)
+  let data = null;    // la compétition affichée, avec les réglages communs (règles, démo…)
+  const state = { comp: "wc", kind: "net", cat: null, q: "", tw: null };
+  const unit = () => (data.prefixe === "WC"
+    ? { Cap: "Semaine", cap: "semaine", caps: "Semaines", this: "Cette semaine", next: "Semaine prochaine", end: "de la semaine" }
+    : { Cap: "Manche", cap: "manche", caps: "Manches", this: "Cette manche", next: "Manche suivante", end: "de la manche" });
+  const P = () => data.prefixe;
 
   /* ---------- Routage : #/classement?cat=Femmes&kind=brut ---------- */
   function parseHash() {
@@ -32,8 +38,35 @@
     return { route: path || "classement", params: Object.fromEntries(new URLSearchParams(query)) };
   }
   function go(route, params = {}) {
-    const q = new URLSearchParams(params).toString();
+    const q = new URLSearchParams(state.comp === "wc" ? params : { ...params, comp: state.comp }).toString();
     history.replaceState(null, "", `#/${route}${q ? "?" + q : ""}`);
+  }
+
+  /* ---------- Compétitions : Winter Challenge, Short Game… ---------- */
+  function useComp(id) {
+    const c = comps.find((x) => x.id === id) || comps[0];
+    state.comp = c.id;
+    data = { ...raw, ...c };
+  }
+  const compBar = () => (comps.length < 2 ? "" : `<div class="toolbar"><div class="seg comp-switch" role="group" aria-label="Compétition">${comps.map((c) =>
+    `<button type="button" data-comp="${esc(c.id)}" aria-pressed="${c.id === state.comp}">${esc(c.nom)}</button>`).join("")}</div></div>`);
+  function bindComp(route) {
+    app.querySelectorAll("[data-comp]").forEach((b) => b.addEventListener("click", () => {
+      state.comp = b.dataset.comp; state.cat = null; state.tw = null;
+      go(route, {}); render();
+    }));
+  }
+  const noPlayers = () => `${compBar()}<p class="empty">Pas encore de joueur dans le ${esc(data.nom)}.</p>`;
+
+  /* Parcours de la compétition : en cours (d'après les dates de début), à venir (le suivant seulement) et terminés */
+  function courseState() {
+    const entries = [...(Array.isArray(data.parcours) ? data.parcours : [])];
+    const current = entries.filter((e) => e.statut === "en_cours").pop();
+    let next = entries.find((e) => e.statut === "a_venir");
+    const lastNo = Math.max(0, ...entries.filter((e) => e.statut !== "a_venir").map((e) => e.semaine));
+    const chosen = data.parcours_semaine;  // parcours choisi par le capitaine, pas encore créé chez SGT
+    if (!next && chosen && chosen.semaine > lastNo) next = { ...chosen, statut: "a_venir", depart: null, reglages: null };
+    return { current, next, history: entries.filter((e) => e.statut === "terminee").sort((a, b) => b.semaine - a.semaine) };
   }
 
   /* ---------- Éléments communs ---------- */
@@ -50,23 +83,24 @@
   /* ---------- Classement ---------- */
   function viewRanking(params) {
     const cats = data.categories;
+    if (!cats.length) { app.innerHTML = noPlayers(); bindComp("classement"); return; }
     state.cat = cats.some((c) => c.nom === (params.cat || state.cat)) ? params.cat || state.cat : cats[0].nom;
     state.kind = (params.kind || state.kind) === "brut" ? "brut" : "net";
     const week = latestWeek();
-    const pc = data.parcours_semaine;
-    const upcoming = pc && week && pc.semaine > week.numero;
-    const course = upcoming ? pc.nom : (week && week.parcours);
+    const { current, next } = courseState();
+    const course = current ? current.nom : week && week.parcours;
+    const u = unit();
     const leaders = cats.map((c) => c.classement[state.kind][0]).filter((r) => r && r.rang);
 
-    app.innerHTML = `
+    app.innerHTML = `${compBar()}
       <section class="grid stats" aria-label="En bref">
-        <div class="card stat"><div class="label">Semaine</div>
-          <div class="value">WC${esc(week?.numero)} ${week?.statut === "en_cours" ? '<span class="live">en cours</span>' : ""}</div>
-          <div class="note">${week ? `${day(week.debut)} au ${day(week.fin)}` : ""}</div></div>
-        <div class="card stat"><div class="label">${upcoming ? "Prochain parcours" : "Parcours"}</div><div class="value">${esc(course)}</div>
-          <div class="note"><a href="#/parcours">Voir la fiche du parcours</a></div></div>
+        <div class="card stat"><div class="label">${u.Cap}</div>
+          <div class="value">${P()}${esc(week?.numero)} ${week?.statut === "en_cours" ? '<span class="live">en cours</span>' : ""}</div>
+          <div class="note">${week ? dates(week) : ""}</div></div>
+        <div class="card stat"><div class="label">Parcours</div><div class="value">${esc(course ?? "–")}</div>
+          <div class="note"><a href="#/parcours${state.comp === "wc" ? "" : "?comp=" + state.comp}">${next ? `Ensuite : ${esc(next.nom)}` : "Voir la fiche du parcours"}</a></div></div>
         <div class="card stat"><div class="label">Joueurs</div><div class="value">${data.joueurs.length}</div>
-          <div class="note">${pl(data.semaines.length, "semaine")} jouée${data.semaines.length > 1 ? "s" : ""}</div></div>
+          <div class="note">${pl(data.semaines.length, u.cap)} jouée${data.semaines.length > 1 ? "s" : ""}</div></div>
         <div class="card stat"><div class="label">Meilleur ${state.kind === "net" ? "net" : "brut"}</div>
           <div class="value">${leaders.length ? esc(leaders.sort((a, b) => b.total - a.total)[0].joueur) : "–"}</div>
           <div class="note">${leaders.length ? num(leaders[0].total) + " points" : "Pas encore de résultat"}</div></div>
@@ -84,12 +118,54 @@
         <input class="search" id="q" type="search" placeholder="Chercher un joueur" aria-label="Chercher un joueur" value="${esc(state.q)}">
       </div>
       <div id="podium"></div>
-      <div id="ranking"></div>`;
+      <div id="ranking"></div>
+      <section id="tuiles" aria-labelledby="tuiles-titre"></section>`;
+    bindComp("classement");
 
     app.querySelectorAll("[data-kind]").forEach((b) => b.addEventListener("click", () => { go("classement", { cat: state.cat, kind: b.dataset.kind }); render(); }));
     app.querySelectorAll("[data-cat]").forEach((b) => b.addEventListener("click", () => { go("classement", { cat: b.dataset.cat, kind: state.kind }); render(); }));
     $("#q").addEventListener("input", (e) => { state.q = e.target.value; drawRanking(); });
     drawRanking();
+    drawTiles();
+  }
+
+  /* Les meilleurs de chaque statistique SGT pour une semaine : FIR, GIR, drive, proximité GIR, putts rentrés */
+  const TILES = [
+    ["fir", "FIR", "Fairways touchés", (t) => ({ big: dec(t.valeur, 1) + " %" })],
+    ["gir", "GIR", "Greens en régulation", (t) => ({ big: dec(t.valeur, 1) + " %" })],
+    ["drive", "Distance de drive", "Le plus long drive", (t) => ({ big: dec(t.valeur, 1) + " m", small: t.orig == null ? "" : dec(t.orig, 2) + " yds" })],
+    ["gir_prox", "Proximité GIR", "Distance au drapeau, green atteint", (t) => ({ big: dec(t.valeur, 2) + " m", small: t.orig == null ? "" : dec(t.orig, 2) + " ft" })],
+    ["putts_faits", "Putts rentrés", "Distance des putts rentrés", (t) => ({ big: dec(t.valeur, 2) + " m", small: t.orig == null ? "" : dec(t.orig, 2) + " ft" })],
+  ];
+
+  function drawTiles() {
+    const box = $("#tuiles");
+    if (!box) return;
+    const cat = data.categories.find((c) => c.nom === state.cat);
+    const stats = (cat && cat.stats) || {};
+    const weeks = Object.keys(stats).map(Number).sort((a, b) => b - a);
+    const u = unit();
+    if (!weeks.length) {
+      box.innerHTML = `<h3 id="tuiles-titre">Statistiques ${u.end}</h3><p class="empty">Les statistiques (fairways, greens, drive, putts) apparaîtront après les premiers tours.</p>`;
+      return;
+    }
+    if (!weeks.includes(state.tw)) state.tw = weeks[0];
+    const st = stats[String(state.tw)];
+    box.innerHTML = `
+      <h3 id="tuiles-titre">Statistiques ${u.end}</h3>
+      <div class="toolbar"><label class="sub" for="tw">${u.Cap}</label>
+        <select id="tw" class="select">${weeks.map((w) => `<option value="${w}"${w === state.tw ? " selected" : ""}>${P()}${w}</option>`).join("")}</select></div>
+      <div class="tiles">${TILES.map(([key, title, hint, fmt]) => {
+        const t = st[key];
+        const v = t ? fmt(t) : null;
+        return `<div class="tile" title="${esc(hint)}"><div class="tile-title">${esc(title)}</div>
+          <div class="tile-name">${t ? t.joueurs.map(nm).join("<br>") : "–"}</div>
+          <div class="tile-value">${v ? v.big : "Pas de donnée"}</div>${v && v.small ? `<div class="tile-orig">${v.small}</div>` : ""}</div>`;
+      }).join("")}</div>
+      <p class="hint">Le meilleur de chaque statistique parmi les joueurs de la catégorie ${esc(state.cat)}, pour ${esc(P())}${state.tw}.
+        Proximité GIR : distance moyenne au drapeau quand le green est atteint en régulation (le plus petit gagne).
+        Putts rentrés : longueur des putts rentrés par tour. Distances en mètres, valeur d'origine de SGT en dessous.</p>`;
+    $("#tw").addEventListener("change", (e) => { state.tw = Number(e.target.value); drawTiles(); });
   }
 
   function drawRanking() {
@@ -111,7 +187,7 @@
       <div class="table-wrap"><table>
         <caption class="sr">Classement ${state.kind === "net" ? "net" : "brut"} ${esc(state.cat)}</caption>
         <thead><tr><th class="sticky-1" scope="col">#</th><th class="sticky-2 name" scope="col">Joueur</th><th scope="col">Évol.</th>
-          <th scope="col">Hdc</th><th scope="col">Total</th>${weeks.map((w) => `<th scope="col">WC${w}</th>`).join("")}</tr></thead>
+          <th scope="col">Hdc</th><th scope="col">Total</th>${weeks.map((w) => `<th scope="col">${P()}${w}</th>`).join("")}</tr></thead>
         <tbody>${rows.map((r) => `<tr data-player="${esc(r.joueur)}">
           <td class="sticky-1 rank">${r.rang ?? "–"}</td>
           <td class="sticky-2 name"><button type="button" data-player="${esc(r.joueur)}">${nm(r.joueur)}</button><small>${pl(r.nb_semaines, "semaine")}</small></td>
@@ -183,7 +259,7 @@
     const tipOf = (h) => {
       if (h.semaine === 0) return `<b>Départ</b><br>Handicap de jeu : ${h.hdc}`;
       const w = byWeek[h.semaine];
-      return `<b>WC${h.semaine} · ${esc(w.parcours)}</b><br>Handicap de jeu : ${w.hdc_avant} → ${w.hdc_apres}<br>${w.points_net} points nets (Stableford net ${w.stableford_net})`;
+      return `<b>${P()}${h.semaine} · ${esc(w.parcours)}</b><br>Handicap de jeu : ${w.hdc_avant} → ${w.hdc_apres}<br>${w.points_net} points nets (Stableford net ${w.stableford_net})`;
     };
     return `<div class="chart">
       <svg viewBox="0 0 ${W} ${H}" role="group" aria-label="Évolution du handicap de jeu : ${values[0]} au départ, ${values[values.length - 1]} actuellement">
@@ -192,12 +268,12 @@
         ${pts.map((q, i) => { const t = tipOf(hist[i]); return `<g class="pt" transform="translate(${q[0]},${q[1]})" tabindex="0" role="img"
           aria-label="${esc(plain(t))}" data-tip="${esc(t)}"><circle class="hit" r="16"/><circle class="dot${i === pts.length - 1 ? " last" : ""}" r="4.5"/></g>`; }).join("")}
         ${hist.map((h, i) => (i === 0 || i === hist.length - 1 || hist.length < 9)
-          ? `<text x="${pts[i][0]}" y="${H - 8}" text-anchor="middle">${h.semaine === 0 ? "départ" : "WC" + h.semaine}</text>` : "").join("")}
+          ? `<text x="${pts[i][0]}" y="${H - 8}" text-anchor="middle">${h.semaine === 0 ? "départ" : P() + h.semaine}</text>` : "").join("")}
       </svg><div class="tip" role="status"></div></div>
       <p class="hint">Un handicap plus bas est meilleur. Survole ou touche un point pour voir le détail.</p>`;
   }
 
-  /* Points de la tentative retenue pour chaque semaine jouée (le score joué) */
+  /* Points de chaque semaine jouée (le score joué) */
   function chartScores(p, row) {
     const weeks = [...p.semaines].sort((a, b) => a.semaine - b.semaine);
     if (!weeks.length) return "";
@@ -208,7 +284,7 @@
     const base = H - pad.b;
     const kindOf = (w) => (row && w.semaine === row.a_remplacer ? "replace" : row && row.comptees.includes(w.semaine) ? "counted" : "other");
     const KIND_TXT = { counted: "Compte dans le classement", replace: "Compte, mais sera le premier remplacé", other: "Ne compte pas (hors des meilleurs résultats)" };
-    const tipOf = (w) => `<b>WC${w.semaine} · ${esc(w.parcours)}</b><br>Score : ${w.coups_brut} coups (${sign(w.coups_brut - w.par)} par) · net ${w.coups_net}<br>Stableford : ${w.stableford_net} net · ${w.stableford_brut} brut<br>Points : <b>${w.points_net} net</b> · ${w.points_brut} brut<br>${pl(w.tentatives, "tentative")}<br><i>${KIND_TXT[kindOf(w)]}</i>`;
+    const tipOf = (w) => `<b>${P()}${w.semaine} · ${esc(w.parcours)}</b><br>Score : ${w.coups_brut} coups (${sign(w.coups_brut - w.par)} par) · net ${w.coups_net}<br>Stableford : ${w.stableford_net} net · ${w.stableford_brut} brut<br>Points : <b>${w.points_net} net</b> · ${w.points_brut} brut<br><i>${KIND_TXT[kindOf(w)]}</i>`;
     const showValues = slot >= 24;
     return `<div class="chart">
       <svg viewBox="0 0 ${W} ${H}" role="group" aria-label="Points nets par semaine">
@@ -219,7 +295,7 @@
             <rect class="hit" x="${cx - slot / 2}" y="${pad.t}" width="${slot}" height="${base - pad.t}"/>
             <rect class="fill" x="${cx - bw / 2}" y="${y(w.points_net)}" width="${bw}" height="${Math.max(2, base - y(w.points_net))}" rx="4"/>
             ${showValues ? `<text class="val" x="${cx}" y="${y(w.points_net) - 4}" text-anchor="middle">${w.points_net}</text>` : ""}
-            <text x="${cx}" y="${H - 8}" text-anchor="middle">${weeks.length > 10 && i % 2 ? "" : "WC" + w.semaine}</text>
+            <text x="${cx}" y="${H - 8}" text-anchor="middle">${weeks.length > 10 && i % 2 ? "" : P() + w.semaine}</text>
           </g>`; }).join("")}
       </svg><div class="tip" role="status"></div></div>
       <div class="legend"><span><i class="k-counted"></i>Compte</span><span><i class="k-replace"></i>Premier remplacé</span><span><i class="k-other"></i>Ne compte pas</span><span>Ligne : 100 points</span></div>`;
@@ -229,7 +305,7 @@
      Elles couvrent tous les tours de la semaine, pas seulement le tour retenu pour le classement. */
   const dec = (n, d = 1) => (n == null ? "–" : n.toFixed(d).replace(".", ","));
   const place = (rang, sur) => `${rang === 1 ? "1er" : rang + "e"} sur ${sur}`;
-  const pct = (n) => (n == null ? "–" : n + " %");
+  const pct = (n) => (n == null ? "–" : dec(n, Number.isInteger(n) ? 0 : 1) + " %");
 
   function sectionStats(p) {
     const st = p.stats;
@@ -248,18 +324,18 @@
       <section><h3>Statistiques</h3>
         <div class="kpis">
           <div class="fact"><div class="label">Plus long drive</div><div class="value">${bd ? dec(bd.m, 0) + " m" : "–"}</div>
-            <div class="note">${bd ? `WC${bd.semaine} · ${place(driveWeek.drive_rang, driveWeek.drive_sur)}` : "pas encore"}</div></div>
+            <div class="note">${bd ? `${P()}${bd.semaine} · ${place(driveWeek.drive_rang, driveWeek.drive_sur)}` : "pas encore"}</div></div>
           <div class="fact"><div class="label">Plus près du drapeau</div><div class="value">${bc ? dec(bc.m) + " m" : "–"}</div>
-            <div class="note">${bc ? `WC${bc.semaine} · trou ${bc.trou} · ${place(ctpHole.rang, ctpHole.sur)}` : "pas encore"}</div></div>
+            <div class="note">${bc ? `${P()}${bc.semaine} · trou ${bc.trou} · ${place(ctpHole.rang, ctpHole.sur)}` : "pas encore"}</div></div>
           <div class="fact"><div class="label">Putts par tour</div><div class="value">${avg("putts")}</div><div class="note">en moyenne</div></div>
         </div>
         <div class="table-wrap"><table class="mini-table"><caption class="sr">Statistiques par semaine</caption>
           <thead><tr><th scope="col">Sem.</th><th scope="col">Long drive</th><th scope="col">Près du drapeau</th><th scope="col">Fairways</th><th scope="col">Greens</th><th scope="col">Putts</th></tr></thead>
-          <tbody>${weeks.map((w) => `<tr><td>WC${w.semaine}</td>
+          <tbody>${weeks.map((w) => `<tr><td>${P()}${w.semaine}</td>
             <td>${w.drive_m == null ? "–" : `<b>${dec(w.drive_m, 0)} m</b> <small>${place(w.drive_rang, w.drive_sur)}</small>`}</td>
             <td>${ctpCell(w)}</td><td>${pct(w.fairways)}</td><td>${pct(w.greens)}</td><td>${dec(w.putts)}</td></tr>`).join("")}</tbody>
           <tfoot><tr><th scope="row" colspan="3">Moyenne par tour</th><td>${avg("fairways")}</td><td>${avg("greens")}</td><td>${avg("putts")}</td></tr></tfoot></table></div>
-        <p class="hint">Distances en mètres. Drive : le plus long de la semaine. Près du drapeau : par 3, green atteint au départ. Statistiques de tous les tours de la semaine.</p>
+        <p class="hint">Distances en mètres. Drive : le plus long de la semaine. Près du drapeau : par 3, green atteint au départ. Statistiques de ta partie de la semaine.</p>
       </section>`;
   }
 
@@ -283,10 +359,10 @@
         <section><h3>Points par partie</h3>${chartScores(p, row)}</section>
         <section><h3>Évolution du handicap</h3>${chartHandicap(p)}</section>
         <div class="table-wrap"><table class="mini-table"><caption class="sr">Résultats retenus par semaine</caption>
-          <thead><tr><th scope="col">Sem.</th><th class="name" scope="col">Parcours</th><th scope="col">Score</th><th scope="col">Stab. net</th><th scope="col">Pts net</th><th scope="col">Pts brut</th><th scope="col">Hdc</th><th scope="col">Essais</th></tr></thead>
-          <tbody>${weeks.map((w) => `<tr><td>WC${w.semaine}</td><td class="name">${esc(w.parcours)}</td>
+          <thead><tr><th scope="col">Sem.</th><th class="name" scope="col">Parcours</th><th scope="col">Score</th><th scope="col">Stab. net</th><th scope="col">Pts net</th><th scope="col">Pts brut</th><th scope="col">Hdc</th></tr></thead>
+          <tbody>${weeks.map((w) => `<tr><td>${P()}${w.semaine}</td><td class="name">${esc(w.parcours)}</td>
             <td>${w.coups_brut} <small>(${sign(w.coups_brut - w.par)})</small></td><td>${w.stableford_net}</td>
-            <td><b>${w.points_net}</b></td><td>${w.points_brut}</td><td>${w.hdc_avant} → ${w.hdc_apres}</td><td>${w.tentatives}</td></tr>`).join("")}</tbody></table></div>`
+            <td><b>${w.points_net}</b></td><td>${w.points_brut}</td><td>${w.hdc_avant} → ${w.hdc_apres}</td></tr>`).join("")}</tbody></table></div>`
         : '<p class="empty">Pas encore de résultat pour ce joueur.</p>'}
         ${sectionStats(p)}
       </div>`;
@@ -300,7 +376,7 @@
   const key = (s) => String(s ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
   const tr = (map, v) => (v == null ? null : map[key(v)] ?? String(v));
   const FIRMNESS = { soft: "Souple", medium: "Moyen", middle: "Moyen", firm: "Ferme", hard: "Dur" };
-  const TEES = { white: "Blanc", yellow: "Jaune", blue: "Bleu", black: "Noir", red: "Rouge", gold: "Or", green: "Vert", orange: "Orange", silver: "Argent" };
+  const TEES = { par3: "Par 3", white: "Blanc", yellow: "Jaune", blue: "Bleu", black: "Noir", red: "Rouge", gold: "Or", green: "Vert", orange: "Orange", silver: "Argent" };
   const WINDS = { nowind: "Aucun vent", calm: "Calme", breezy: "Brise légère", gusty: "Rafales", windy: "Venteux" };
   const WEATHER = { clear: "Dégagé", sunny: "Ensoleillé", cloudy: "Nuageux", partlycloudy: "Peu nuageux", overcast: "Couvert", rain: "Pluie", rainy: "Pluie", fog: "Brouillard", foggy: "Brouillard" };
   const DAYS = { monday: "lundi", tuesday: "mardi", wednesday: "mercredi", thursday: "jeudi", friday: "vendredi", saturday: "samedi", sunday: "dimanche" };
@@ -328,6 +404,7 @@
     ];
     return rows.filter(([, v]) => v != null && v !== "");
   }
+  const dates = (e) => (!e.fin || e.fin <= e.debut ? `le ${day(e.debut)}` : `du ${day(e.debut)} au ${day(e.fin)}`);
   const factsHtml = (e) => courseParams(e).map(([l, v, n]) =>
     `<div class="fact"><div class="label">${esc(l)}</div><div class="value">${esc(v)}</div>${n ? `<div class="note">${esc(n)}</div>` : ""}</div>`).join("");
   const chipsHtml = (e) => courseParams(e).map(([l, v]) => `<span><b>${esc(l)}</b> ${esc(v)}</span>`).join("");
@@ -337,7 +414,7 @@
     const diff = e.difficulte == null ? null : e.difficulte <= 3 ? "facile" : e.difficulte <= 6 ? "moyen" : "difficile";
     const facts = factsHtml(e) + (diff ? `<div class="fact"><div class="label">Difficulté</div><div class="value">${e.difficulte}/10</div><div class="note">${diff}</div></div>` : "");
     return `<article class="card course">
-      <div class="course-head"><span class="kicker">${esc(kicker)}</span><h2>${esc(e.nom)}</h2><p>${esc(e.lieu || "")}${e.debut ? `${e.lieu ? " · " : ""}du ${day(e.debut)} au ${day(e.fin)}` : ""}</p></div>
+      <div class="course-head"><span class="kicker">${esc(kicker)}</span><h2>${esc(e.nom)}</h2><p>${esc(e.lieu || "")}${e.debut ? `${e.lieu ? " · " : ""}${dates(e)}` : ""}</p></div>
       <div class="course-body">
         ${facts ? `<div class="facts">${facts}</div>` : ""}
         ${e.description ? `<p>${esc(e.description)}</p>` : ""}
@@ -349,36 +426,24 @@
       </div></article>`;
   }
 
-  function viewCourse(params) {
-    const byCat = data.parcours || {};
-    const cats = Object.keys(byCat).length ? Object.keys(byCat) : data.categories.map((c) => c.nom);
-    const cat = cats.includes(params.cat || state.pcat) ? params.cat || state.pcat : cats[0];
-    state.pcat = cat;
-    const entries = [...(byCat[cat] || [])];
-    const current = entries.filter((e) => e.statut === "en_cours").pop();
-    const lastNo = Math.max(0, ...entries.filter((e) => e.statut !== "a_venir").map((e) => e.semaine));
-    let next = entries.find((e) => e.statut === "a_venir");
-    const chosen = data.parcours_semaine;  // parcours choisi par le capitaine, pas encore créé chez SGT
-    if (!next && chosen && chosen.semaine > lastNo) next = { ...chosen, statut: "a_venir", depart: null, reglages: null };
-    const history = entries.filter((e) => e.statut === "terminee").sort((a, b) => b.semaine - a.semaine);
-
-    app.innerHTML = `
+  function viewCourse() {
+    const { current, next, history } = courseState();
+    const u = unit();
+    app.innerHTML = `${compBar()}
       <h2>Parcours</h2>
-      <p class="sub">Les réglages de la semaine, le parcours à venir et ceux déjà joués. Chaque catégorie a son propre tournoi.</p>
-      <div class="toolbar"><div class="chips" role="group" aria-label="Catégorie">${cats.map((c) =>
-        `<button type="button" data-pcat="${esc(c)}" aria-pressed="${c === cat}">${esc(c)}</button>`).join("")}</div></div>
-      ${current ? `<section><h3>Cette semaine</h3>${courseCard(current, `Semaine WC${current.semaine} · en cours`)}
-        <p class="sub" style="margin-top:12px">Joue ton tour sur Simulator Golf Tour avant la fin de la semaine (jusqu'au ${day(current.fin)}) : jusqu'à ${data.regles.tentatives} tentatives, la meilleure compte.</p></section>`
-        : `<section><h3>Cette semaine</h3><p class="empty">Aucun tournoi en cours pour les ${esc(cat)}.</p></section>`}
-      ${next ? `<section><h3>Semaine prochaine</h3>${courseCard(next, `Semaine WC${next.semaine} · à venir`)}</section>` : ""}
+      <p class="sub">Les réglages ${u.end}, le parcours à venir et ceux déjà joués. C'est le même parcours pour toutes les catégories.</p>
+      ${current ? `<section><h3>${u.this}</h3>${courseCard(current, `${u.Cap} ${P()}${current.semaine} · en cours`)}
+        <p class="sub" style="margin-top:12px">Joue ton tour sur Simulator Golf Tour avant la fin ${u.end} (jusqu'au ${day(current.fin)}) : tu n'as droit qu'à un seul tour.</p></section>`
+        : `<section><h3>${u.this}</h3><p class="empty">Aucun tournoi en cours pour le ${esc(data.nom)}.</p></section>`}
+      ${next ? `<section><h3>${u.next}</h3>${courseCard(next, `${u.Cap} ${P()}${next.semaine} · à venir`)}</section>` : ""}
       ${history.length ? `<section><h3>Historique</h3><div class="grid history">${history.map((e) => `
         <article class="card week">
-          <header><span class="no">WC${e.semaine}</span><span class="badge">Terminée</span></header>
-          <div class="course-name">${esc(e.nom)}</div><div class="dates">${day(e.debut)} au ${day(e.fin)}</div>
+          <header><span class="no">${P()}${e.semaine}</span><span class="badge">Terminée</span></header>
+          <div class="course-name">${esc(e.nom)}</div><div class="dates">${dates(e)}</div>
           <div class="mini">${chipsHtml(e)}</div>
           ${e.lien_carte ? `<div class="note"><a href="${esc(e.lien_carte)}" target="_blank" rel="noopener">Carte de score</a></div>` : ""}
         </article>`).join("")}</div></section>` : ""}`;
-    app.querySelectorAll("[data-pcat]").forEach((b) => b.addEventListener("click", () => { go("parcours", { cat: b.dataset.pcat }); render(); }));
+    bindComp("parcours");
     guardScorecard();
   }
 
@@ -393,23 +458,26 @@
   /* ---------- Semaines ---------- */
   function viewWeeks() {
     const weeks = [...data.semaines].sort((a, b) => b.numero - a.numero);
-    app.innerHTML = `<h2>Semaines</h2><p class="sub">Les meilleurs scores en Stableford de chaque semaine.</p>
+    const u = unit();
+    app.innerHTML = `${compBar()}<h2>${u.caps}</h2><p class="sub">Les meilleurs scores en Stableford de chaque ${u.cap}.</p>
+      ${weeks.length ? "" : `<p class="empty">Aucune ${u.cap} jouée pour le moment.</p>`}
       <div class="grid weeks">${weeks.map((w) => {
         const totals = Object.fromEntries(STATS.map(([k]) => [k, w.categories.reduce((s, c) => s + c.stats[k], 0)]));
         return `<article class="card week">
-          <header><span class="no">WC${w.numero}</span><span class="badge ${w.statut === "en_cours" ? "live-badge" : ""}">${w.statut === "en_cours" ? "En cours" : "Terminée"}</span></header>
-          <div class="course-name">${esc(w.parcours)}</div><div class="dates">${day(w.debut)} au ${day(w.fin)}</div>
+          <header><span class="no">${P()}${w.numero}</span><span class="badge ${w.statut === "en_cours" ? "live-badge" : ""}">${w.statut === "en_cours" ? "En cours" : "Terminée"}</span></header>
+          <div class="course-name">${esc(w.parcours)}</div><div class="dates">${dates(w)}</div>
           <dl>${w.categories.map((c) => `<dt>${esc(c.categorie)} · ${pl(c.joueurs, "joueur")}</dt>
             <dd>${c.meilleur_net.stableford == null ? "Pas de résultat" :
               `Net ${c.meilleur_net.stableford} (${esc(c.meilleur_net.joueurs.join(", "))}) · Brut ${c.meilleur_brut.stableford} (${esc(c.meilleur_brut.joueurs.join(", "))})`}</dd>`).join("")}</dl>
           <div class="mini">${STATS.map(([k, label]) => `<span><b>${totals[k]}</b> ${label}</span>`).join("")}</div>
         </article>`;
       }).join("")}</div>`;
+    bindComp("semaines");
   }
 
   /* ---------- Joueurs ---------- */
   function viewPlayers() {
-    app.innerHTML = `<h2>Joueurs</h2><p class="sub">Touche un joueur pour voir sa fiche.</p>
+    app.innerHTML = `${compBar()}<h2>Joueurs</h2><p class="sub">Touche un joueur pour voir sa fiche.</p>
       <div class="toolbar"><input class="search" id="pq" type="search" placeholder="Chercher un joueur" aria-label="Chercher un joueur"></div>
       <div class="grid players" id="plist"></div>`;
     const draw = () => {
@@ -421,6 +489,7 @@
       bindPlayers();
     };
     $("#pq").addEventListener("input", draw);
+    bindComp("joueurs");
     draw();
   }
 
@@ -430,11 +499,12 @@
     app.innerHTML = `<h2>Règles</h2><p class="sub">Comment fonctionne le Winter Challenge.</p>
       <div class="rules">
         <div class="card rule"><h3>Une semaine, un parcours</h3><p>Chaque semaine, un parcours est choisi sur Simulator Golf Tour. Tu joues 9 trous, depuis ton simulateur, quand tu veux pendant la semaine.</p></div>
-        <div class="card rule"><h3>${r.tentatives} tentatives, la meilleure compte</h3><p>Tu peux rejouer jusqu'à <strong>${r.tentatives} fois</strong> par semaine. Seule la tentative au meilleur <strong>Stableford net</strong> est retenue, et elle compte pour les classements brut et net.</p></div>
+        <div class="card rule"><h3>Un seul tour par semaine</h3><p>Tu n'as droit qu'à <strong>un seul tour</strong> par semaine : pas de seconde chance. Ton <strong>Stableford</strong> de ce tour donne tes points, pour les classements brut et net.</p></div>
         <div class="card rule"><h3>Les points</h3><p>Sur 9 trous, <strong>18 points Stableford valent 100 points</strong> de classement, et chaque point de plus ou de moins vaut 10 points (minimum 30). Sur 18 trous, la référence est de 36 points.</p></div>
         <div class="card rule"><h3>Le classement final</h3><p>Seuls tes <strong>${r.meilleurs} meilleurs résultats</strong> de la saison comptent. Dans le tableau, ils sont en vert, et le plus petit d'entre eux est en rouge : c'est le premier que tu remplaceras si tu fais mieux.</p></div>
-        <div class="card rule"><h3>Le handicap de jeu</h3><p>Il part de la moitié de ton handicap réel. À la fin de chaque semaine, il monte de 1 si tu fais moins de 100 points nets, sinon il baisse d'un point par tranche de 10 points au-dessus de 100. Il ne change jamais entre deux tentatives d'une même semaine.</p></div>
-        <div class="card rule"><h3>Les catégories</h3><p>${data.categories.map((c) => `<strong>${esc(c.nom)}</strong>`).join(", ")} : chaque catégorie a son propre classement, en net et en brut.</p></div>
+        <div class="card rule"><h3>Le handicap de jeu</h3><p>Il part de la moitié de ton handicap réel. À la fin de chaque semaine, il monte de 1 si tu fais moins de 100 points nets, sinon il baisse d'un point par tranche de 10 points au-dessus de 100.</p></div>
+        <div class="card rule"><h3>Les catégories</h3><p>${raw.categories.map((c) => `<strong>${esc(c.nom)}</strong>`).join(", ")} : chaque catégorie a son propre classement, en net et en brut.</p></div>
+        ${comps.slice(1).map((c) => `<div class="card rule"><h3>${esc(c.nom)}</h3><p>Le ${esc(c.nom)} a son propre classement, en net et en brut, et ses propres parcours : un tournoi par période sur Simulator Golf Tour (${esc(c.prefixe)}1, ${esc(c.prefixe)}2…). Les points, le handicap et les ${raw.regles.meilleurs} meilleurs résultats se calculent comme pour le Winter Challenge.</p></div>`).join("")}
       </div>`;
   }
 
@@ -443,6 +513,7 @@
   function render() {
     const { route, params } = parseHash();
     const name = VIEWS[route] ? route : "classement";
+    useComp(params.comp || state.comp);
     document.querySelectorAll(".tabs a").forEach((a) => (a.dataset.route === name ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current")));
     VIEWS[name](params);
   }
@@ -451,7 +522,9 @@
   fetch("donnees/saison.json?v=" + Date.now())
     .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then((json) => {
-      data = json;
+      raw = json;
+      comps = [{ id: "wc", ...json }, ...(json.competitions_autres || []).map((c) => ({ ...c, id: String(c.prefixe).toLowerCase() }))];
+      data = { ...raw };
       $("#season-label").textContent = data.saison;
       $("#updated").textContent = "Mis à jour le " + stamp(data.genere_le);
       $("#demo-banner").hidden = !data.demo;

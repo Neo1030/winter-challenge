@@ -6,13 +6,12 @@ classeur Excel (sans macros).
 
 ## Règles du classement
 
-- Une semaine (WC1, WC2…) = un tournoi SGT, jusqu'à 10 tentatives par joueur ; seul le meilleur Stableford net compte
-  (à égalité, la tentative la plus récente). Les deux classements, brut et net, utilisent cette même tentative.
+- Une semaine (WC1, WC2…) = un tournoi SGT, un seul tour par joueur. Les deux classements, brut et net, utilisent ce même tour.
 - Points : `100 + (Stableford − 36) × 10` sur 18 trous (`− 18` sur 9 trous), minimum 30.
 - Classement final : somme des **8 meilleurs** résultats de la saison. Dans le classeur, ces résultats sont en vert et le
   plus petit d'entre eux (le premier à être remplacé) est en rouge.
 - Handicap de jeu : +1 sous les 100 points nets, sinon `− (points − 100) / 10`. Il ne change qu'à la fin de la semaine,
-  jamais entre deux tentatives. Handicap de départ : 50 % du handicap réel.
+  en cours de semaine. Handicap de départ : 50 % du handicap réel.
 
 Ces règles sont dans `winter_challenge/scoring.py` et `winter_challenge/season.py`.
 
@@ -29,7 +28,7 @@ python3 scripts/build_workbook.py --tour 3901:Test --saison 2026-2027 --sortie W
 - `--depuis-fichier data/sgt_brut.json` : refait le classeur sans appeler l'API (les données du dernier appel sont
   enregistrées dans `data/sgt_brut.json`).
 
-Le classeur contient : `Classement Net`, `Classement Brut`, `Résultats` (toutes les tentatives), `Semaines`, `Joueurs`
+Le classeur contient : `Classement Net`, `Classement Brut`, `Résultats` (un tour par joueur et par semaine), `Semaines`, `Joueurs`
 et `Paramètres`. Il est entièrement régénéré à chaque lancement : ne pas le corriger à la main.
 
 L'API est celle des clubs « Full Suite » de SGT : <https://simulatorgolftour.com/docs/clubapi>.

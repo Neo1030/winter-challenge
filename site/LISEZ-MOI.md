@@ -29,10 +29,12 @@ python3 scripts/serve_site.py                                                   
 ## Mettre à jour les données
 
 ```bash
-python3 scripts/export_site_data.py --tour 3910:Hommes --tour 3911:Femmes --tour 3912:Seniors
+python3 scripts/export_site_data.py --tour 3910:Hommes --tour 3911:Femmes --tour 3912:Seniors --tour 3909:Mixte:Short_Game
 ```
 
-Cela relit l'API SGT, recalcule points, handicaps et classements, et réécrit `site/donnees/saison.json`.
+Un tour s'écrit `ID:Catégorie`, ou `ID:Catégorie:Compétition` pour une autre compétition que le Winter Challenge (ici le Short
+Game ; le tiret bas remplace l'espace). Chaque compétition a son classement, ses semaines (WC1, WC2… ; SG1, SG2…), ses joueurs
+et ses parcours. Cela relit l'API SGT, recalcule points, handicaps et classements, et réécrit `site/donnees/saison.json`.
 Le parcours de la semaine vient de `config/prochain_parcours.json` (skill `choix-parcours`).
 La clé de l'API SGT ne quitte jamais cet ordinateur : le site ne contient que le fichier de résultats.
 
@@ -66,7 +68,7 @@ Dans GitHub, **Settings → Secrets and variables → Actions** :
 | Secret | `FTP_PASSWORD` | mot de passe de l'utilisateur FTP limité au dossier du site |
 | Variable | `SGT_CLUB_URL` | nom du club dans l'adresse SGT (voir `.env.example`) |
 | Variable | `FTP_USER` | `x12b2_winterchallenge` |
-| Variable | `SGT_TOURS` | les tours et leur catégorie, par exemple `3910:Hommes 3911:Femmes 3912:Seniors` |
+| Variable | `SGT_TOURS` | les tours et leur catégorie, par exemple `3910:Hommes 3911:Femmes 3912:Seniors 3909:Mixte:Short_Game` |
 | Variable | `MISE_A_JOUR_ACTIVE` | `true` pour **allumer** la tâche (à créer en dernier ; supprime-la ou mets `false` pour l'éteindre) |
 
 Pour essayer : onglet **Actions → Mise à jour des résultats → Run workflow**. Le parcours de la semaine vient de
@@ -111,18 +113,29 @@ meilleur brut) et le classement, qui occupe tout le reste de l'écran.
 
 ## Fiche joueur et carte de score
 
-- La fiche d'un joueur (clic sur son nom) montre deux graphiques : les **points de la tentative retenue pour chaque partie**
+- La fiche d'un joueur (clic sur son nom) montre deux graphiques : les **points de chaque partie**
   (barres bleues : compte, rose : premier remplacé, grises : ne compte pas) et l'**évolution du handicap**. En survolant (souris),
   en touchant (téléphone) ou en naviguant au clavier, une **bulle** donne le détail : score en coups et par rapport au par,
-  Stableford, points et tentatives.
+  Stableford et points.
 - La fiche contient aussi une section **Statistiques**, en mètres : plus long drive, plus près du drapeau (par 3), fairways,
   greens et putts, par semaine et en moyenne, avec le rang du joueur parmi les joueurs de son tour. Elles viennent de l'API SGT
-  (`tournaments/stats`) et portent sur **tous les tours de la semaine**, pas seulement le tour retenu pour le classement.
-  **Unités à confirmer** : l'API ne les donne pas. On suppose des yards pour les drives et des pieds pour les distances au
-  drapeau (documentation du site SGT) ; la conversion est dans `winter_challenge/stats.py` (`YARD_M`, `FOOT_M`).
-  Pour vérifier : comparer un drive ou une distance de `saison.json` avec ce que SGT affiche pour le même tournoi.
-- La page « Parcours » a trois sous-onglets (Hommes, Femmes, Seniors, un tournoi chacun) : la **semaine en cours**, la **semaine
-  prochaine** (tournoi déjà créé chez SGT, sinon le parcours choisi avec le skill) et l'**historique** des semaines terminées.
+  (`tournaments/stats`) et portent sur le tour de la semaine (un seul par joueur).
+  Unités : les drives sont en **yards** (confirmé le 27.10.2026 : 246.09 dans l'API = « 246.09 YDS / 224.94 M » sur le site SGT) ;
+  les distances au drapeau et les putts sont en pieds (documentation SGT). La conversion est dans `winter_challenge/stats.py`.
+  Écart connu : pour la proximité GIR et les putts rentrés, SGT affiche des mètres un peu plus courts que la conversion exacte
+  (10.35 ft = 3.16 m, SGT écrit 3.04 m). Le site affiche la conversion exacte, avec la valeur d'origine en dessous.
+- **Classement** : sous le tableau, cinq tuiles comme sur SGT (FIR, GIR, distance de drive, proximité GIR, putts rentrés) donnent le
+  meilleur de la catégorie pour la semaine choisie. Les données viennent de `tournaments/stats` (les ex æquo sont tous cités).
+- **Compétitions** : le Winter Challenge et le Short Game (une manche par mois) ont chacun leur onglet de choix en haut des pages
+  Classement, Parcours, Semaines et Joueurs.
+- **La semaine en cours** se juge aux dates de **début** des tournois, pas à leur statut ni à leur date de fin : chez SGT, tous les
+  tournois restent « In Progress » (on rattrape jusqu'en mars). La semaine en cours est celle qui a commencé aujourd'hui, ou la plus
+  récente avant aujourd'hui (heure de Suisse). Sa **date de fin affichée** est la veille du début du tournoi suivant (ce qui gère
+  aussi les pauses de plusieurs semaines) ; pour le dernier tournoi, c'est la fin prévue chez SGT. Les catégories suivent le
+  calendrier des Hommes (premier tour de la compétition).
+- La page « Parcours » montre, pour la compétition choisie, la **semaine en cours**, la **semaine prochaine** (le tournoi suivant
+  déjà créé chez SGT, sinon le parcours choisi avec le skill ; jamais plus loin) et l'**historique** des semaines terminées.
+  Le parcours est le même pour toutes les catégories : on lit celui du premier tour (les Hommes).
   Chaque parcours montre ses réglages : départ, pente et cotation, neuf joué et par, stimp, fermeté des greens et des fairways,
   vent, météo, positions des drapeaux, gimmies (en mètres) et putting.
   **D'où ça vient :** l'API de club ne donne pas ces réglages. Ils sont lus sur la page publique du tournoi

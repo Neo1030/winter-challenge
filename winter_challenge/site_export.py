@@ -33,7 +33,8 @@ def _ranking_rows(season: Season, category: str, kind: str) -> list:
 def _week_summaries(season: Season) -> list:
     groups = {}
     for w in season.weeks:
-        groups.setdefault(w.number, []).append(w)
+        if w.phase != "a_venir":  # une semaine pas encore commencée n'a rien à résumer (elle figure dans « Parcours »)
+            groups.setdefault(w.number, []).append(w)
     out = []
     for number in sorted(groups):
         first = groups[number][0]
@@ -41,7 +42,7 @@ def _week_summaries(season: Season) -> list:
         for w in groups[number]:
             attempts = [a for a in season.attempts if a.week == number and a.category == w.category]
             retained = [a for (cat, _, wk), a in season.best.items() if wk == number and cat == w.category]
-            entry = {"categorie": w.category, "joueurs": len({a.player for a in attempts}), "tentatives": len(attempts)}
+            entry = {"categorie": w.category, "joueurs": len({a.player for a in attempts})}
             for kind, field in (("brut", "stableford_gross"), ("net", "stableford_net")):
                 best = max((getattr(a.result, field) for a in retained), default=None)
                 who = sorted(a.player for a in retained if getattr(a.result, field) == best) if retained else []
@@ -50,7 +51,7 @@ def _week_summaries(season: Season) -> list:
             categories.append(entry)
         out.append({
             "numero": number, "parcours": first.course, "debut": first.start, "fin": first.end,
-            "statut": "en_cours" if any(w.status == "In Progress" for w in groups[number]) else "terminee",
+            "statut": "en_cours" if any(w.phase == "en_cours" for w in groups[number]) else "terminee",
             "categories": categories,
         })
     return out
@@ -103,14 +104,13 @@ def _players(season: Season) -> list:
         weeks, history = [], [{"semaine": 0, "hdc": p.start_hcp}]
         for number in sorted({w for (cat, name, w) in season.best if name == p.name and cat == p.category}):
             a = season.best[(p.category, p.name, number)]
-            tries = sum(1 for x in season.attempts if x.player == p.name and x.week == number)
             r = a.result
             par = sum(par for score, par in zip(a.scores, a.pars) if score)  # par des trous réellement joués
             weeks.append({"semaine": number, "parcours": a.course, "trous": a.holes_played, "par": par,
                           "coups_brut": r.gross_total, "coups_net": r.net_total,
                           "points_net": r.points_net, "points_brut": r.points_gross,
                           "stableford_net": r.stableford_net, "stableford_brut": r.stableford_gross,
-                          "hdc_avant": r.hcp_before, "hdc_apres": int(r.hcp_after), "tentatives": tries})
+                          "hdc_avant": r.hcp_before, "hdc_apres": int(r.hcp_after)})
             history.append({"semaine": number, "hdc": int(r.hcp_after)})
         ranks = {kind: next((r for r in season.rankings[(p.category, kind)] if r.player == p.name), None)
                  for kind in ("net", "brut")}
@@ -123,54 +123,98 @@ def _players(season: Season) -> list:
     return out
 
 
-STATUS = {"Completed": "terminee", "In Progress": "en_cours"}  # tout le reste : tournoi créé, pas encore commencé
 DETAIL_KEYS = ("lieu", "difficulte", "styles", "description", "vent", "lien_video", "longueur_jaune_m")
 
+# Les statistiques en tuiles du classement : (clé, champ en mètres ou en %, champ d'origine, plus grand = meilleur)
+LEADER_TILES = (
+    ("fir", "fairways", None, True),
+    ("gir", "greens", None, True),
+    ("drive", "drive_m", "drive_yd", True),
+    ("gir_prox", "gir_prox_m", "gir_prox_ft", False),
+    ("putts_faits", "putts_faits_m", "putts_faits_ft", True),
+)
 
-def _courses(season: Season, history: list, next_course: dict | None) -> dict:
-    """Parcours de chaque catégorie, semaine par semaine : réglages lus chez SGT, neuf joué, par, longueur.
 
-    Les infos du capitaine (longueur, description, vidéo…) viennent de l'archive des parcours choisis, par nom de parcours
-    et numéro de semaine. Le site n'en montre que trois groupes : la semaine en cours, la suivante et l'historique.
+def _courses(season: Season, history: list, next_course: dict | None) -> list:
+    """Parcours de chaque semaine : réglages lus chez SGT, neuf joué, par, longueur.
+
+    Les parcours sont les mêmes pour toutes les catégories (un tournoi par catégorie, mais le même parcours) : on lit
+    ceux du premier tour (les Hommes). Les infos du capitaine (longueur, description, vidéo…) viennent de l'archive des
+    parcours choisis, par nom de parcours et numéro de semaine. Le site n'en montre que trois groupes : la semaine en
+    cours, la suivante et l'historique.
     """
     chosen = [site_course(h) for h in history] + ([next_course] if next_course else [])
+    reference = (season.labels or [w.category for w in season.weeks] or [None])[0]
+    entries = []
+    for w in sorted((w for w in season.weeks if w.category == reference), key=lambda w: w.number):
+        attempts = [a for a in season.attempts if a.week == w.number and a.category == reference]
+        sections = [a.section for a in attempts if a.section != "All"] or [a.section for a in attempts]
+        nine = max(set(sections), key=sections.count) if sections else None
+        par = None
+        if attempts:
+            pars = attempts[0].pars
+            par = sum(pars[:9] if nine == "Front" else pars[9:] if nine == "Back" else pars)
+        settings = dict(w.settings or {})
+        info = next((c for c in chosen if c.get("semaine") == w.number and normalize(c["nom"]) == normalize(w.course)), None)
+        entry = {"semaine": w.number, "tournoi_id": w.tournament_id, "nom": w.course, "parcours_id": w.course_id,
+                 "debut": w.start, "fin": w.end, "statut": w.phase,
+                 "neuf": nine or (info or {}).get("neuf"), "par": par,
+                 "depart": settings.get("depart") or (attempts[0].tee if attempts else None) or None,
+                 "reglages": settings or None,
+                 "lien_carte": CARD_URL.format(id=w.course_id) if w.course_id else None}
+        entry.update({k: info.get(k) for k in DETAIL_KEYS if info and info.get(k) is not None})
+        entries.append(entry)
+    return entries
+
+
+def _leaders(season: Season, category: str) -> dict:
+    """Les meilleurs de chaque statistique, semaine par semaine : {semaine: {tuile: {valeur, orig, joueurs}}}.
+
+    Les ex æquo sont tous cités. Une semaine sans aucune statistique n'apparaît pas.
+    """
     out = {}
-    for category in dict.fromkeys(season.labels + [w.category for w in season.weeks]):
-        entries = []
-        for w in sorted((w for w in season.weeks if w.category == category), key=lambda w: w.number):
-            attempts = [a for a in season.attempts if a.week == w.number and a.category == category]
-            sections = [a.section for a in attempts if a.section != "All"] or [a.section for a in attempts]
-            nine = max(set(sections), key=sections.count) if sections else None
-            par = None
-            if attempts:
-                pars = attempts[0].pars
-                par = sum(pars[:9] if nine == "Front" else pars[9:] if nine == "Back" else pars)
-            settings = dict(w.settings or {})
-            info = next((c for c in chosen if c.get("semaine") == w.number and normalize(c["nom"]) == normalize(w.course)), None)
-            entry = {"semaine": w.number, "tournoi_id": w.tournament_id, "nom": w.course, "parcours_id": w.course_id,
-                     "debut": w.start, "fin": w.end, "statut": STATUS.get(w.status, "a_venir"),
-                     "neuf": nine or (info or {}).get("neuf"), "par": par,
-                     "depart": settings.get("depart") or (attempts[0].tee if attempts else None) or None,
-                     "reglages": settings or None,
-                     "lien_carte": CARD_URL.format(id=w.course_id) if w.course_id else None}
-            entry.update({k: info.get(k) for k in DETAIL_KEYS if info and info.get(k) is not None})
-            entries.append(entry)
-        out[category] = entries
+    for (label, number), st in sorted(season.stats.items(), key=lambda kv: kv[0][1]):
+        if label != category:
+            continue
+        tiles = {}
+        for key, field, orig, high in LEADER_TILES:
+            values = {n: p[field] for n, p in st["joueurs"].items() if field in p}
+            if not values:
+                continue
+            best = (max if high else min)(values.values())
+            who = sorted(n for n, v in values.items() if v == best)
+            tiles[key] = {"valeur": best, "joueurs": who,
+                          "orig": st["joueurs"][who[0]].get(orig) if orig else None}
+        if tiles:
+            out[str(number)] = tiles
     return out
 
 
-def build_site_data(season: Season, season_label: str, next_course: dict | None = None, demo: bool = False,
-                    now: datetime | None = None, history: list | None = None) -> dict:
+def _competition(season: Season, nom: str, prefixe: str, next_course: dict | None, history: list | None) -> dict:
     categories = list(dict.fromkeys(p.category for p in season.players))
     return {
-        "genere_le": (now or datetime.now()).isoformat(timespec="minutes"),
-        "demo": demo,
-        "saison": season_label,
-        "regles": {"meilleurs": season.best_n, "tentatives": season.max_attempts},
+        "nom": nom,
+        "prefixe": prefixe,
         "categories": [{"nom": c, "classement": {"net": _ranking_rows(season, c, "net"),
-                                                  "brut": _ranking_rows(season, c, "brut")}} for c in categories],
+                                                  "brut": _ranking_rows(season, c, "brut")},
+                        "stats": _leaders(season, c)} for c in categories],
         "semaines": _week_summaries(season),
         "joueurs": _players(season),
         "parcours_semaine": next_course,
         "parcours": _courses(season, history or [], next_course),
     }
+
+
+def build_site_data(season: Season, season_label: str, next_course: dict | None = None, demo: bool = False,
+                    now: datetime | None = None, history: list | None = None, autres: list | None = None) -> dict:
+    """Le Winter Challenge est à la racine du fichier ; les autres compétitions (autres = [(nom, préfixe, Season)])
+    sont dans « competitions_autres », avec la même forme."""
+    data = {
+        "genere_le": (now or datetime.now()).isoformat(timespec="minutes"),
+        "demo": demo,
+        "saison": season_label,
+        "regles": {"meilleurs": season.best_n},
+        **_competition(season, "Winter Challenge", "WC", next_course, history),
+    }
+    data["competitions_autres"] = [_competition(s, nom, prefixe, None, None) for nom, prefixe, s in autres or []]
+    return data

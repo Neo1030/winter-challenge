@@ -43,7 +43,6 @@ def main():
     parser.add_argument("--saison", default="2026-2027")
     parser.add_argument("--sortie", default="Winter-Challenge_Test.xlsx")
     parser.add_argument("--joueurs", metavar="CSV")
-    parser.add_argument("--tentatives", type=int, default=10, help="tentatives comptées par joueur et par semaine")
     parser.add_argument("--meilleurs", type=int, default=8, help="nombre de résultats comptés au classement")
     args = parser.parse_args()
 
@@ -67,7 +66,7 @@ def main():
         sys.exit(f"Erreur API : {e}")
 
     overrides = read_players_file(args.joueurs) if args.joueurs else None
-    season = build_season(tours, overrides, args.tentatives, args.meilleurs)
+    season = build_season(tours, overrides, args.meilleurs)
     write_workbook(season, tours, args.saison, args.sortie)
     print(f"{len(season.players)} joueurs, {len(season.weeks)} semaines, {len(season.attempts)} résultats")
     print(f"Classeur enregistré : {args.sortie}")

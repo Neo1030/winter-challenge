@@ -64,7 +64,7 @@ def make_card(rng, card_id, name, course, pars, strokes, section, tee, skill, ho
     return card
 
 
-def simulate_tour(rng, courses, players, tour_id, label, weeks, card_start, quota_demo=None):
+def simulate_tour(rng, courses, players, tour_id, label, weeks, card_start):
     """Un tour SGT fictif : players = {pseudo: handicap réel}."""
     tournaments, card_id = [], card_start
     for week in range(1, weeks + 1):
@@ -76,15 +76,11 @@ def simulate_tour(rng, courses, players, tour_id, label, weeks, card_start, quot
             if rng.random() > 0.78:  # tous ne jouent pas toutes les semaines
                 continue
             form = rng.gauss(0, 0.25)  # forme du jour
-            n = rng.choices([1, 2, 3, 4, 5], weights=[55, 25, 12, 5, 3])[0]
-            if quota_demo and (name, week) == quota_demo:
-                n = 12  # démonstration du quota de tentatives
             tee = rng.choice(TEES)
-            for _ in range(n):
-                card_id += 1
-                holes = 4 if rng.random() < 0.03 else None  # parfois un tour abandonné
-                cards.append(make_card(rng, card_id, name, course, pars, strokes, section, tee,
-                                       hcp / 18 + form + rng.gauss(0, 0.2), holes))
+            card_id += 1  # un seul tour par joueur et par semaine
+            holes = 4 if rng.random() < 0.03 else None  # parfois un tour abandonné
+            cards.append(make_card(rng, card_id, name, course, pars, strokes, section, tee,
+                                   hcp / 18 + form + rng.gauss(0, 0.2), holes))
         tournaments.append({
             "tournamentId": tour_id * 100 + week, "tourId": tour_id, "tourType": "CLUB", "courseName": course,
             "name": f"Semaine {week}", "status": "In Progress" if week == weeks else "Completed",
@@ -137,7 +133,7 @@ def main():
         players = {"Mike_LetsGolf": 10, "Mike_Lets_Golf": 6}
         for i in range(1, args.joueurs + 1):
             players[f"Joueur_{i:02d}"] = rng.randint(3, 30)
-        tour, _ = simulate_tour(rng, courses, players, 9999, "Test", weeks, 100000, quota_demo=("Joueur_05", 4))
+        tour, _ = simulate_tour(rng, courses, players, 9999, "Test", weeks, 100000)
         tours = [tour]
         out = args.sortie or "data/sgt_simule.json"
 

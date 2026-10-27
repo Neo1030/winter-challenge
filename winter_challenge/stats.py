@@ -1,8 +1,9 @@
 """Statistiques de tournoi SGT (tournaments/stats) : plus long drive, plus près du drapeau, fairways, greens, putts.
 
-L'API ne donne pas les unités. Hypothèse tirée de la documentation du site SGT (à confirmer, voir LISEZ-MOI) :
-les drives sont en yards, les distances au drapeau en pieds. Tout est converti en mètres ici, et seulement ici.
-Ces statistiques portent sur tous les tours du joueur dans le tournoi, pas seulement sur la tentative retenue.
+L'API ne donne pas les unités. Les drives sont en yards (confirmé le 27.10.2026 : 246.09 dans l'API = « 246.09 YDS / 224.94 M »
+sur le site SGT) ; les distances au drapeau et les putts sont en pieds (documentation SGT). Tout est converti en mètres ici,
+et seulement ici ; la valeur d'origine est gardée à côté pour pouvoir comparer avec ce qu'affiche SGT.
+Ces statistiques portent sur le tour du joueur dans le tournoi (un seul tour par semaine).
 """
 
 from __future__ import annotations
@@ -36,8 +37,13 @@ def parse_tournament_stats(raw: dict | None) -> dict:
                 players.setdefault(name, {})[key] = round(value * factor, digits)
 
     put(raw.get("drivingDistance"), "longest_drive", "drive_m", YARD_M)
-    put(raw.get("drivingAccuracy"), "fir_percent", "fairways", digits=0)
-    put(raw.get("greenAccuracy"), "gir_percent", "greens", digits=0)
+    put(raw.get("drivingDistance"), "longest_drive", "drive_yd", digits=2)
+    put(raw.get("drivingAccuracy"), "fir_percent", "fairways")
+    put(raw.get("greenAccuracy"), "gir_percent", "greens")
+    put(raw.get("girProx"), "girProx", "gir_prox_m", FOOT_M, digits=2)  # distance moyenne au drapeau, greens en régulation
+    put(raw.get("girProx"), "girProx", "gir_prox_ft", digits=2)
+    put(raw.get("feetPuttsMade"), "putts_feet_per_round", "putts_faits_m", FOOT_M, digits=2)  # longueur des putts rentrés, par tour
+    put(raw.get("feetPuttsMade"), "putts_feet_per_round", "putts_faits_ft", digits=2)
     put(raw.get("puttsPerRound"), "putts_per_round", "putts")
     put(raw.get("puttsPerGIR"), "putts_per_gir", "putts_par_green", digits=2)
     put(raw.get("sandSave"), "sand_save_percent", "sable", digits=0)

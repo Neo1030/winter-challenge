@@ -51,7 +51,7 @@
     const [netName, netNote] = best("net");
     const [brutName, brutNote] = best("brut");
     const cards = [
-      ["Semaine", `WC${week.numero}${week.statut === "en_cours" ? ' <span class="live">en cours</span>' : ""}`, `${day(week.debut)} au ${day(week.fin)}`],
+      ["Semaine", `WC${week.numero}${week.statut === "en_cours" ? ' <span class="live">en cours</span>' : ""}`, (week.fin <= week.debut ? `le ${day(week.debut)}` : `du ${day(week.debut)} au ${day(week.fin)}`)],
       [upcoming ? "Prochain parcours" : "Parcours", esc(course), esc(place)],
       ["Joueurs", data.joueurs.length, `${pl(data.semaines.length, "semaine")} jouée${data.semaines.length > 1 ? "s" : ""}`],
       ["Meilleur net", netName, netNote],
