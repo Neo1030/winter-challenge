@@ -12,6 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from .scoring import RoundResult, game_handicap, hole_counts, score_round
+from .stats import parse_tournament_stats
 
 STATUS_RETAINED = "Retenu"
 STATUS_NOT_RETAINED = "Non retenu"
@@ -83,6 +84,7 @@ class Season:
     rankings: dict  # (catégorie, "net" ou "brut") -> [RankRow]
     best_n: int
     max_attempts: int
+    stats: dict = field(default_factory=dict)  # (catégorie, semaine) -> statistiques du tournoi (voir stats.py)
 
 
 def section_of(scores) -> str:
@@ -130,10 +132,11 @@ def sorted_tournaments(tour: dict) -> list:
 def build_season(tours: list, overrides: dict | None = None, max_attempts: int = 10, best_n: int = 8) -> Season:
     players = build_players(tours, overrides)
     by_name = {p.name: p for p in players}
-    weeks, attempts, best = [], [], {}
+    weeks, attempts, best, stats = [], [], {}, {}
 
     for tour in tours:
         for number, t in enumerate(sorted_tournaments(tour), start=1):
+            stats[(tour["label"], number)] = parse_tournament_stats(t.get("stats"))
             weeks.append(Week(number, tour["tour_id"], tour["label"], t["tournamentId"], t["name"], t["courseName"],
                               t["start_date"][:10], t["end_date"][:10], t["status"]))
             cards = sorted(t["scorecards"], key=lambda c: (c["tournamentScorecardId"], c["round"]))
@@ -170,7 +173,7 @@ def build_season(tours: list, overrides: dict | None = None, max_attempts: int =
                     best[(player.category, name, number)] = chosen
                     player.current_hcp = int(chosen.result.hcp_after)
 
-    season = Season(players, weeks, attempts, best, {}, best_n, max_attempts)
+    season = Season(players, weeks, attempts, best, {}, best_n, max_attempts, stats)
     for category in dict.fromkeys(p.category for p in players):
         for kind in ("net", "brut"):
             season.rankings[(category, kind)] = rank_category(season, category, kind)

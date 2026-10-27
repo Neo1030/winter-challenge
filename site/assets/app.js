@@ -225,6 +225,44 @@
       <div class="legend"><span><i class="k-counted"></i>Compte</span><span><i class="k-replace"></i>Premier remplacé</span><span><i class="k-other"></i>Ne compte pas</span><span>Ligne : 100 points</span></div>`;
   }
 
+  /* Statistiques de jeu (longest drive, nearest to the pin, fairways, greens, putts), en mètres.
+     Elles couvrent tous les tours de la semaine, pas seulement le tour retenu pour le classement. */
+  const dec = (n, d = 1) => (n == null ? "–" : n.toFixed(d).replace(".", ","));
+  const place = (rang, sur) => `${rang === 1 ? "1er" : rang + "e"} sur ${sur}`;
+  const pct = (n) => (n == null ? "–" : n + " %");
+
+  function sectionStats(p) {
+    const st = p.stats;
+    if (!st) return "";
+    const r = st.resume, weeks = [...st.semaines].sort((a, b) => b.semaine - a.semaine);
+    const bd = r.meilleur_drive, bc = r.meilleur_ctp;
+    const driveWeek = bd && st.semaines.find((w) => w.semaine === bd.semaine);
+    const ctpHole = bc && st.semaines.find((w) => w.semaine === bc.semaine).ctp.find((h) => h.trou === bc.trou);
+    const ctpCell = (w) => {
+      if (!w.ctp.length) return "–";
+      const best = w.ctp.reduce((a, b) => (b.m < a.m ? b : a));
+      return `${dec(best.m)} m <small>trou ${best.trou}${w.ctp.length > 1 ? ` · +${w.ctp.length - 1}` : ""}</small>`;
+    };
+    const avg = (k) => (r[k] == null ? "–" : k === "putts" ? dec(r[k]) : pct(r[k]));
+    return `
+      <section><h3>Statistiques</h3>
+        <div class="kpis">
+          <div class="fact"><div class="label">Plus long drive</div><div class="value">${bd ? dec(bd.m, 0) + " m" : "–"}</div>
+            <div class="note">${bd ? `WC${bd.semaine} · ${place(driveWeek.drive_rang, driveWeek.drive_sur)}` : "pas encore"}</div></div>
+          <div class="fact"><div class="label">Plus près du drapeau</div><div class="value">${bc ? dec(bc.m) + " m" : "–"}</div>
+            <div class="note">${bc ? `WC${bc.semaine} · trou ${bc.trou} · ${place(ctpHole.rang, ctpHole.sur)}` : "pas encore"}</div></div>
+          <div class="fact"><div class="label">Putts par tour</div><div class="value">${avg("putts")}</div><div class="note">en moyenne</div></div>
+        </div>
+        <div class="table-wrap"><table class="mini-table"><caption class="sr">Statistiques par semaine</caption>
+          <thead><tr><th scope="col">Sem.</th><th scope="col">Long drive</th><th scope="col">Près du drapeau</th><th scope="col">Fairways</th><th scope="col">Greens</th><th scope="col">Putts</th></tr></thead>
+          <tbody>${weeks.map((w) => `<tr><td>WC${w.semaine}</td>
+            <td>${w.drive_m == null ? "–" : `<b>${dec(w.drive_m, 0)} m</b> <small>${place(w.drive_rang, w.drive_sur)}</small>`}</td>
+            <td>${ctpCell(w)}</td><td>${pct(w.fairways)}</td><td>${pct(w.greens)}</td><td>${dec(w.putts)}</td></tr>`).join("")}</tbody>
+          <tfoot><tr><th scope="row" colspan="3">Moyenne par tour</th><td>${avg("fairways")}</td><td>${avg("greens")}</td><td>${avg("putts")}</td></tr></tfoot></table></div>
+        <p class="hint">Distances en mètres. Drive : le plus long de la semaine. Près du drapeau : par 3, green atteint au départ. Statistiques de tous les tours de la semaine.</p>
+      </section>`;
+  }
+
   function openPlayer(name) {
     const p = data.joueurs.find((j) => j.joueur === name);
     if (!p) return;
@@ -250,6 +288,7 @@
             <td>${w.coups_brut} <small>(${sign(w.coups_brut - w.par)})</small></td><td>${w.stableford_net}</td>
             <td><b>${w.points_net}</b></td><td>${w.points_brut}</td><td>${w.hdc_avant} → ${w.hdc_apres}</td><td>${w.tentatives}</td></tr>`).join("")}</tbody></table></div>`
         : '<p class="empty">Pas encore de résultat pour ce joueur.</p>'}
+        ${sectionStats(p)}
       </div>`;
     dialog.showModal();
     setupTips(dialog);

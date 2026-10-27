@@ -16,6 +16,7 @@
   const DURATION = Math.max(2, Number(params.get("duree")) || 10) * 1000;
   const MAX_ROWS = Number(params.get("lignes")) || 0;
   const REFRESH = 60 * 1000;
+  const ROW_VH = 0.062;                                          // hauteur visée d'une ligne, en part de la hauteur de l'écran
 
   const area = $("#tv-area");
   const bar = $("#tv-bar");
@@ -59,19 +60,34 @@
     $("#tv-stats").innerHTML = cards.map(([label, value, note]) =>
       `<div class="tv-stat"><div class="label">${label}</div><div class="value${String(value).replace(/<[^>]+>/g, "").length > 16 ? " long" : ""}">${value}</div><div class="note">${note || "&nbsp;"}</div></div>`).join("");
     $("#tv-demo").hidden = !data.demo;
+    fitCards();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitCards);   // la police maison change les largeurs une fois chargée
+  }
+
+  /* Réduit un peu un texte de carte (jamais sous 62 % de sa taille) quand il déborde, pour qu'il reste lisible en entier */
+  function fitCards() {
+    document.querySelectorAll(".tv-stat .value:not(.long), .tv-stat .note").forEach((el) => {
+      el.style.fontSize = "";
+      const base = parseFloat(getComputedStyle(el).fontSize);
+      let size = base;
+      while (el.scrollWidth > el.clientWidth && size > base * 0.62) { size -= 0.5; el.style.fontSize = size + "px"; }
+    });
   }
 
   /* ---------- Pages du classement ---------- */
-  const rowsFit = () => {
-    const minRow = 0.052 * window.innerHeight;                   // ligne la plus serrée qui reste lisible de loin
-    const fit = Math.max(5, Math.floor(area.clientHeight / minRow) - 1);  // moins la ligne des titres de colonnes
-    return MAX_ROWS ? Math.min(MAX_ROWS, fit) : fit;
-  };
+  /* Toutes les lignes ont la même hauteur sur toutes les pages, donc les mêmes textes, quel que soit le nombre de joueurs :
+     on compte combien de lignes de ~6,2 % de la hauteur de l'écran tiennent dans la carte, puis on les étire pour la remplir */
+  const slots = () => Math.max(4, Math.floor(area.clientHeight / (ROW_VH * window.innerHeight)));   // lignes, titres de colonnes compris
+  const rowHeight = () => area.clientHeight / slots();
+  const rowsFit = () => (MAX_ROWS ? Math.min(MAX_ROWS, slots() - 1) : slots() - 1);
+  /* Largeurs des colonnes en multiples de la hauteur de ligne : le tableau garde les mêmes proportions sur un écran 16:9
+     comme sur une zone plus carrée (par exemple 1229 × 1080) ; seul le nombre de semaines affichées change */
+  const COLS = [1.1, 1.25, 4.2, 1.1, 1.5];                       // rang, évolution, joueur, handicap, total
+  const WEEK_COL = 0.95;                                         // une colonne de semaine
   const weeksFit = () => {
-    const fixed = 0.41 * window.innerWidth;                      // largeur des colonnes fixes, voir COLS
-    return Math.max(0, Math.floor((area.clientWidth - fixed) / (0.036 * window.innerWidth)));
+    const fixed = COLS.reduce((a, b) => a + b, 0) * rowHeight();
+    return Math.max(0, Math.floor((area.clientWidth - fixed) / (WEEK_COL * rowHeight())));
   };
-  const COLS = [5, 5, 19, 5, 7];                                 // rang, évolution, joueur, handicap, total (en vw)
 
   function buildSlides() {
     const cap = rowsFit();
@@ -98,14 +114,14 @@
 
   function drawSlide(s) {
     const weeks = data.semaines.map((w) => w.numero).sort((a, b) => b - a).slice(0, weeksFit());
-    const rowH = Math.min(area.clientHeight / (s.per + 1), 0.1 * window.innerHeight);
+    const rowH = rowHeight();
     const multi = data.categories.length > 1;
     $("#tv-title").textContent = `Classement ${s.kind === "net" ? "net Stableford" : "brut"}${multi ? " · " + s.cat : ""}`;
     $("#tv-page").textContent = s.pages > 1 ? `Page ${s.page} / ${s.pages}` : "";
     area.innerHTML = `<table class="tv-table" style="--row-h:${rowH}px">
-      <colgroup>${COLS.map((w) => `<col style="width:${w}vw">`).join("")}${weeks.map(() => "<col>").join("")}</colgroup>
+      <colgroup>${COLS.map((w) => `<col style="width:${(w * rowH).toFixed(1)}px">`).join("")}${weeks.map(() => "<col>").join("")}</colgroup>
       <thead><tr><th scope="col">#</th><th scope="col">Évol.</th><th class="name" scope="col">Joueur</th><th scope="col">Hdc</th><th scope="col">Total</th>
-        ${weeks.map((w) => `<th scope="col">WC${w}</th>`).join("")}</tr></thead>
+        ${weeks.map((w) => `<th class="wk" scope="col">WC${w}</th>`).join("")}</tr></thead>
       <tbody>${s.rows.map((r, i) => `<tr class="${r.rang <= 3 ? "top" : ""}" style="--i:${i}">
         <td class="rank ${r.rang <= 3 ? "r" + r.rang : ""}"><span>${r.rang}</span></td><td>${evo(r.evolution)}</td>
         <td class="name"><span class="nm">${esc(r.joueur)}</span></td><td>${r.hdc_actuel}</td><td class="total">${num(r.total)}</td>

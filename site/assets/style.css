@@ -226,12 +226,16 @@ dialog::backdrop { background: rgba(0, 28, 51, .45); backdrop-filter: blur(3px);
 .dlg-close:hover { background: var(--sky); }
 .dlg-body { padding: 18px 24px 24px; overflow-y: auto; max-height: calc(90vh - 120px); display: grid; gap: 22px; }
 .dlg-body section h3 { margin-bottom: 10px; }
-.kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.dlg-body > * { min-width: 0; }  /* un tableau large défile dans son cadre au lieu d'élargir la fiche */
+.kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.kpis .fact .label { overflow-wrap: anywhere; }
 .kpis .fact { padding: 10px; }
 .kpis .value { font-size: 1.35rem; }
 .mini-table th, .mini-table td { padding: 8px 9px; font-size: .88rem; }
 .mini-table td.name { max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
 .mini-table small { color: var(--ink-soft); font-weight: 400; }
+.mini-table tfoot th, .mini-table tfoot td { border-top: 2px solid var(--line); font-weight: 700; background: var(--surface-2); }
+.mini-table tfoot th { text-align: left; }
 .mini-table tbody tr { cursor: default; }
 .mini-table tbody tr:hover td { background: transparent; }
 

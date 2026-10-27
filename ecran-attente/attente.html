@@ -1,0 +1,75 @@
+<!doctype html>
+<!-- Source de l'image d'attente de la TV (1229 × 1080). Pour la refaire : copier ce fichier dans site/ avec des données de démonstration
+     (data/saison_demo_site.json copié en site/donnees/saison.json dans une COPIE du dossier site, jamais dans le vrai), servir le dossier,
+     puis capturer avec Chrome : --headless=new --window-size=1229,1080 --virtual-time-budget=9000 --screenshot=image.png http://127.0.0.1:PORT/attente.html -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Écran d'attente</title>
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  html, body { margin: 0; width: 1229px; height: 1080px; overflow: hidden; background: #fff; }
+  body { font-family: "Figtree", system-ui, sans-serif; color: var(--navy); position: relative; }
+  .bg { position: absolute; inset: 0; background: linear-gradient(180deg, #ffffff 0%, #ffffff 38%, var(--sky-soft) 100%); }
+  .wrap { position: absolute; inset: 0; padding: 44px 48px 0; display: flex; flex-direction: column; }
+
+  .top { display: flex; align-items: center; justify-content: space-between; }
+  .top img { width: 290px; height: auto; display: block; }
+  .tag { font-size: 20px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--sky-ink); }
+
+  .head { margin-top: 38px; }
+  h1 { margin: 0; font-size: 56px; line-height: 1.08; font-weight: 800; letter-spacing: -.01em; }
+  h1 span { color: var(--sky-ink); }
+  .sub { margin: 14px 0 0; font-size: 30px; font-weight: 600; color: var(--ink-soft); }
+  .bar { width: 96px; height: 7px; border-radius: 4px; background: var(--sky); margin-top: 22px; }
+
+  /* Aperçu de la page télé : on montre les cartes et les premières lignes du classement */
+  .preview { position: relative; margin: 34px auto 0; width: 1100px; height: 520px; border-radius: 22px; overflow: hidden;
+             background: #fff; border: 1px solid var(--line); box-shadow: 0 18px 50px rgba(0, 28, 51, .16); }
+  .preview .viewport { position: absolute; left: 0; top: 0; width: 1229px; height: 1080px; transform-origin: 0 0; transform: translate(0, -80px) scale(.895); }
+  .preview iframe { border: 0; width: 1229px; height: 1080px; display: block; }
+  .fade { position: absolute; left: 0; right: 0; bottom: 0; height: 96px; z-index: 1; background: linear-gradient(180deg, rgba(255,255,255,0), #fff); }
+
+  .foot { margin-top: auto; padding-bottom: 36px; text-align: center; }
+  .foot .more { margin: 0 auto; max-width: 1040px; font-size: 27px; line-height: 1.3; font-weight: 600; color: var(--navy); }
+  .foot .more b { font-weight: 800; color: var(--sky-ink); white-space: nowrap; }
+  .foot .tel { margin: 22px 0 0; font-size: 22px; font-weight: 600; color: var(--ink-soft); }
+  .foot .tel { margin: 22px 0 0; font-size: 24px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--sky-ink); }
+  .foot strong { display: inline-block; margin-top: 26px; font-size: 32px; font-weight: 800; color: var(--navy); letter-spacing: .01em; }
+  .foot strong i { font-style: normal; color: var(--sky-ink); }
+</style>
+</head>
+<body>
+  <div class="bg"></div>
+  <div class="wrap">
+    <div class="top">
+      <img src="assets/logo-letsgolf.svg" alt="Let's Golf">
+      <div class="tag">Winter Challenge 2026-2027</div>
+    </div>
+
+    <div class="head">
+      <h1>Vos classements en direct ici,</h1>
+      <p class="sub">dès le début du <span style="color:var(--sky-ink);font-weight:800">Winter Challenge</span></p>
+      <div class="bar"></div>
+    </div>
+
+    <div class="preview">
+      <div class="viewport"><iframe id="f" src="tv.html?duree=600" title="Aperçu"></iframe></div>
+      <div class="fade"></div>
+    </div>
+
+    <div class="foot">
+      <p class="more">Retrouve tes résultats, <b>les longest drives</b>, <b>les nearest to the pin</b>, <b>les stats de tous les joueurs</b> et bien plus encore <b style="color:var(--navy);font-weight:600">sur ton téléphone</b>&nbsp;!</p>
+      <strong>winterchallenge<i>.letsgolf.ch</i></strong>
+    </div>
+  </div>
+<script>
+  // Aperçu figé : pas d'animation d'apparition des lignes, pour une image nette
+  document.getElementById("f").addEventListener("load", function () {
+    var d = this.contentDocument, st = d.createElement("style");
+    st.textContent = ".tv-table tbody tr { animation: none !important; } .tv-top .tv-demo { display: none; } * { transition: none !important; }";
+    d.head.appendChild(st);
+  });
+</script>
+</body>
+</html>

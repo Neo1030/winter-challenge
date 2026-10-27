@@ -10,6 +10,7 @@ from datetime import datetime
 
 from .scoring import COUNT_LABELS
 from .season import Season
+from .stats import rank_of
 
 STATS_KEYS = {"Albatross": "albatros", "Eagles": "eagles", "Birdies": "birdies", "Pars": "pars", "Bogeys": "bogeys",
               "Double-Bogeys": "doubles", "Triple-Bogeys": "triples", "More": "plus"}
@@ -54,6 +55,47 @@ def _week_summaries(season: Season) -> list:
     return out
 
 
+def _player_stats(season: Season, name: str) -> dict | None:
+    """Statistiques d'un joueur : une ligne par semaine (avec son rang parmi les joueurs du tour) et un résumé.
+
+    Elles couvrent tous ses tours de la semaine, pas seulement le tour retenu pour le classement.
+    """
+    courses = {(w.category, w.number): w.course for w in season.weeks}
+    weeks = []
+    for (label, number), st in sorted(season.stats.items(), key=lambda kv: kv[0][1]):
+        mine = dict(st["joueurs"].get(name, {}))
+        holes = []
+        for hole, entries in sorted(st["ctp"].items()):
+            for who, metres in entries:
+                if who == name:
+                    holes.append({"trou": hole, "m": round(metres, 1), "rang": rank_of(metres, [m for _, m in entries], False),
+                                  "sur": len(entries)})
+        if not mine and not holes:
+            continue
+        if "drive_m" in mine:
+            drives = [p["drive_m"] for p in st["joueurs"].values() if "drive_m" in p]
+            mine["drive_rang"], mine["drive_sur"] = rank_of(mine["drive_m"], drives), len(drives)
+        mine.update({"semaine": number, "parcours": courses.get((label, number), ""), "ctp": holes})
+        weeks.append(mine)
+    if not weeks:
+        return None
+
+    summary = {}
+    drives = [(w["drive_m"], w["semaine"]) for w in weeks if "drive_m" in w]
+    if drives:
+        best = max(drives)
+        summary["meilleur_drive"] = {"m": best[0], "semaine": best[1]}
+    shots = [(h["m"], w["semaine"], h["trou"]) for w in weeks for h in w["ctp"]]
+    if shots:
+        best = min(shots)
+        summary["meilleur_ctp"] = {"m": best[0], "semaine": best[1], "trou": best[2]}
+    for key in ("fairways", "greens", "putts"):  # moyenne par tour, pondérée par le nombre de tours de chaque semaine
+        pairs = [(w[key], w.get("tours") or 1) for w in weeks if key in w]
+        if pairs:
+            summary[key] = round(sum(v * n for v, n in pairs) / sum(n for _, n in pairs), 1 if key == "putts" else 0)
+    return {"resume": summary, "semaines": weeks}
+
+
 def _players(season: Season) -> list:
     out = []
     for p in sorted(season.players, key=lambda p: (p.category, p.name.lower())):
@@ -75,7 +117,7 @@ def _players(season: Season) -> list:
             "joueur": p.name, "categorie": p.category, "hdc_depart": p.start_hcp, "hdc_actuel": p.current_hcp,
             "rang_net": ranks["net"].rank if ranks["net"] else None, "total_net": ranks["net"].total if ranks["net"] else 0,
             "rang_brut": ranks["brut"].rank if ranks["brut"] else None, "total_brut": ranks["brut"].total if ranks["brut"] else 0,
-            "semaines": weeks, "hdc_historique": history,
+            "semaines": weeks, "hdc_historique": history, "stats": _player_stats(season, p.name),
         })
     return out
 

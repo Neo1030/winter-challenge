@@ -115,6 +115,12 @@ meilleur brut) et le classement, qui occupe tout le reste de l'écran.
   (barres bleues : compte, rose : premier remplacé, grises : ne compte pas) et l'**évolution du handicap**. En survolant (souris),
   en touchant (téléphone) ou en naviguant au clavier, une **bulle** donne le détail : score en coups et par rapport au par,
   Stableford, points et tentatives.
+- La fiche contient aussi une section **Statistiques**, en mètres : plus long drive, plus près du drapeau (par 3), fairways,
+  greens et putts, par semaine et en moyenne, avec le rang du joueur parmi les joueurs de son tour. Elles viennent de l'API SGT
+  (`tournaments/stats`) et portent sur **tous les tours de la semaine**, pas seulement le tour retenu pour le classement.
+  **Unités à confirmer** : l'API ne les donne pas. On suppose des yards pour les drives et des pieds pour les distances au
+  drapeau (documentation du site SGT) ; la conversion est dans `winter_challenge/stats.py` (`YARD_M`, `FOOT_M`).
+  Pour vérifier : comparer un drive ou une distance de `saison.json` avec ce que SGT affiche pour le même tournoi.
 - La page « Parcours » affiche **directement l'image de la carte de score** du parcours de la semaine (longueurs par départ, pars,
   index des trous). L'image est chargée depuis simulatorgolftour.com : elle appartient à SGT et à ses concepteurs. Si SGT la rend
   indisponible, la page affiche un bouton qui ouvre la carte chez SGT. Pour ne plus dépendre d'eux, on pourrait en garder une

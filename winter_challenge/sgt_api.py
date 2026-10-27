@@ -111,6 +111,9 @@ class SgtClient:
     def scorecards(self, tournament_id: int):
         return self._get("tournaments/scorecards", tournamentId=tournament_id)
 
+    def tournament_stats(self, tournament_id: int):
+        return self._get("tournaments/stats", tournamentId=tournament_id)
+
     def registrations(self, tournament_id: int):
         return self._get("registrations/view", tournamentId=tournament_id)
 
@@ -122,6 +125,10 @@ class SgtClient:
         tournaments = self.tournaments(tour_id).get("results", [])
         for t in tournaments:
             t["scorecards"] = self.scorecards(t["tournamentId"])
+            try:  # les statistiques sont un plus : leur absence ne doit jamais bloquer les classements
+                t["stats"] = self.tournament_stats(t["tournamentId"])
+            except SgtApiError:
+                t["stats"] = None
         return {
             "tour_id": tour_id,
             "label": label,
