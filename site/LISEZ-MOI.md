@@ -149,7 +149,7 @@ meilleur brut) et le classement, qui occupe tout le reste de l'écran.
 - La page « Parcours » montre, pour la compétition choisie, la **semaine en cours**, la **semaine prochaine** (le tournoi suivant
   déjà créé chez SGT, sinon le parcours choisi avec le skill ; jamais plus loin) et l'**historique** des semaines terminées.
   Le parcours est le même pour toutes les catégories : on lit celui du premier tour (les Hommes).
-  Chaque parcours montre ses réglages : départ, pente et cotation, neuf joué et par, stimp, fermeté des greens et des fairways,
+  Chaque parcours montre ses réglages : départ, slope et course rating, neuf joué et par, stimp, fermeté des greens et des fairways,
   vent, météo, positions des drapeaux, gimmies (en mètres) et putting.
   **D'où ça vient :** l'API de club ne donne pas ces réglages. Ils sont lus sur la page publique du tournoi
   (`simulatorgolftour.com/tournament/<id>`, bloc « Round settings », code dans `winter_challenge/sgt_page.py`). C'est une lecture

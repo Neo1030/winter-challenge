@@ -122,6 +122,57 @@ class SgtClient:
     def registrations(self, tournament_id: int):
         return self._get("registrations/view", tournamentId=tournament_id)
 
+    # Gestion des joueurs (écriture : à n'utiliser que sur demande explicite)
+    def _write(self, endpoint: str, **data):
+        if not self.api_key:
+            raise SgtApiError("Pas de clé API : appelle login() d'abord")
+        res = self._post(endpoint, {"api-key": self.api_key, **data})
+        if isinstance(res, str):
+            raise SgtApiError(f"Réponse inattendue sur {endpoint} : {res[:120]}")
+        return res
+
+    def check_user(self, user_name: str, user_email: str) -> dict:
+        """{username_available, email_available, user_id} ; user_id n'est rempli que si pseudo ET e-mail sont du même compte."""
+        return self._get("members/check-user", user_name=user_name, user_email=user_email)
+
+    def register_user(self, user_name: str, user_email: str, password: str) -> dict:
+        """Crée un compte SGT et l'ajoute au club. Durable : l'API ne permet pas de supprimer le compte."""
+        return self._write("members/register-new", user_name=user_name, user_email=user_email, user_password_new=password)
+
+    def add_club_member(self, user_id: int) -> dict:
+        return self._write("members/add", user_id=user_id)
+
+    def add_tour_member(self, tour_id: int, user_id: int) -> dict:
+        return self._write("tours/add-member", tourId=tour_id, user_id=user_id)
+
+    def remove_tour_member(self, tour_id: int, user_id: int) -> dict:
+        return self._write("tours/remove-member", tourId=tour_id, user_id=user_id)
+
+    def register_in_tournament(self, tour_id: int, tournament_id: int, user_id: int, hcp: int | None = None) -> dict:
+        """Inscrit un joueur à un tournoi, avec le départ du tournoi. Sans hcp, il prend son handicap de tour ;
+        avec hcp (-36 à 36), cette valeur est fixée pour l'inscription (cap personnalisé)."""
+        entry = {"registrationList[0][user_id]": user_id, "registrationList[0][useComboCap]": "false",
+                 "registrationList[0][useCustomCap]": "false" if hcp is None else "true"}
+        if hcp is not None:
+            entry["registrationList[0][customCap]"] = hcp
+        return self._write("registrations/register-members", tourId=tour_id, tournamentId=tournament_id, **entry)
+
+    def set_registration_hcp(self, tour_id: int, tournament_id: int, user_id: int, hcp: int) -> dict:
+        """Change le handicap d'une inscription en gardant le reste (statut, tour en cours, départs). Individuel seulement."""
+        current = next((r for r in self.registrations(tournament_id) if r["user_id"] == user_id), None)
+        if current is None:
+            raise SgtApiError(f"Joueur {user_id} non inscrit au tournoi {tournament_id}")
+        if current.get("TeamPlayer2"):
+            raise SgtApiError("Tournoi par équipes : non géré")
+        tees = {key: current.get(key) or "Default" for key in ("tee_type", "tee_type2", "tee_type3", "tee_type4")}
+        return self._write("registrations/edit", tourId=tour_id, tournamentId=tournament_id, user_id=user_id,
+                           player1="NONE", player2="NONE", player3="NONE", player4="NONE", hcp=hcp,
+                           current_round=current["current_round"], status=current["status"], opponent_id=0,
+                           team_id=0, dq="No", **tees)
+
+    def delete_registration(self, tour_id: int, tournament_id: int, user_id: int) -> dict:
+        return self._write("registrations/delete", tourId=tour_id, tournamentId=tournament_id, user_id=user_id)
+
     def fetch_tour(self, tour_id: int, label: str, known_settings: dict | None = None) -> dict:
         """Tout ce qu'il faut pour un tour : membres et, pour chaque tournoi, les scorecards, statistiques et réglages.
 

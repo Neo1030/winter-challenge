@@ -14,12 +14,6 @@
   const day = (iso) => (iso ? iso.slice(0, 10).split("-").reverse().join(".") : "");
   const stamp = (iso) => (iso ? `${day(iso)} à ${iso.slice(11, 16)}` : "");
 
-  const STYLES = {
-    Mountain: "Montagne", Coastal: "Côtier", Links: "Links", Parkland: "Parkland", Desert: "Désert", Fantasy: "Fantasy",
-    Heathland: "Heathland", Historic: "Historique", Tropical: "Tropical", "Major Venue": "Parcours de majeur",
-    "Tour Stop": "Étape de tournoi", Beginner: "Débutant", Training: "Entraînement",
-  };
-  const WIND = { NoWind: "Aucun vent", Calm: "Calme", Breezy: "Brise légère", Gusty: "Rafales" };
   const NINE = { Front: "trous 1 à 9", Back: "trous 10 à 18", All: "les 18 trous" };
   const STATS = [["eagles", "eagles"], ["birdies", "birdies"], ["pars", "pars"], ["bogeys", "bogeys"]];
 
@@ -383,9 +377,10 @@
   /* ---------- Parcours : semaine en cours, semaine suivante et historique, une catégorie à la fois ---------- */
   const key = (s) => String(s ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
   const tr = (map, v) => (v == null ? null : map[key(v)] ?? String(v));
-  const FIRMNESS = { soft: "Souple", medium: "Moyen", middle: "Moyen", firm: "Ferme", hard: "Dur" };
+  // Les termes techniques de golf restent en anglais, comme sur SGT et sur la carte de score
+  const FIRMNESS = { soft: "Soft", medium: "Medium", middle: "Medium", firm: "Firm", hard: "Hard" };
   const TEES = { par3: "Par 3", white: "Blanc", yellow: "Jaune", blue: "Bleu", black: "Noir", red: "Rouge", gold: "Or", green: "Vert", orange: "Orange", silver: "Argent" };
-  const WINDS = { nowind: "Aucun vent", calm: "Calme", breezy: "Brise légère", gusty: "Rafales", windy: "Venteux" };
+  const WINDS = { nowind: "No wind", calm: "Calm", breezy: "Breezy", gusty: "Gusty", windy: "Windy" };
   const WEATHER = { clear: "Dégagé", sunny: "Ensoleillé", cloudy: "Nuageux", partlycloudy: "Peu nuageux", overcast: "Couvert", rain: "Pluie", rainy: "Pluie", fog: "Brouillard", foggy: "Brouillard" };
   const DAYS = { monday: "lundi", tuesday: "mardi", wednesday: "mercredi", thursday: "jeudi", friday: "vendredi", saturday: "samedi", sunday: "dimanche" };
   const PUTTING = { normal: "Normal", nogimmes: "Sans gimmie", nogimmies: "Sans gimmie" };
@@ -398,7 +393,7 @@
   function courseParams(e) {
     const r = e.reglages || {};
     const rows = [
-      ["Départ", e.depart ? tr(TEES, e.depart) : null, r.pente ? `pente ${r.pente} · cotation ${r.cotation ?? "–"}` : null],
+      ["Départ", e.depart ? tr(TEES, e.depart) : null, r.pente ? `slope ${r.pente} · course rating ${r.cotation ?? "–"}` : null],
       ["On joue", e.neuf ? NINE[e.neuf] ?? e.neuf : null, e.par ? `par ${e.par}` : null],
       ["Longueur", e.longueur_jaune_m ? `${num(e.longueur_jaune_m)} m` : null, e.longueur_jaune_m ? "18 trous, départ jaune" : null],
       ["Stimp", r.stimp ?? null, "vitesse des greens"],
@@ -426,7 +421,7 @@
       <div class="course-body">
         ${facts ? `<div class="facts">${facts}</div>` : ""}
         ${e.description ? `<p>${esc(e.description)}</p>` : ""}
-        ${e.styles?.length ? `<div class="tags">${e.styles.map((s) => `<span class="tag">${esc(STYLES[s] ?? s)}</span>`).join("")}</div>` : ""}
+        ${e.styles?.length ? `<div class="tags">${e.styles.map((s) => `<span class="tag">${esc(s)}</span>`).join("")}</div>` : ""}
         ${e.lien_carte ? `<figure class="scorecard"><a href="${esc(e.lien_carte)}" target="_blank" rel="noopener" title="Ouvrir la carte en grand">
           <img src="${esc(e.lien_carte)}" alt="Carte de score de ${esc(e.nom)} : longueurs par départ, pars et index des trous" loading="lazy" referrerpolicy="no-referrer"></a>
           <figcaption>Carte de score · Simulator Golf Tour · touche l'image pour l'agrandir</figcaption></figure>` : ""}
