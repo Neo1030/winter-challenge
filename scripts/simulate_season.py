@@ -4,6 +4,8 @@ Usage :
   python3 scripts/simulate_season.py chemin/ancien.xlsm          # écrit data/sgt_simule.json (1 catégorie, 22 joueurs)
   python3 scripts/simulate_season.py chemin/ancien.xlsm --site   # écrit data/sgt_demo_site.json (3 catégories, 60 joueurs)
   python3 scripts/simulate_season.py chemin/ancien.xlsm --site --short-game 20   # + un Short Game mensuel de 20 joueurs
+  python3 scripts/simulate_season.py --parcours-json data/sgt_demo_site.json --site --semaines 18 --short-game 20 --sortie data/sgt_demo_18.json
+      # sans l'ancien classeur : reprend les parcours (pars et index) d'une simulation déjà faite
   python3 scripts/build_workbook.py --depuis-fichier data/sgt_simule.json --sortie Winter-Challenge_Simulation.xlsx
 
 Les parcours (pars et index des trous) viennent de la feuille Courses de l'ancien classeur.
@@ -46,6 +48,19 @@ def load_courses(path):
         if row[1] and all(isinstance(v, (int, float)) for v in list(row[2:11]) + list(row[12:21]) + list(row[23:41])):
             courses.append((row[1], list(row[2:11]) + list(row[12:21]), list(row[23:41])))
     return courses
+
+
+def load_courses_json(path):
+    """Les parcours (nom, pars, index) d'une simulation déjà écrite, dans l'ordre où ils apparaissent."""
+    with open(path, encoding="utf-8") as f:
+        tours = json.load(f)
+    courses = {}
+    for tour in tours:
+        for t in tour["tournaments"]:
+            for c in t["scorecards"]:
+                if c["courseName"] not in courses:
+                    courses[c["courseName"]] = ([c[f"h{i}_Par"] for i in range(1, 19)], [c[f"h{i}_index"] for i in range(1, 19)])
+    return [(name, pars, strokes) for name, (pars, strokes) in courses.items()]
 
 
 def hole_score(rng, par, skill):
@@ -121,7 +136,8 @@ def check_range(tours):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("classeur")
+    parser.add_argument("classeur", nargs="?", help="ancien classeur (feuille Courses) ; facultatif avec --parcours-json")
+    parser.add_argument("--parcours-json", metavar="JSON", help="reprend les parcours d'une simulation déjà écrite au lieu de l'ancien classeur")
     parser.add_argument("--joueurs", type=int, default=20, help="joueurs fictifs en plus des 2 comptes de test")
     parser.add_argument("--semaines", type=int)
     parser.add_argument("--graine", type=int, default=42)
@@ -131,7 +147,9 @@ def main():
     args = parser.parse_args()
 
     rng = random.Random(args.graine)
-    courses = load_courses(args.classeur)
+    if not args.classeur and not args.parcours_json:
+        parser.error("donne l'ancien classeur ou --parcours-json")
+    courses = load_courses_json(args.parcours_json) if args.parcours_json else load_courses(args.classeur)
     rng.shuffle(courses)
 
     if args.site:
@@ -145,7 +163,7 @@ def main():
         if args.short_game:
             everyone = [n for t in tours for n in (m["user_name"] for m in t["members"][1:])]
             picked = {n: rng.randint(3, 30) for n in rng.sample(everyone, args.short_game)}
-            tour, card_id = simulate_short_game(rng, courses, picked, 9100, card_id)
+            tour, card_id = simulate_short_game(rng, courses, picked, 9100, card_id, months=max(4, weeks // 4 + 1))
             tours.append(tour)
         out = args.sortie or "data/sgt_demo_site.json"
     else:

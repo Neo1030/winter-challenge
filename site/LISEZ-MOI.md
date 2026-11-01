@@ -8,6 +8,7 @@ site/
 ├── index.html            le site des joueurs (menu, classements, parcours, fiches)
 ├── tv.html               la page pour la télévision du centre (Winter Challenge Results)
 ├── tvreduit.html         la même page pour une zone d'écran de 1229 × 1080 (même script, en-tête du classement sur deux lignes)
+├── tvdemo.html, tvreduitdemo.html   les mêmes pages avec des données fictives (demo/saison_demo.json : 18 semaines, 60 joueurs, 20 au Short Game)
 ├── .htaccess             réglages Apache (le fichier de données n'est jamais gardé en cache)
 ├── assets/
 │   ├── style.css         l'apparence (couleurs en tête de fichier)
@@ -33,6 +34,13 @@ python3 scripts/serve_site.py                                                   
 python3 scripts/simulate_season.py ~/Downloads/Winter-Challenge_2k26_WC18.xlsm --site --short-game 20   # scores fictifs -> data/sgt_demo_site.json
 python3 scripts/export_site_data.py --depuis-fichier data/sgt_demo_site.json --demo --sortie data/saison_demo.json
 PORT=8766 python3 scripts/serve_site.py --demo      # puis http://127.0.0.1:8766 et http://127.0.0.1:8766/tv.html
+```
+
+Les pages `tvdemo.html` et `tvreduitdemo.html` lisent `site/demo/saison_demo.json` (18 semaines, 60 joueurs ; fichier fictif, marqué « Données de démonstration »). Pour le refaire :
+
+```bash
+python3 scripts/simulate_season.py --parcours-json data/sgt_demo_site.json --site --semaines 18 --short-game 20 --sortie data/sgt_demo_18.json
+python3 scripts/export_site_data.py --depuis-fichier data/sgt_demo_18.json --demo --sortie site/demo/saison_demo.json
 ```
 
 Les données fictives restent dans `data/` : le site normal (port 8765) et le déploiement n'y touchent jamais. La démonstration se
