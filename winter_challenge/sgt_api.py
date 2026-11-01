@@ -142,6 +142,10 @@ class SgtClient:
     def add_club_member(self, user_id: int) -> dict:
         return self._write("members/add", user_id=user_id)
 
+    def remove_club_member(self, user_id: int) -> dict:
+        """Retire un joueur du club (le compte SGT, lui, reste : l'API ne supprime pas les comptes)."""
+        return self._write("members/remove", user_id=user_id)
+
     def add_tour_member(self, tour_id: int, user_id: int) -> dict:
         return self._write("tours/add-member", tourId=tour_id, user_id=user_id)
 
