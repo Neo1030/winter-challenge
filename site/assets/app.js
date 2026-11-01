@@ -511,17 +511,46 @@
   /* ---------- Règles ---------- */
   function viewRules() {
     const r = data.regles;
-    app.innerHTML = `<h2>Règles</h2><p class="sub">Comment fonctionne le Winter Challenge.</p>
+    const wc = comps[0], others = comps.slice(1);
+    const cats = raw.categories.map((c) => `<strong>${esc(c.nom)}</strong>`).join(", ");
+    const rule = (title, html) => `<div class="card rule"><h3>${title}</h3><p>${html}</p></div>`;
+    const short = (c) => [
+      rule(`Un mois, un parcours`, `Le ${esc(c.nom)} est un tournoi par mois sur Simulator Golf Tour (${esc(c.prefixe)}1, ${esc(c.prefixe)}2…), sur ses propres parcours. Tu es inscrit d'office, en même temps que dans le ${esc(wc.nom)}.`),
+      rule(`Un seul tour par mois`, `Comme au ${esc(wc.nom)}, tu n'as droit qu'à <strong>un seul tour</strong> par tournoi : pas de seconde chance.`),
+      c.brut_seul
+        ? rule(`Brut seulement, sans handicap`, `<strong>Tout le monde joue avec un handicap de 0</strong>, sans exception. Il n'y a donc ni classement net, ni handicap de jeu à suivre : seul compte ton score brut.`)
+        : rule(`Net et brut`, `Le ${esc(c.nom)} a un classement net et un classement brut, comme le ${esc(wc.nom)}.`),
+      rule(`Un seul classement pour tous`, `${c.brut_seul ? "Hommes, Femmes et Seniors jouent ensemble : " : ""}il y a un seul classement${c.categories.length > 1 ? " par catégorie" : ""}. Les points se calculent comme au ${esc(wc.nom)} (Stableford, 100 points de référence), et seuls tes <strong>${r.meilleurs} meilleurs résultats</strong> comptent.`),
+    ].join("");
+    app.innerHTML = `<h2>Règles</h2>
+      <p class="sub">Tout ce qu'il faut savoir pour jouer. Les joueurs sont inscrits à la fois au ${esc(wc.nom)} et ${others.length ? "au " + others.map((c) => esc(c.nom)).join(" et au ") : "aux autres compétitions"}.</p>
+
+      <section class="grid stats" aria-label="Les règles en bref">
+        <div class="card stat"><div class="label">Essais</div><div class="value">1 seul tour</div><div class="note">par tournoi, sans seconde chance</div></div>
+        <div class="card stat"><div class="label">Format</div><div class="value">9 trous</div><div class="note">sur le parcours du tournoi</div></div>
+        <div class="card stat"><div class="label">Classement</div><div class="value">${r.meilleurs} meilleurs</div><div class="note">résultats de la saison</div></div>
+        <div class="card stat"><div class="label">Compétitions</div><div class="value">${comps.length}</div><div class="note">${comps.map((c) => esc(c.nom)).join(" · ")}</div></div>
+      </section>
+
+      <h3 class="rules-title">${esc(wc.nom)}</h3>
       <div class="rules">
-        <div class="card rule"><h3>Une semaine, un parcours</h3><p>Chaque semaine, un parcours est choisi sur Simulator Golf Tour. Tu joues 9 trous, depuis ton simulateur, quand tu veux pendant la semaine.</p></div>
-        <div class="card rule"><h3>Un seul tour par semaine</h3><p>Tu n'as droit qu'à <strong>un seul tour</strong> par semaine : pas de seconde chance. Ton <strong>Stableford</strong> de ce tour donne tes points, pour les classements brut et net.</p></div>
-        <div class="card rule"><h3>Les points</h3><p>Sur 9 trous, <strong>18 points Stableford valent 100 points</strong> de classement, et chaque point de plus ou de moins vaut 10 points (minimum 30). Sur 18 trous, la référence est de 36 points.</p></div>
-        <div class="card rule"><h3>Le classement final</h3><p>Seuls tes <strong>${r.meilleurs} meilleurs résultats</strong> de la saison comptent. Dans le tableau, ils sont en vert, et le plus petit d'entre eux est en rouge : c'est le premier que tu remplaceras si tu fais mieux.</p></div>
-        <div class="card rule"><h3>Le handicap de jeu</h3><p>Il part de la moitié de ton handicap réel. À la fin de chaque semaine, il monte de 1 si tu fais moins de 100 points nets, sinon il baisse d'un point par tranche de 10 points au-dessus de 100.</p></div>
-        <div class="card rule"><h3>Les catégories</h3><p>${raw.categories.map((c) => `<strong>${esc(c.nom)}</strong>`).join(", ")} : chaque catégorie a son propre classement, en net et en brut.</p></div>
-        ${comps.slice(1).map((c) => `<div class="card rule"><h3>${esc(c.nom)}</h3><p>${c.brut_seul
-            ? `Le ${esc(c.nom)} a son propre classement, <strong>en brut seulement</strong> : tout le monde joue avec un handicap de 0, sans classement net ni handicap de jeu. Il a ses propres parcours : un tournoi par mois sur Simulator Golf Tour (${esc(c.prefixe)}1, ${esc(c.prefixe)}2…). Les points et les ${raw.regles.meilleurs} meilleurs résultats se calculent comme pour le Winter Challenge.`
-            : `Le ${esc(c.nom)} a son propre classement, en net et en brut, et ses propres parcours : un tournoi par mois sur Simulator Golf Tour (${esc(c.prefixe)}1, ${esc(c.prefixe)}2…). Les points, le handicap et les ${raw.regles.meilleurs} meilleurs résultats se calculent comme pour le Winter Challenge.`}</p></div>`).join("")}
+        ${rule("Une semaine, un parcours", "Chaque semaine, un parcours est choisi sur Simulator Golf Tour. Tu joues <strong>9 trous</strong> depuis ton simulateur, quand tu veux pendant la semaine. Le parcours et ses réglages sont sur la page Parcours.")}
+        ${rule("Un seul tour par semaine", "Tu n'as droit qu'à <strong>un seul tour</strong> par semaine : pas de seconde chance. Ton <strong>Stableford</strong> de ce tour donne tes points, pour les classements brut et net.")}
+        ${rule("Les points", "Sur 9 trous, <strong>18 points Stableford valent 100 points</strong> de classement, et chaque point de plus ou de moins vaut 10 points (minimum 30). Sur 18 trous, la référence est de 36 points.")}
+        ${rule("Brut et net", "Le classement <strong>brut</strong> compte ton score tel quel. Le classement <strong>net</strong> tient compte de ton handicap de jeu : tu reçois des coups sur les trous les plus difficiles.")}
+        ${rule("Le handicap de jeu", "Il part de la <strong>moitié de ton handicap réel</strong> (sans handicap réel connu, tu pars à 0). Il ne change qu'à la fin de chaque semaine : il monte de 1 si tu fais moins de 100 points nets, sinon il baisse d'un point par tranche de 10 points au-dessus de 100. Un handicap plus bas est meilleur.")}
+        ${rule("Les catégories", `${cats} : chaque catégorie a son propre classement, en net et en brut.`)}
+        ${rule("Le classement final", `Seuls tes <strong>${r.meilleurs} meilleurs résultats</strong> de la saison comptent. Dans le tableau, ils sont en vert, et le plus petit d'entre eux est en rouge : c'est le premier que tu remplaceras si tu fais mieux. La flèche indique les places gagnées ou perdues depuis la semaine précédente.`)}
+      </div>
+
+      ${others.map((c) => `<h3 class="rules-title">${esc(c.nom)}</h3><div class="rules">${short(c)}</div>`).join("")}
+
+      <h3 class="rules-title">Pour jouer</h3>
+      <div class="rules">
+        ${rule("Ton compte", "Ton pseudo est ton nom d'utilisateur Simulator Golf Tour, le même dans GSPro : c'est lui qui apparaît ici. Pour choisir ou changer ton mot de passe, utilise « mot de passe oublié » sur simulatorgolftour.com avec l'adresse e-mail de ton inscription.")}
+        ${rule("Où jouer", "Sur les simulateurs du Let's Golf, à Bussigny, avec GSPro : ton tour est envoyé tout seul au tournoi de Simulator Golf Tour.")}
+        ${rule("Les statistiques", "Sous chaque classement, cinq tuiles donnent le meilleur de la semaine : fairways touchés (FIR), greens en régulation (GIR), plus long drive, proximité du drapeau et putts rentrés. Ta fiche joueur garde les tiennes.")}
+        ${rule("Les résultats", "Ce site se met à jour tout seul, toutes les 5 minutes environ en journée : ton score apparaît peu après la fin de ton tour.")}
       </div>`;
   }
 
