@@ -67,8 +67,11 @@ Les intitulés exacts du Manager Infomaniak peuvent varier un peu ; le principe 
    est créée automatiquement. Active le certificat SSL gratuit (Let's Encrypt) pour avoir le https.
 2. **Accès FTP** : dans le Manager (FTP / SSH), crée un utilisateur de type **FTP** (et non « FTP + SSH », qui ouvre tout
    l'hébergement) limité au dossier du sous-domaine.
-3. **Envoi des fichiers** : `python3 scripts/deploy_ftps.py` envoie le contenu de `site/` en FTPS (le mot de passe est demandé au
-   clavier). `--essai` liste les fichiers sans rien envoyer ; `--donnees-seules` n'envoie que `saison.json`.
+3. **Envoi des fichiers** : **automatique**. Chaque push sur `main` qui touche `site/` lance la tâche « Mise en ligne du site »
+   (`.github/workflows/mise-en-ligne.yml`) : les tests passent, puis le contenu de `site/` part en FTPS avec les identifiants du dépôt
+   (variable `FTP_USER`, secret `FTP_PASSWORD`). Un test qui échoue bloque l'envoi. L'onglet Actions de GitHub (« Run workflow »)
+   renvoie le site à la main. En secours, `python3 scripts/deploy_ftps.py` fait la même chose depuis cet ordinateur (le mot de passe
+   est demandé au clavier) ; `--essai` liste les fichiers sans rien envoyer ; `--donnees-seules` n'envoie que `saison.json`.
 4. **Chaque semaine** : régénère `saison.json` (commande ci-dessus) et envoie-le, ou laisse la mise à jour automatique le faire.
 
 Pour intégrer la page au site Let's Golf existant, il suffit de copier le dossier tel quel dans un sous-dossier : tous les

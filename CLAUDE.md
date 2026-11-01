@@ -60,7 +60,12 @@ conversation. **S'il manque une information, demande-la avant d'écrire quoi que
 - Variable GitHub `SGT_TOURS` : `3910:Hommes 3911:Femmes 3912:Seniors 3909:Mixte:Short_Game` (le tiret bas remplace l'espace).
 - La mise à jour automatique (« Mise à jour des résultats », toutes les ~5 minutes) écrit `donnees/saison.json` en ligne.
   `python3 scripts/deploy_ftps.py` n'envoie **pas** ce fichier (sinon des joueurs et des semaines disparaissent) : `--avec-donnees`
-  seulement si c'est voulu. Le mot de passe FTP se tape dans un terminal, jamais dans un fichier.
+  seulement si c'est voulu.
+- **Mise en ligne du site : automatique.** Chaque push sur `main` qui touche `site/` lance le workflow « Mise en ligne du site »
+  (`.github/workflows/mise-en-ligne.yml`) : tests, puis envoi FTPS avec les identifiants du dépôt. Plus de mot de passe à taper ;
+  un test qui échoue bloque l'envoi. Un push met le site (et la télé) en ligne : relis avant de pousser. Après un push, suis le
+  workflow (`gh run list --workflow mise-en-ligne.yml`) et compare un fichier en ligne avec le local pour confirmer.
+  Envoi à la main, si besoin : `python3 scripts/deploy_ftps.py` (le mot de passe se tape dans un terminal, jamais dans un fichier).
 - Le calendrier : la semaine en cours est le tournoi dont la date de début est aujourd'hui ou la plus récente.
 
 ## Contrôles

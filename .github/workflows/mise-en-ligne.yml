@@ -1,0 +1,46 @@
+# Met le site en ligne chez Infomaniak à chaque push sur main qui touche le dossier site/ : plus de mot de passe FTP à taper.
+#
+# Les tests passent d'abord : s'ils échouent, rien n'est envoyé. Le fichier donnees/saison.json n'est jamais envoyé ici
+# (il est tenu à jour par « Mise à jour des résultats » ; voir scripts/deploy_ftps.py). Les identifiants FTP sont ceux du dépôt.
+# « Run workflow » (onglet Actions) renvoie le site à la main.
+name: Mise en ligne du site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "scripts/deploy_ftps.py"
+      - ".github/workflows/mise-en-ligne.yml"
+  workflow_dispatch:
+
+# Un seul envoi à la fois ; si un envoi est encore en cours, le suivant attend
+concurrency:
+  group: mise-en-ligne-site
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  mise-en-ligne:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      FTP_USER: ${{ vars.FTP_USER }}
+      FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: "3.12"
+
+      - name: Installer la seule dépendance
+        run: pip install openpyxl==3.1.5
+
+      - name: Contrôles (rien n'est envoyé s'ils échouent)
+        run: python3 -m unittest discover tests
+
+      - name: Envoyer le site chez Infomaniak
+        run: python3 scripts/deploy_ftps.py
