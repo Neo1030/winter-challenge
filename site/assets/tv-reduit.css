@@ -21,3 +21,5 @@
 .reduit .tv-tile .tt { font-size: 3.4vh; }
 .reduit .tv-tile .tn { font-size: 2.8vh; }
 .reduit .tv-tile .tb { font-size: 5vh; }
+
+/* Mise en ligne automatique : ce fichier est envoyé à chaque push sur main (voir .github/workflows/mise-en-ligne.yml) */
