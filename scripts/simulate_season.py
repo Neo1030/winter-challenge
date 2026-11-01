@@ -80,6 +80,28 @@ def make_card(rng, card_id, name, course, pars, strokes, section, tee, skill, ho
     return card
 
 
+def simulate_stats(tour_id, week, cards):
+    """Statistiques de tournoi fictives au format de l'API SGT (tournaments/stats), pour les joueurs qui ont joué.
+
+    Générateur à part : les scores des cartes ne changent pas quand on modifie ces statistiques.
+    """
+    r = random.Random(f"stats-{tour_id}-{week}")
+    names = sorted({c["player_name"] for c in cards if any(c[f"hole{i}_gross"] for i in range(1, 19))})
+
+    def rows(field, low, high, digits=1, rounds=False):
+        out = []
+        for n in names:
+            row = {"user_name": n, field: round(r.uniform(low, high), digits)}
+            if rounds:
+                row["numrounds"] = 1
+            out.append(row)
+        return out
+
+    return {"drivingDistance": rows("longest_drive", 190, 290, 2, rounds=True), "drivingAccuracy": rows("fir_percent", 30, 100),
+            "greenAccuracy": rows("gir_percent", 10, 75), "girProx": rows("girProx", 8, 45, 2),
+            "feetPuttsMade": rows("putts_feet_per_round", 8, 60, 2), "puttsPerRound": rows("putts_per_round", 14, 21)}
+
+
 def simulate_tour(rng, courses, players, tour_id, label, weeks, card_start):
     """Un tour SGT fictif : players = {pseudo: handicap réel}."""
     tournaments, card_id = [], card_start
@@ -101,6 +123,7 @@ def simulate_tour(rng, courses, players, tour_id, label, weeks, card_start):
             "tournamentId": tour_id * 100 + week, "tourId": tour_id, "tourType": "CLUB", "courseName": course,
             "name": f"Semaine {week}", "status": "In Progress" if week == weeks else "Completed",
             "start_date": f"{start} 00:00:00", "end_date": f"{start + timedelta(days=6)} 00:00:00", "scorecards": cards,
+            "stats": simulate_stats(tour_id, week, cards),
         })
     return {
         "tour_id": tour_id, "label": label, "name": f"Simulation {label}", "admin": "Lets_golf",

@@ -1,8 +1,10 @@
 /* Winter Challenge Results · page pour la télévision du centre.
    Fait défiler les classements tout seul : Hommes net, Hommes brut, Femmes net, Femmes brut, Seniors net, Seniors brut,
-   puis ceux du Short Game, par pages qui remplissent tout l'écran. Lit donnees/saison.json et le relit chaque minute.
+   puis les statistiques de la semaine en cours de chaque catégorie, puis le Short Game (classements et statistiques du mois),
+   par pages qui remplissent tout l'écran. Lit donnees/saison.json et le relit chaque minute.
    Écrit pour les anciens navigateurs des lecteurs d'affichage (Zebrix…) : pas de « ?. » ni de « ?? ».
-   Réglages dans l'adresse :  tv.html?duree=15  (secondes par page, 8 par défaut)   tv.html?lignes=5  (lignes par page au maximum) */
+   Réglages dans l'adresse :  tv.html?duree=15  (secondes par page, 8 par défaut)   tv.html?lignes=5  (lignes par page au maximum)
+   tv.html?debut=stats  (commence par les statistiques, pour les vérifier sans attendre) */
 (() => {
   "use strict";
 
@@ -15,6 +17,7 @@
   const params = new URLSearchParams(location.search);
   const DURATION = Math.max(2, Number(params.get("duree")) || 8) * 1000;
   const MAX_ROWS = Number(params.get("lignes")) || 0;
+  const START_STATS = params.get("debut") === "stats";
   const REFRESH = 60 * 1000;
   const ROW_VH = 0.062;                                          // hauteur visée d'une ligne, en part de la hauteur de l'écran
 
@@ -100,6 +103,36 @@
     return Math.max(0, Math.floor((area.clientWidth - fixed) / (WEEK_COL * rowHeight())));
   };
 
+  /* ---------- Statistiques de la semaine : les cinq tuiles du site (FIR, GIR, drive, proximité GIR, putts rentrés) ---------- */
+  const dec = (n, d) => (n == null ? "–" : Number(n).toFixed(d).replace(".", ","));
+  const TILES = [
+    ["fir", "FIR", "Fairways touchés", (t) => [dec(t.valeur, 1) + " %", ""]],
+    ["gir", "GIR", "Greens en régulation", (t) => [dec(t.valeur, 1) + " %", ""]],
+    ["drive", "Distance de drive", "Le plus long drive", (t) => [dec(t.valeur, 1) + " m", t.orig == null ? "" : dec(t.orig, 2) + " yds"]],
+    ["gir_prox", "Proximité GIR", "Au plus près du drapeau, green atteint", (t) => [dec(t.valeur, 2) + " m", t.orig == null ? "" : dec(t.orig, 2) + " ft"]],
+    ["putts_faits", "Putts rentrés", "Longueur des putts rentrés", (t) => [dec(t.valeur, 2) + " m", t.orig == null ? "" : dec(t.orig, 2) + " ft"]],
+  ];
+
+  /* Semaine (ou mois) dont on montre les statistiques : le plus récent, ou à défaut la dernière qui en a */
+  function statsWeek(comp, cat) {
+    const keys = Object.keys(cat.stats || {}).map(Number).sort((a, b) => b - a);
+    if (!keys.length) return null;
+    const last = comp.semaines.length ? comp.semaines[comp.semaines.length - 1].numero : null;
+    return keys.indexOf(last) >= 0 ? last : keys[0];
+  }
+
+  function drawStats(s, comp) {
+    const names = (t) => (t ? t.joueurs.slice(0, 3).map(esc).join("<br>") + (t.joueurs.length > 3 ? "<br>+" + (t.joueurs.length - 3) : "") : "–");
+    $("#tv-title").textContent = `${comps.length > 1 ? comp.nom + " · " : ""}Statistiques ${isWC(comp) ? "de la semaine" : "du mois"} · ${comp.prefixe}${s.week}${comp.categories.length > 1 ? " · " + s.cat : ""}`;
+    $("#tv-page").textContent = "";
+    area.innerHTML = `<div class="tv-tiles">${TILES.map((def, i) => {
+      const t = s.tiles[def[0]];
+      const v = t ? def[3](t) : null;
+      return `<div class="tv-tile" style="--i:${i}"><div class="tt">${def[1]}</div><div class="th">${def[2]}</div>
+        <div class="tn">${names(t)}</div><div class="tb">${v ? v[0] : "Pas de donnée"}</div><div class="to">${v && v[1] ? v[1] : "&nbsp;"}</div></div>`;
+    }).join("")}</div>`;
+  }
+
   function buildSlides() {
     const cap = rowsFit();
     const out = [];
@@ -112,6 +145,10 @@
           const per = Math.ceil(rows.length / pages);              // pages équilibrées : 7 + 7 + 7 plutôt que 10 + 10 + 1
           for (let p = 0; p < pages; p++) out.push({ ci, comp: comp.nom, cat: c.nom, kind, page: p + 1, pages, per, rows: rows.slice(p * per, (p + 1) * per) });
         }
+      }
+      for (const c of comp.categories) {                         // puis les statistiques de la semaine en cours, une page par catégorie
+        const week = statsWeek(comp, c);
+        if (week != null) out.push({ ci, comp: comp.nom, cat: c.nom, kind: "stats", page: 1, pages: 1, week, tiles: c.stats[String(week)] });
       }
     });
     slides = out;
@@ -128,6 +165,8 @@
   function drawSlide(s) {
     const comp = comps[s.ci];
     if (shown !== comp) renderStats(comp);                       // les cartes du haut suivent la compétition du classement affiché
+    $(".tv-card").className = "tv-card" + (s.kind === "stats" ? " stats" : "");   // page de statistiques : sans la légende du classement
+    if (s.kind === "stats") { drawStats(s, comp); return; }
     const weeks = comp.semaines.map((w) => w.numero).sort((a, b) => b - a).slice(0, weeksFit(comp));
     const rowH = rowHeight();
     const multi = comp.categories.length > 1;
@@ -188,7 +227,7 @@
       renderStats(comps[0]);
       buildSlides();
       const same = here && slides.findIndex((s) => s.ci === here.ci && s.cat === here.cat && s.kind === here.kind && s.page === here.page);
-      if (first) { show(0); loop(); } else { index = same >= 0 ? same : Math.min(index, slides.length - 1); drawSlide(slides[index]); }
+      if (first) { const at = START_STATS ? slides.findIndex((s) => s.kind === "stats") : 0; show(Math.max(0, at)); loop(); } else { index = same >= 0 ? same : Math.min(index, slides.length - 1); drawSlide(slides[index]); }
     } catch (e) {
       if (first) area.innerHTML = '<div class="tv-empty">Résultats momentanément indisponibles…</div>';  // sinon, on garde l'affichage actuel
     }

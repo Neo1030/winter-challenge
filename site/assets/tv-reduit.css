@@ -15,3 +15,9 @@
 .reduit .tv-stat { padding: 1.2vh .8vw 1.3vh; }
 .reduit .tv-stat .value { font-size: 2.9vh; }
 .reduit .tv-stat .value.long { font-size: 2.4vh; }
+
+/* Statistiques de la semaine : 3 tuiles puis 2, plutôt que 5 tuiles très étroites */
+.reduit .tv-tiles { grid-template-columns: repeat(3, 1fr); gap: 1.6vh 1.5vw; }
+.reduit .tv-tile .tt { font-size: 3.4vh; }
+.reduit .tv-tile .tn { font-size: 2.8vh; }
+.reduit .tv-tile .tb { font-size: 5vh; }

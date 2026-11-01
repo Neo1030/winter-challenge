@@ -122,6 +122,10 @@ meilleur brut) et le classement, qui occupe tout le reste de l'écran.
   n'apparaît pas. Chaque classement est coupé en pages équilibrées qui remplissent l'écran (par exemple 30 hommes en 3 pages de 10,
   plutôt que 10 + 10 + 10 lignes serrées ou 10 + 10 + 1). En Full HD, une page compte une dizaine de lignes ; le nombre de lignes et
   de semaines affichées s'adapte tout seul à la taille de l'écran.
+- **Statistiques de la semaine** : après les classements d'une compétition, une page par catégorie reprend les cinq tuiles du site (FIR, GIR, distance
+  de drive, proximité GIR, putts rentrés) pour la semaine en cours (le mois en cours au Short Game). `tv.html?debut=stats` commence par ces pages.
+  Une catégorie sans statistique n'a pas de page. Les pages de la télé sont toujours revérifiées par le navigateur (`.htaccess`), et leurs fichiers
+  portent un numéro de version (`?v=3`) à augmenter quand on change `tv.js` ou les feuilles de style.
 - **Fondu** entre deux pages : le tableau s'efface, puis la nouvelle page apparaît ligne après ligne. Une barre fine en bas de la
   carte montre le temps restant avant la page suivante.
 - **Réglages dans l'adresse** : `tv.html?duree=15` (secondes par page, 8 par défaut), `tv.html?lignes=5` (5 lignes au maximum par page).

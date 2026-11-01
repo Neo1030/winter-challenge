@@ -8,6 +8,11 @@ AddDefaultCharset UTF-8
     # Une zone web de lecteur d'affichage (iframe isolée) lit le fichier comme venant d'un autre site : on l'autorise
     Header set Access-Control-Allow-Origin "*"
   </FilesMatch>
+  # Pages et fichiers de la télévision : le lecteur d'affichage vérifie toujours s'il y a une nouvelle version (sinon une ancienne
+  # feuille de style peut rester des heures avec un nouveau script)
+  <FilesMatch "\.(html|css|js)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
 </IfModule>
 
 <IfModule mod_deflate.c>

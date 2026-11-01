@@ -65,9 +65,20 @@ body { display: flex; flex-direction: column; gap: 1.5vh; padding: 1.5vh 1.8vw 1
 .tv-table tbody tr.top td.pt.counted { background: var(--counted); }
 .tv-table tbody tr.top td.pt.replace { background: var(--replace); }
 
+/* Page des statistiques de la semaine : cinq tuiles qui remplissent la carte (la légende du classement n'a pas de sens ici) */
+.tv-card.stats .tv-legend { visibility: hidden; }
+.tv-tiles { display: grid; grid-template-columns: repeat(5, 1fr); grid-auto-rows: 1fr; gap: 1.6vh 1.2vw; height: 100%; box-sizing: border-box; padding: 2.2vh 1.5vw; }
+.tv-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; min-width: 0; min-height: 0; overflow: hidden;
+  background: #fff; border: .5vh solid var(--sky); border-radius: 2.2vh; padding: 1.2vh .8vw; animation: tv-row-in .55s ease-out both; animation-delay: calc(var(--i, 0) * 90ms); }
+.tv-tile .tt { font-size: 3.8vh; font-weight: 800; color: var(--sky-ink); line-height: 1.1; }
+.tv-tile .th { font-size: 1.8vh; color: var(--ink-soft); margin-top: .5vh; min-height: 4.8vh; }   /* deux lignes : les noms restent alignés d'une tuile à l'autre */
+.tv-tile .tn { font-size: 2.9vh; font-weight: 800; text-transform: uppercase; line-height: 1.25; margin-top: 2vh; max-width: 100%; overflow-wrap: anywhere; }
+.tv-tile .tb { font-size: 5.4vh; font-weight: 900; margin-top: 1.6vh; white-space: nowrap; }
+.tv-tile .to { font-size: 2.1vh; color: var(--ink-soft); margin-top: .6vh; }
+
 .tv-empty { display: grid; place-items: center; height: 100%; font-size: 3vh; color: var(--ink-soft); }
 
-@media (prefers-reduced-motion: reduce) { .tv-table tbody tr { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .tv-table tbody tr, .tv-tile { animation: none; } }
 
 /* Diagnostic : tv.html?debug=1 affiche les erreurs et le navigateur en bas de l'écran */
 #tv-debug { position: fixed; left: 0; right: 0; bottom: 0; z-index: 9; margin: 0; padding: 6px 10px; background: #001c33; color: #fff; font: 14px/1.3 monospace; white-space: pre-wrap; }
