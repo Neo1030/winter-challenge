@@ -47,7 +47,7 @@
     const weeks = c.semaines;
     const week = weeks[weeks.length - 1];
     const pc = c.parcours_semaine;
-    const upcoming = pc && week && pc.semaine > week.numero;
+    const upcoming = pc && week && pc.semaine === week.numero + 1;   // jamais plus loin que la semaine suivante
     const course = upcoming ? pc.nom : week ? week.parcours : "–";
     const place = pc && week && (upcoming || pc.semaine === week.numero) ? pc.lieu : "";
     const multi = c.categories.length > 1;

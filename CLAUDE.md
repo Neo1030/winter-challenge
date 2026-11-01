@@ -66,7 +66,11 @@ conversation. **S'il manque une information, demande-la avant d'écrire quoi que
   un test qui échoue bloque l'envoi. Un push met le site (et la télé) en ligne : relis avant de pousser. Après un push, suis le
   workflow (`gh run list --workflow mise-en-ligne.yml`) et compare un fichier en ligne avec le local pour confirmer.
   Envoi à la main, si besoin : `python3 scripts/deploy_ftps.py` (le mot de passe se tape dans un terminal, jamais dans un fichier).
-- Le calendrier : la semaine en cours est le tournoi dont la date de début est aujourd'hui ou la plus récente.
+- **Le calendrier vient uniquement de SGT** (décision de Mike, 01.11.2026) : les dates sont celles des tournois saisis par le
+  capitaine, jamais des dates choisies ici. Semaine en cours = le tournoi dont la date de début est aujourd'hui ou la plus récente ;
+  WC1, WC2… = l'ordre des dates de début. Le site et la télé n'affichent que la semaine en cours et, au plus, le parcours de la
+  semaine suivante : jamais plus loin. Fin affichée d'une semaine = veille du début du tournoi suivant (chez SGT, les tournois
+  restent ouverts jusqu'en fin de saison).
 
 ## Contrôles
 

@@ -71,7 +71,7 @@
     let next = entries.find((e) => e.statut === "a_venir");
     const lastNo = Math.max(0, ...entries.filter((e) => e.statut !== "a_venir").map((e) => e.semaine));
     const chosen = data.parcours_semaine;  // parcours choisi par le capitaine, pas encore créé chez SGT
-    if (!next && chosen && chosen.semaine > lastNo) next = { ...chosen, statut: "a_venir", depart: null, reglages: null };
+    if (!next && chosen && chosen.semaine === lastNo + 1) next = { ...chosen, statut: "a_venir", depart: null, reglages: null };
     return { current, next, history: entries.filter((e) => e.statut === "terminee").sort((a, b) => b.semaine - a.semaine) };
   }
 
