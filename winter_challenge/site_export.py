@@ -202,6 +202,7 @@ def _competition(season: Season, nom: str, prefixe: str, next_course: dict | Non
     return {
         "nom": nom,
         "prefixe": prefixe,
+        "meilleurs": season.best_n,      # nombre de résultats comptés au classement (8 au Winter Challenge, 5 au Short Game)
         "brut_seul": season.gross_only,  # Short Game : seulement le classement brut, sans handicap
         "categories": [{"nom": c, "classement": {kind: _ranking_rows(season, c, kind)
                                                   for kind in (("brut",) if season.gross_only else ("net", "brut"))},

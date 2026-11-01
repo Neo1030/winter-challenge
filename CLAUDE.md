@@ -16,6 +16,8 @@ Réponds en français, en tutoyant, ton concret. Francs suisses (CHF), dates JJ.
 - **Il n'y a aucun score net, aucun classement net et aucun calcul de handicap pour le Short Game.** Ni sur le site, ni sur la
   page télé, ni dans les données. Ne les remets jamais, même « pour compléter » ou pour une démonstration.
 - Chez SGT, toute inscription à un tournoi du Short Game se fait avec le handicap **0**.
+- Le Short Game dure **5 mois, avec 5 parcours** (un tournoi par mois) et **les 5 résultats comptent tous** au classement : aucun résultat
+  n'est « à remplacer » (`BRUT_SEUL = {"Short Game": 5}` dans scripts/export_site_data.py ; indicateur `meilleurs` dans saison.json).
 - Le Short Game est un tour mixte (`Mixte`, tour 3909) : pas de découpage Hommes / Femmes / Seniors, le fichier des handicaps
   réels ne s'y applique pas.
 - Dans le code : `build_season(..., gross_only=True)` (winter_challenge/season.py), constante `BRUT_SEUL` dans
@@ -30,6 +32,8 @@ Réponds en français, en tutoyant, ton concret. Francs suisses (CHF), dates JJ.
 - Le handicap de jeu bouge à la fin de chaque semaine (+1 sous 100 points nets, sinon − (points − 100) / 10).
 - Les handicaps réels sont dans `config/joueurs.csv` (`pseudo;categorie;handicap_reel`), lu par la mise à jour automatique.
 - Chez SGT, l'inscription aux tournois du Winter Challenge se fait avec le handicap **réel**.
+- Le capitaine se réserve le droit de **déplacer le tee de départ** des joueurs en haut du classement si l'écart devient trop important
+  (règle affichée sur la page Règles du site).
 - Classement final : somme des 8 meilleurs résultats. Points : 100 + (Stableford − 36) × 10 sur 18 trous (− 18 sur 9), minimum 30.
 
 ## Inscrire des joueurs (skill `inscrire-joueurs`)

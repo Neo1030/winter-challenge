@@ -36,6 +36,7 @@
   /* Short Game : brut seulement, handicap de 0 pour tous. Pas de classement net, pas de handicap à afficher. */
   const grossOnly = () => !!data.brut_seul;
   const kind = () => (grossOnly() ? "brut" : state.kind);
+  const bestN = () => data.meilleurs || data.regles.meilleurs;   // résultats comptés : 8 au Winter Challenge, 5 au Short Game (tous)
 
   /* ---------- Routage : #/classement?cat=Femmes&kind=brut ---------- */
   function parseHash() {
@@ -112,7 +113,7 @@
       </section>
 
       <h2>Classement ${kind() === "net" ? "net Stableford" : "brut"}</h2>
-      <p class="sub">Les ${data.regles.meilleurs} meilleurs résultats de la saison comptent. Touche un joueur pour voir sa fiche.</p>
+      <p class="sub">${grossOnly() ? `Tes ${bestN()} résultats (un par mois) comptent tous.` : `Les ${bestN()} meilleurs résultats de la saison comptent.`} Touche un joueur pour voir sa fiche.</p>
       <div class="toolbar">
         ${grossOnly() ? "" : `<div class="seg" role="group" aria-label="Type de classement">
           <button type="button" data-kind="net" aria-pressed="${state.kind === "net"}">Net</button>
@@ -204,7 +205,7 @@
             return `<td class="pt ${cls}">${p}</td>`;
           }).join("")}</tr>`).join("")}</tbody></table></div>
       <div class="legend"><span><i style="background:var(--counted)"></i>Résultat compté</span>
-        <span><i style="background:var(--replace)"></i>Premier à être remplacé</span>${grossOnly() ? "<span>Tout le monde joue à 0 : pas de handicap</span>" : "<span>Hdc : handicap de jeu actuel</span>"}</div>`;
+        ${grossOnly() ? "" : '<span><i style="background:var(--replace)"></i>Premier à être remplacé</span>'}${grossOnly() ? "<span>Tout le monde joue à 0 : pas de handicap</span>" : "<span>Hdc : handicap de jeu actuel</span>"}</div>`;
     bindPlayers();
   }
 
@@ -306,7 +307,7 @@
             <text x="${cx}" y="${H - 8}" text-anchor="middle">${weeks.length > 10 && i % 2 ? "" : P() + w.semaine}</text>
           </g>`; }).join("")}
       </svg><div class="tip" role="status"></div></div>
-      <div class="legend"><span><i class="k-counted"></i>Compte</span><span><i class="k-replace"></i>Premier remplacé</span><span><i class="k-other"></i>Ne compte pas</span><span>Ligne : 100 points</span></div>`;
+      <div class="legend"><span><i class="k-counted"></i>Compte</span>${grossOnly() ? "" : '<span><i class="k-replace"></i>Premier remplacé</span>'}<span><i class="k-other"></i>Ne compte pas</span><span>Ligne : 100 points</span></div>`;
   }
 
   /* Statistiques de jeu (longest drive, nearest to the pin, fairways, greens, putts), en mètres.
@@ -512,23 +513,25 @@
   function viewRules() {
     const r = data.regles;
     const wc = comps[0], others = comps.slice(1);
-    const cats = raw.categories.map((c) => `<strong>${esc(c.nom)}</strong>`).join(", ");
+    const catNames = ["Hommes", "Femmes", "Seniors"];
+    raw.categories.forEach((c) => { if (catNames.indexOf(c.nom) < 0) catNames.push(c.nom); });   // toutes les catégories, même sans joueur pour l'instant
+    const cats = catNames.map((n) => `<strong>${esc(n)}</strong>`).join(", ");
     const rule = (title, html) => `<div class="card rule"><h3>${title}</h3><p>${html}</p></div>`;
-    const short = (c) => [
-      rule(`Un mois, un parcours`, `Le ${esc(c.nom)} est un tournoi par mois sur Simulator Golf Tour (${esc(c.prefixe)}1, ${esc(c.prefixe)}2…), sur ses propres parcours. Tu es inscrit d'office, en même temps que dans le ${esc(wc.nom)}.`),
+    const short = (c) => { const n = c.meilleurs || r.meilleurs; return [
+      rule(`${n} mois, ${n} parcours`, `Le ${esc(c.nom)} dure <strong>${n} mois</strong> : un tournoi par mois sur Simulator Golf Tour (${esc(c.prefixe)}1 à ${esc(c.prefixe)}${n}), sur <strong>${n} parcours</strong> différents, propres au ${esc(c.nom)}. Tu es inscrit d'office, en même temps que dans le ${esc(wc.nom)}.`),
       rule(`Un seul tour par mois`, `Comme au ${esc(wc.nom)}, tu n'as droit qu'à <strong>un seul tour</strong> par tournoi : pas de seconde chance.`),
       c.brut_seul
         ? rule(`Brut seulement, sans handicap`, `<strong>Tout le monde joue avec un handicap de 0</strong>, sans exception. Il n'y a donc ni classement net, ni handicap de jeu à suivre : seul compte ton score brut.`)
         : rule(`Net et brut`, `Le ${esc(c.nom)} a un classement net et un classement brut, comme le ${esc(wc.nom)}.`),
-      rule(`Un seul classement pour tous`, `${c.brut_seul ? "Hommes, Femmes et Seniors jouent ensemble : " : ""}il y a un seul classement${c.categories.length > 1 ? " par catégorie" : ""}. Les points se calculent comme au ${esc(wc.nom)} (Stableford, 100 points de référence), et seuls tes <strong>${r.meilleurs} meilleurs résultats</strong> comptent.`),
-    ].join("");
+      rule(`Un seul classement pour tous`, `${c.brut_seul ? "Hommes, Femmes et Seniors jouent ensemble : " : ""}il y a un seul classement${c.categories.length > 1 ? " par catégorie" : ""}. Les points se calculent comme au ${esc(wc.nom)} (Stableford, 100 points de référence), et <strong>tes ${n} résultats comptent tous</strong> au classement : pas de résultat à remplacer.`),
+    ].join(""); };
     app.innerHTML = `<h2>Règles</h2>
       <p class="sub">Tout ce qu'il faut savoir pour jouer. Les joueurs sont inscrits à la fois au ${esc(wc.nom)} et ${others.length ? "au " + others.map((c) => esc(c.nom)).join(" et au ") : "aux autres compétitions"}.</p>
 
       <section class="grid stats" aria-label="Les règles en bref">
         <div class="card stat"><div class="label">Essais</div><div class="value">1 seul tour</div><div class="note">par tournoi, sans seconde chance</div></div>
         <div class="card stat"><div class="label">Format</div><div class="value">9 trous</div><div class="note">sur le parcours du tournoi</div></div>
-        <div class="card stat"><div class="label">Classement</div><div class="value">${r.meilleurs} meilleurs</div><div class="note">résultats de la saison</div></div>
+        <div class="card stat"><div class="label">Classement</div><div class="value">${r.meilleurs} meilleurs</div><div class="note">résultats au ${esc(wc.nom)}${others.map((c) => ` · les ${c.meilleurs || r.meilleurs} au ${esc(c.nom)}`).join("")}</div></div>
         <div class="card stat"><div class="label">Compétitions</div><div class="value">${comps.length}</div><div class="note">${comps.map((c) => esc(c.nom)).join(" · ")}</div></div>
       </section>
 
@@ -547,6 +550,7 @@
 
       <h3 class="rules-title">Pour jouer</h3>
       <div class="rules">
+        ${rule("Le tee de départ", "Le capitaine se réserve le droit de <strong>déplacer le tee de départ</strong> des joueurs en haut du classement, si l'écart avec les autres devient trop important.")}
         ${rule("Ton compte", "Ton pseudo est ton nom d'utilisateur Simulator Golf Tour, le même dans GSPro : c'est lui qui apparaît ici. Pour choisir ou changer ton mot de passe, utilise « mot de passe oublié » sur simulatorgolftour.com avec l'adresse e-mail de ton inscription.")}
         ${rule("Où jouer", "Sur les simulateurs du Let's Golf, à Bussigny, avec GSPro : ton tour est envoyé tout seul au tournoi de Simulator Golf Tour.")}
         ${rule("Les statistiques", "Sous chaque classement, cinq tuiles donnent le meilleur de la semaine : fairways touchés (FIR), greens en régulation (GIR), plus long drive, proximité du drapeau et putts rentrés. Ta fiche joueur garde les tiennes.")}

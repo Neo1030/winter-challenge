@@ -282,6 +282,8 @@ def rank_category(season: Season, category: str, kind: str) -> list:
     for p in players:
         d = pts.get(p.name, {})
         counted, replaced = counted_and_replaced(d, season.best_n)
+        if season.gross_only:
+            replaced = None  # tous les résultats comptent (Short Game : 5 mois, 5 résultats) : rien à remplacer
         evolution = None
         if ranks_before and p.name in ranks_now:
             evolution = ranks_before[p.name] - ranks_now[p.name] if p.name in ranks_before else "Nouveau"

@@ -43,8 +43,9 @@ def next_course_from_config(path=parcours.NEXT_FILE):
         return parcours.site_course(json.load(f))
 
 
-# Compétitions jouées en brut seulement : handicap de 0 pour tous, ni classement net ni calcul de handicap (voir CLAUDE.md)
-BRUT_SEUL = {"Short Game"}
+# Compétitions jouées en brut seulement : handicap de 0 pour tous, ni classement net ni calcul de handicap (voir CLAUDE.md).
+# La valeur est le nombre de résultats comptés au classement : le Short Game dure 5 mois et les 5 comptent tous.
+BRUT_SEUL = {"Short Game": 5}
 COMPETITIONS = {"Winter Challenge": "WC", "Short Game": "SG"}  # préfixe des semaines ; une autre compétition prend ses initiales
 
 
@@ -120,7 +121,8 @@ def main():
     groups = {}
     for tour in tours:
         groups.setdefault(tour.get("competition") or "Winter Challenge", []).append(tour)
-    seasons = {name: build_season(group, overrides, today=today, gross_only=name in BRUT_SEUL) for name, group in groups.items()}
+    seasons = {name: build_season(group, overrides, best_n=BRUT_SEUL.get(name, 8), today=today, gross_only=name in BRUT_SEUL)
+               for name, group in groups.items()}
     season = seasons.pop("Winter Challenge", None)
     if season is None:
         sys.exit("Il faut au moins un tour du Winter Challenge (sans nom de compétition).")

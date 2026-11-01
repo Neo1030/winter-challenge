@@ -156,6 +156,13 @@ class GrossOnlyTest(unittest.TestCase):
             self.assertEqual(a.result.hcp_before, 0)
             self.assertEqual(a.result.stableford_net, a.result.stableford_gross)  # handicap 0 : net = brut
 
+    def test_tous_les_resultats_comptent_rien_a_remplacer(self):
+        t = [tournament(i, 1 + 7 * (i - 1), [card("Ana", [3] * 9)]) for i in (1, 2)]
+        s = build_season(tour(t, label="Mixte"), best_n=2, today=date(2026, 11, 20), gross_only=True)
+        row = s.rankings[("Mixte", "brut")][0]
+        self.assertEqual(row.counted_weeks, {1, 2})
+        self.assertIsNone(row.replaced_week)   # au Winter Challenge, avec 2 résultats sur 2, le plus petit serait « à remplacer »
+
     def test_un_seul_classement_le_brut_et_une_seule_categorie(self):
         self.assertEqual({p.category for p in self.season.players}, {"Mixte"})
         self.assertEqual(list(self.season.rankings), [("Mixte", "brut")])

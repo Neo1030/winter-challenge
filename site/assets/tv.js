@@ -165,7 +165,7 @@
   function drawSlide(s) {
     const comp = comps[s.ci];
     if (shown !== comp) renderStats(comp);                       // les cartes du haut suivent la compétition du classement affiché
-    $(".tv-card").className = "tv-card" + (s.kind === "stats" ? " stats" : "");   // page de statistiques : sans la légende du classement
+    $(".tv-card").className = "tv-card" + (s.kind === "stats" ? " stats" : "") + (comp.brut_seul ? " no-replace" : "");   // page de statistiques : sans la légende du classement
     if (s.kind === "stats") { drawStats(s, comp); return; }
     const weeks = comp.semaines.map((w) => w.numero).sort((a, b) => b - a).slice(0, weeksFit(comp));
     const rowH = rowHeight();
