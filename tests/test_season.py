@@ -137,3 +137,26 @@ class CalendrierTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class GrossOnlyTest(unittest.TestCase):
+    """Short Game : brut seulement, handicap de 0 pour tous, jamais de calcul de handicap (voir CLAUDE.md)."""
+
+    def setUp(self):
+        t1 = tournament(1, 1, [card("Ana", [3] * 9), card("Bob", [7] * 9)])
+        t2 = tournament(2, 8, [card("Ana", [6] * 9), card("Bob", [3] * 9)], status="In Progress")
+        # le fichier joueurs voudrait mettre Ana chez les Femmes avec un handicap de 20 : le Short Game l'ignore
+        overrides = {"ana": {"category": "Femmes", "real_hcp": 20.0}}
+        self.season = build_season(tour([t1, t2], label="Mixte"), overrides, today=date(2026, 11, 10), gross_only=True)
+
+    def test_personne_n_a_de_handicap_et_il_ne_bouge_jamais(self):
+        self.assertTrue(self.season.gross_only)
+        for p in self.season.players:
+            self.assertEqual((p.start_hcp, p.current_hcp, p.real_hcp), (0, 0, None))
+        for a in self.season.best.values():
+            self.assertEqual(a.result.hcp_before, 0)
+            self.assertEqual(a.result.stableford_net, a.result.stableford_gross)  # handicap 0 : net = brut
+
+    def test_un_seul_classement_le_brut_et_une_seule_categorie(self):
+        self.assertEqual({p.category for p in self.season.players}, {"Mixte"})
+        self.assertEqual(list(self.season.rankings), [("Mixte", "brut")])
+

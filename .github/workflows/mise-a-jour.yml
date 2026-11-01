@@ -20,7 +20,7 @@ on:
         default: false
   push:
     branches: [main]
-    paths: [config/prochain_parcours.json]   # nouveau parcours choisi : on met le site à jour tout de suite
+    paths: [config/prochain_parcours.json, config/joueurs.csv]   # nouveau parcours ou nouveaux joueurs : on met le site à jour tout de suite
 
 # Un seul envoi à la fois ; si un envoi est encore en cours, le suivant attend
 concurrency:
@@ -70,6 +70,8 @@ jobs:
           args=()
           for tour in $SGT_TOURS; do args+=(--tour "$tour"); done
           [ ${#args[@]} -gt 0 ] || { echo "SGT_TOURS est vide (variable de dépôt)"; exit 1; }
+          # handicaps réels des joueurs (50 % = handicap de départ) : fichier tenu à jour par scripts/inscrire_joueurs.py
+          [ ! -f config/joueurs.csv ] || args+=(--joueurs config/joueurs.csv)
           python3 scripts/export_site_data.py "${args[@]}"
 
       - name: Envoyer chez Infomaniak (seulement si les résultats ont changé)

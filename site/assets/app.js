@@ -33,6 +33,9 @@
     return u;
   };
   const P = () => data.prefixe;
+  /* Short Game : brut seulement, handicap de 0 pour tous. Pas de classement net, pas de handicap à afficher. */
+  const grossOnly = () => !!data.brut_seul;
+  const kind = () => (grossOnly() ? "brut" : state.kind);
 
   /* ---------- Routage : #/classement?cat=Femmes&kind=brut ---------- */
   function parseHash() {
@@ -87,12 +90,12 @@
     const cats = data.categories;
     if (!cats.length) { app.innerHTML = noPlayers(); bindComp("classement"); return; }
     state.cat = cats.some((c) => c.nom === (params.cat || state.cat)) ? params.cat || state.cat : cats[0].nom;
-    state.kind = (params.kind || state.kind) === "brut" ? "brut" : "net";
+    if (!grossOnly()) state.kind = (params.kind || state.kind) === "brut" ? "brut" : "net";   // le Short Game reste en brut sans toucher au choix du Winter Challenge
     const week = latestWeek();
     const { current, next } = courseState();
     const course = current ? current.nom : week && week.parcours;
     const u = unit();
-    const leaders = cats.map((c) => c.classement[state.kind][0]).filter((r) => r && r.rang);
+    const leaders = cats.map((c) => c.classement[kind()][0]).filter((r) => r && r.rang);
 
     app.innerHTML = `${compBar()}
       <section class="grid stats" aria-label="En bref">
@@ -103,18 +106,18 @@
           <div class="note"><a href="#/parcours${state.comp === "wc" ? "" : "?comp=" + state.comp}">${next ? `Ensuite : ${esc(next.nom)}` : "Voir la fiche du parcours"}</a></div></div>
         <div class="card stat"><div class="label">Joueurs</div><div class="value">${data.joueurs.length}</div>
           <div class="note">${u.count(data.semaines.length)} ${u.played[data.semaines.length > 1 ? 1 : 0]}</div></div>
-        <div class="card stat"><div class="label">Meilleur ${state.kind === "net" ? "net" : "brut"}</div>
+        <div class="card stat"><div class="label">Meilleur ${kind() === "net" ? "net" : "brut"}</div>
           <div class="value">${leaders.length ? esc(leaders.sort((a, b) => b.total - a.total)[0].joueur) : "–"}</div>
           <div class="note">${leaders.length ? num(leaders[0].total) + " points" : "Pas encore de résultat"}</div></div>
       </section>
 
-      <h2>Classement ${state.kind === "net" ? "net Stableford" : "brut"}</h2>
+      <h2>Classement ${kind() === "net" ? "net Stableford" : "brut"}</h2>
       <p class="sub">Les ${data.regles.meilleurs} meilleurs résultats de la saison comptent. Touche un joueur pour voir sa fiche.</p>
       <div class="toolbar">
-        <div class="seg" role="group" aria-label="Type de classement">
+        ${grossOnly() ? "" : `<div class="seg" role="group" aria-label="Type de classement">
           <button type="button" data-kind="net" aria-pressed="${state.kind === "net"}">Net</button>
           <button type="button" data-kind="brut" aria-pressed="${state.kind === "brut"}">Brut</button>
-        </div>
+        </div>`}
         ${cats.length > 1 ? `<div class="chips" role="group" aria-label="Catégorie">${cats.map((c) =>
           `<button type="button" data-cat="${esc(c.nom)}" aria-pressed="${c.nom === state.cat}">${esc(c.nom)}</button>`).join("")}</div>` : ""}
         <input class="search" id="q" type="search" placeholder="Chercher un joueur" aria-label="Chercher un joueur" value="${esc(state.q)}">
@@ -172,7 +175,7 @@
 
   function drawRanking() {
     const cat = data.categories.find((c) => c.nom === state.cat);
-    const all = cat.classement[state.kind];
+    const all = cat.classement[kind()];
     const q = state.q.trim().toLowerCase();
     const rows = q ? all.filter((r) => r.joueur.toLowerCase().includes(q)) : all;
     const weeks = weekNumbersDesc();
@@ -181,19 +184,19 @@
     $("#podium").innerHTML = !q && top.length >= 3 ? `<div class="grid podium">${top.map((r, i) => `
       <div class="card pod p${i + 1}"><button type="button" data-player="${esc(r.joueur)}">
         <div class="medal">${r.rang}</div><div class="name">${nm(r.joueur)}</div>
-        <div class="pts">${num(r.total)}</div><div class="meta">${unit().count(r.nb_semaines)} · hdc ${r.hdc_actuel}</div></button></div>`).join("")}</div>` : "";
+        <div class="pts">${num(r.total)}</div><div class="meta">${unit().count(r.nb_semaines)}${grossOnly() ? "" : ` · hdc ${r.hdc_actuel}`}</div></button></div>`).join("")}</div>` : "";
 
     if (!rows.length) { $("#ranking").innerHTML = `<p class="empty">Aucun joueur ne correspond à « ${esc(state.q)} ».</p>`; bindPlayers(); return; }
 
     $("#ranking").innerHTML = `
       <div class="table-wrap"><table>
-        <caption class="sr">Classement ${state.kind === "net" ? "net" : "brut"} ${esc(state.cat)}</caption>
+        <caption class="sr">Classement ${kind() === "net" ? "net" : "brut"} ${esc(state.cat)}</caption>
         <thead><tr><th class="sticky-1" scope="col">#</th><th class="sticky-2 name" scope="col">Joueur</th><th scope="col">Évol.</th>
-          <th scope="col">Hdc</th><th scope="col">Total</th>${weeks.map((w) => `<th scope="col">${P()}${w}</th>`).join("")}</tr></thead>
+          ${grossOnly() ? "" : '<th scope="col">Hdc</th>'}<th scope="col">Total</th>${weeks.map((w) => `<th scope="col">${P()}${w}</th>`).join("")}</tr></thead>
         <tbody>${rows.map((r) => `<tr data-player="${esc(r.joueur)}">
           <td class="sticky-1 rank">${r.rang ?? "–"}</td>
           <td class="sticky-2 name"><button type="button" data-player="${esc(r.joueur)}">${nm(r.joueur)}</button><small>${unit().count(r.nb_semaines)}</small></td>
-          <td>${evo(r.evolution)}</td><td>${r.hdc_actuel}</td><td class="total">${num(r.total)}</td>
+          <td>${evo(r.evolution)}</td>${grossOnly() ? "" : `<td>${r.hdc_actuel}</td>`}<td class="total">${num(r.total)}</td>
           ${weeks.map((w) => {
             const p = r.points[String(w)];
             if (p == null) return '<td class="pt none">·</td>';
@@ -201,7 +204,7 @@
             return `<td class="pt ${cls}">${p}</td>`;
           }).join("")}</tr>`).join("")}</tbody></table></div>
       <div class="legend"><span><i style="background:var(--counted)"></i>Résultat compté</span>
-        <span><i style="background:var(--replace)"></i>Premier à être remplacé</span><span>Hdc : handicap de jeu actuel</span></div>`;
+        <span><i style="background:var(--replace)"></i>Premier à être remplacé</span>${grossOnly() ? "<span>Tout le monde joue à 0 : pas de handicap</span>" : "<span>Hdc : handicap de jeu actuel</span>"}</div>`;
     bindPlayers();
   }
 
@@ -280,23 +283,26 @@
     const weeks = [...p.semaines].sort((a, b) => a.semaine - b.semaine);
     if (!weeks.length) return "";
     const W = 360, H = 200, pad = { l: 30, r: 10, t: 16, b: 28 };
-    const maxV = Math.max(130, ...weeks.map((w) => w.points_net));
+    const pts = grossOnly() ? "points_brut" : "points_net";   // les points du classement affiché
+    const maxV = Math.max(130, ...weeks.map((w) => w[pts]));
     const slot = (W - pad.l - pad.r) / weeks.length, bw = Math.min(34, slot * 0.64);
     const y = (v) => pad.t + ((maxV - v) * (H - pad.t - pad.b)) / maxV;
     const base = H - pad.b;
     const kindOf = (w) => (row && w.semaine === row.a_remplacer ? "replace" : row && row.comptees.includes(w.semaine) ? "counted" : "other");
     const KIND_TXT = { counted: "Compte dans le classement", replace: "Compte, mais sera le premier remplacé", other: "Ne compte pas (hors des meilleurs résultats)" };
-    const tipOf = (w) => `<b>${P()}${w.semaine} · ${esc(w.parcours)}</b><br>Score : ${w.coups_brut} coups (${sign(w.coups_brut - w.par)} par) · net ${w.coups_net}<br>Stableford : ${w.stableford_net} net · ${w.stableford_brut} brut<br>Points : <b>${w.points_net} net</b> · ${w.points_brut} brut<br><i>${KIND_TXT[kindOf(w)]}</i>`;
+    const tipOf = (w) => grossOnly()
+      ? `<b>${P()}${w.semaine} · ${esc(w.parcours)}</b><br>Score : ${w.coups_brut} coups (${sign(w.coups_brut - w.par)} par)<br>Stableford : ${w.stableford_brut}<br>Points : <b>${w.points_brut}</b><br><i>${KIND_TXT[kindOf(w)]}</i>`
+      : `<b>${P()}${w.semaine} · ${esc(w.parcours)}</b><br>Score : ${w.coups_brut} coups (${sign(w.coups_brut - w.par)} par) · net ${w.coups_net}<br>Stableford : ${w.stableford_net} net · ${w.stableford_brut} brut<br>Points : <b>${w.points_net} net</b> · ${w.points_brut} brut<br><i>${KIND_TXT[kindOf(w)]}</i>`;
     const showValues = slot >= 24;
     return `<div class="chart">
-      <svg viewBox="0 0 ${W} ${H}" role="group" aria-label="Points nets par ${unit().cap}">
+      <svg viewBox="0 0 ${W} ${H}" role="group" aria-label="Points ${grossOnly() ? "bruts" : "nets"} par ${unit().cap}">
         <line class="ref" x1="${pad.l}" x2="${W - pad.r}" y1="${y(100)}" y2="${y(100)}"/>
         <text x="4" y="${y(100) + 4}">100</text><text x="4" y="${base + 4}">0</text>
         ${weeks.map((w, i) => { const cx = pad.l + slot * i + slot / 2, t = tipOf(w); return `
           <g class="bar ${kindOf(w)}" tabindex="0" role="img" aria-label="${esc(plain(t))}" data-tip="${esc(t)}">
             <rect class="hit" x="${cx - slot / 2}" y="${pad.t}" width="${slot}" height="${base - pad.t}"/>
-            <rect class="fill" x="${cx - bw / 2}" y="${y(w.points_net)}" width="${bw}" height="${Math.max(2, base - y(w.points_net))}" rx="4"/>
-            ${showValues ? `<text class="val" x="${cx}" y="${y(w.points_net) - 4}" text-anchor="middle">${w.points_net}</text>` : ""}
+            <rect class="fill" x="${cx - bw / 2}" y="${y(w[pts])}" width="${bw}" height="${Math.max(2, base - y(w[pts]))}" rx="4"/>
+            ${showValues ? `<text class="val" x="${cx}" y="${y(w[pts]) - 4}" text-anchor="middle">${w[pts]}</text>` : ""}
             <text x="${cx}" y="${H - 8}" text-anchor="middle">${weeks.length > 10 && i % 2 ? "" : P() + w.semaine}</text>
           </g>`; }).join("")}
       </svg><div class="tip" role="status"></div></div>
@@ -345,26 +351,31 @@
     const p = data.joueurs.find((j) => j.joueur === name);
     if (!p) return;
     const cat = data.categories.find((c) => c.nom === p.categorie);
-    const size = (kind) => cat.classement[kind].filter((r) => r.rang).length;
-    const row = cat.classement.net.find((r) => r.joueur === p.joueur);
+    const size = (k) => cat.classement[k].filter((r) => r.rang).length;
+    const row = cat.classement[kind()].find((r) => r.joueur === p.joueur);
     const weeks = [...p.semaines].sort((a, b) => b.semaine - a.semaine);
     dialog.innerHTML = `
       <div class="dlg-head"><h2 id="player-name">${esc(p.joueur)}</h2><p>${esc(p.categorie)}</p>
         <button type="button" class="dlg-close" aria-label="Fermer">×</button></div>
       <div class="dlg-body">
         <div class="kpis">
-          <div class="fact"><div class="label">Rang net</div><div class="value">${p.rang_net ?? "–"}</div><div class="note">${num(p.total_net)} pts sur ${size("net")} classés</div></div>
+          ${grossOnly() ? `<div class="fact"><div class="label">Rang brut</div><div class="value">${p.rang_brut ?? "–"}</div><div class="note">${num(p.total_brut)} pts sur ${size("brut")} classés</div></div>`
+            : `<div class="fact"><div class="label">Rang net</div><div class="value">${p.rang_net ?? "–"}</div><div class="note">${num(p.total_net)} pts sur ${size("net")} classés</div></div>
           <div class="fact"><div class="label">Rang brut</div><div class="value">${p.rang_brut ?? "–"}</div><div class="note">${num(p.total_brut)} pts</div></div>
-          <div class="fact"><div class="label">Handicap de jeu</div><div class="value">${p.hdc_actuel}</div><div class="note">au départ : ${p.hdc_depart}</div></div>
+          <div class="fact"><div class="label">Handicap de jeu</div><div class="value">${p.hdc_actuel}</div><div class="note">au départ : ${p.hdc_depart}</div></div>`}
         </div>
         ${p.semaines.length ? `
         <section><h3>Points par partie</h3>${chartScores(p, row)}</section>
-        <section><h3>Évolution du handicap</h3>${chartHandicap(p)}</section>
+        ${grossOnly() ? "" : `<section><h3>Évolution du handicap</h3>${chartHandicap(p)}</section>`}
         <div class="table-wrap"><table class="mini-table"><caption class="sr">Résultats retenus par ${unit().cap}</caption>
-          <thead><tr><th scope="col">${unit().short}</th><th class="name" scope="col">Parcours</th><th scope="col">Score</th><th scope="col">Stab. net</th><th scope="col">Pts net</th><th scope="col">Pts brut</th><th scope="col">Hdc</th></tr></thead>
+          ${grossOnly()
+            ? `<thead><tr><th scope="col">${unit().short}</th><th class="name" scope="col">Parcours</th><th scope="col">Score</th><th scope="col">Stableford</th><th scope="col">Points</th></tr></thead>
+          <tbody>${weeks.map((w) => `<tr><td>${P()}${w.semaine}</td><td class="name">${esc(w.parcours)}</td>
+            <td>${w.coups_brut} <small>(${sign(w.coups_brut - w.par)})</small></td><td>${w.stableford_brut}</td><td><b>${w.points_brut}</b></td></tr>`).join("")}</tbody>`
+            : `<thead><tr><th scope="col">${unit().short}</th><th class="name" scope="col">Parcours</th><th scope="col">Score</th><th scope="col">Stab. net</th><th scope="col">Pts net</th><th scope="col">Pts brut</th><th scope="col">Hdc</th></tr></thead>
           <tbody>${weeks.map((w) => `<tr><td>${P()}${w.semaine}</td><td class="name">${esc(w.parcours)}</td>
             <td>${w.coups_brut} <small>(${sign(w.coups_brut - w.par)})</small></td><td>${w.stableford_net}</td>
-            <td><b>${w.points_net}</b></td><td>${w.points_brut}</td><td>${w.hdc_avant} → ${w.hdc_apres}</td></tr>`).join("")}</tbody></table></div>`
+            <td><b>${w.points_net}</b></td><td>${w.points_brut}</td><td>${w.hdc_avant} → ${w.hdc_apres}</td></tr>`).join("")}</tbody>`}</table></div>`
         : '<p class="empty">Pas encore de résultat pour ce joueur.</p>'}
         ${sectionStats(p)}
       </div>`;
@@ -470,8 +481,9 @@
           <header><span class="no">${P()}${w.numero}</span><span class="badge ${w.statut === "en_cours" ? "live-badge" : ""}">${w.statut === "en_cours" ? "En cours" : "Terminée"}</span></header>
           <div class="course-name">${esc(w.parcours)}</div><div class="dates">${dates(w)}</div>
           <dl>${w.categories.map((c) => `<dt>${esc(c.categorie)} · ${pl(c.joueurs, "joueur")}</dt>
-            <dd>${c.meilleur_net.stableford == null ? "Pas de résultat" :
-              `Net ${c.meilleur_net.stableford} (${esc(c.meilleur_net.joueurs.join(", "))}) · Brut ${c.meilleur_brut.stableford} (${esc(c.meilleur_brut.joueurs.join(", "))})`}</dd>`).join("")}</dl>
+            <dd>${c.meilleur_brut.stableford == null ? "Pas de résultat" : grossOnly()
+              ? `Brut ${c.meilleur_brut.stableford} (${esc(c.meilleur_brut.joueurs.join(", "))})`
+              : `Net ${c.meilleur_net.stableford} (${esc(c.meilleur_net.joueurs.join(", "))}) · Brut ${c.meilleur_brut.stableford} (${esc(c.meilleur_brut.joueurs.join(", "))})`}</dd>`).join("")}</dl>
           <div class="mini">${STATS.map(([k, label]) => `<span><b>${totals[k]}</b> ${label}</span>`).join("")}</div>
         </article>`;
       }).join("")}</div>`;
@@ -487,8 +499,8 @@
       const q = $("#pq").value.trim().toLowerCase();
       const list = data.joueurs.filter((j) => j.joueur.toLowerCase().includes(q));
       $("#plist").innerHTML = list.length ? list.map((j) => `<button type="button" class="card pcard" data-player="${esc(j.joueur)}">
-        <span><span class="n">${nm(j.joueur)}</span><br><span class="c">${esc(j.categorie)} · hdc ${j.hdc_actuel}</span></span>
-        <span class="r">${j.rang_net ? "#" + j.rang_net : "–"}</span></button>`).join("") : '<p class="empty">Aucun joueur.</p>';
+        <span><span class="n">${nm(j.joueur)}</span><br><span class="c">${esc(j.categorie)}${grossOnly() ? "" : ` · hdc ${j.hdc_actuel}`}</span></span>
+        <span class="r">${(grossOnly() ? j.rang_brut : j.rang_net) ? "#" + (grossOnly() ? j.rang_brut : j.rang_net) : "–"}</span></button>`).join("") : '<p class="empty">Aucun joueur.</p>';
       bindPlayers();
     };
     $("#pq").addEventListener("input", draw);
@@ -507,7 +519,9 @@
         <div class="card rule"><h3>Le classement final</h3><p>Seuls tes <strong>${r.meilleurs} meilleurs résultats</strong> de la saison comptent. Dans le tableau, ils sont en vert, et le plus petit d'entre eux est en rouge : c'est le premier que tu remplaceras si tu fais mieux.</p></div>
         <div class="card rule"><h3>Le handicap de jeu</h3><p>Il part de la moitié de ton handicap réel. À la fin de chaque semaine, il monte de 1 si tu fais moins de 100 points nets, sinon il baisse d'un point par tranche de 10 points au-dessus de 100.</p></div>
         <div class="card rule"><h3>Les catégories</h3><p>${raw.categories.map((c) => `<strong>${esc(c.nom)}</strong>`).join(", ")} : chaque catégorie a son propre classement, en net et en brut.</p></div>
-        ${comps.slice(1).map((c) => `<div class="card rule"><h3>${esc(c.nom)}</h3><p>Le ${esc(c.nom)} a son propre classement, en net et en brut, et ses propres parcours : un tournoi par mois sur Simulator Golf Tour (${esc(c.prefixe)}1, ${esc(c.prefixe)}2…). Les points, le handicap et les ${raw.regles.meilleurs} meilleurs résultats se calculent comme pour le Winter Challenge.</p></div>`).join("")}
+        ${comps.slice(1).map((c) => `<div class="card rule"><h3>${esc(c.nom)}</h3><p>${c.brut_seul
+            ? `Le ${esc(c.nom)} a son propre classement, <strong>en brut seulement</strong> : tout le monde joue avec un handicap de 0, sans classement net ni handicap de jeu. Il a ses propres parcours : un tournoi par mois sur Simulator Golf Tour (${esc(c.prefixe)}1, ${esc(c.prefixe)}2…). Les points et les ${raw.regles.meilleurs} meilleurs résultats se calculent comme pour le Winter Challenge.`
+            : `Le ${esc(c.nom)} a son propre classement, en net et en brut, et ses propres parcours : un tournoi par mois sur Simulator Golf Tour (${esc(c.prefixe)}1, ${esc(c.prefixe)}2…). Les points, le handicap et les ${raw.regles.meilleurs} meilleurs résultats se calculent comme pour le Winter Challenge.`}</p></div>`).join("")}
       </div>`;
   }
 

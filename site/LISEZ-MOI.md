@@ -7,6 +7,7 @@ résultats par semaine et fiches joueurs. Aucun outil de compilation, aucune bas
 site/
 ├── index.html            le site des joueurs (menu, classements, parcours, fiches)
 ├── tv.html               la page pour la télévision du centre (Winter Challenge Results)
+├── tvreduit.html         la même page pour une zone d'écran de 1229 × 1080 (même script, en-tête du classement sur deux lignes)
 ├── .htaccess             réglages Apache (le fichier de données n'est jamais gardé en cache)
 ├── assets/
 │   ├── style.css         l'apparence (couleurs en tête de fichier)
@@ -141,6 +142,8 @@ meilleur brut) et le classement, qui occupe tout le reste de l'écran.
   meilleur de la catégorie pour la semaine choisie. Les données viennent de `tournaments/stats` (les ex æquo sont tous cités).
 - **Compétitions** : le Winter Challenge et le Short Game (un tournoi par mois, SG1, SG2… : le site et la TV parlent de « mois ») ont chacun leur onglet de choix en haut des pages
   Classement, Parcours, Semaines et Joueurs.
+- **Short Game : brut seulement** : tout le monde y joue avec un handicap de 0. Le site et la page télé n'ont donc ni classement net, ni colonne
+  « Hdc », ni graphique de handicap, ni carte « Meilleur net » pour le Short Game (indicateur `brut_seul` dans `saison.json`).
 - **La semaine en cours** se juge aux dates de **début** des tournois, pas à leur statut ni à leur date de fin : chez SGT, tous les
   tournois restent « In Progress » (on rattrape jusqu'en mars). La semaine en cours est celle qui a commencé aujourd'hui, ou la plus
   récente avant aujourd'hui (heure de Suisse). Sa **date de fin affichée** est la veille du début du tournoi suivant (ce qui gère

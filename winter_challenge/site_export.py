@@ -22,12 +22,16 @@ def _evolution(value):
 
 
 def _ranking_rows(season: Season, category: str, kind: str) -> list:
-    return [{
+    rows = [{
         "rang": r.rank, "evolution": _evolution(r.evolution), "joueur": r.player, "hdc_depart": r.start_hcp,
         "hdc_actuel": r.current_hcp, "nb_semaines": r.nb_weeks, "total": r.total,
         "points": {str(w): p for w, p in sorted(r.points.items())},
         "comptees": sorted(r.counted_weeks), "a_remplacer": r.replaced_week,
     } for r in season.rankings[(category, kind)]]
+    if season.gross_only:  # pas de handicap en brut seulement
+        for row in rows:
+            del row["hdc_depart"], row["hdc_actuel"]
+    return rows
 
 
 def _week_summaries(season: Season) -> list:
@@ -43,7 +47,7 @@ def _week_summaries(season: Season) -> list:
             attempts = [a for a in season.attempts if a.week == number and a.category == w.category]
             retained = [a for (cat, _, wk), a in season.best.items() if wk == number and cat == w.category]
             entry = {"categorie": w.category, "joueurs": len({a.player for a in attempts})}
-            for kind, field in (("brut", "stableford_gross"), ("net", "stableford_net")):
+            for kind, field in ((("brut", "stableford_gross"),) if season.gross_only else (("brut", "stableford_gross"), ("net", "stableford_net"))):
                 best = max((getattr(a.result, field) for a in retained), default=None)
                 who = sorted(a.player for a in retained if getattr(a.result, field) == best) if retained else []
                 entry[f"meilleur_{kind}"] = {"stableford": best, "joueurs": who}
@@ -106,20 +110,23 @@ def _players(season: Season) -> list:
             a = season.best[(p.category, p.name, number)]
             r = a.result
             par = sum(par for score, par in zip(a.scores, a.pars) if score)  # par des trous réellement joués
-            weeks.append({"semaine": number, "parcours": a.course, "trous": a.holes_played, "par": par,
-                          "coups_brut": r.gross_total, "coups_net": r.net_total,
-                          "points_net": r.points_net, "points_brut": r.points_gross,
-                          "stableford_net": r.stableford_net, "stableford_brut": r.stableford_gross,
-                          "hdc_avant": r.hcp_before, "hdc_apres": int(r.hcp_after)})
-            history.append({"semaine": number, "hdc": int(r.hcp_after)})
-        ranks = {kind: next((r for r in season.rankings[(p.category, kind)] if r.player == p.name), None)
-                 for kind in ("net", "brut")}
-        out.append({
-            "joueur": p.name, "categorie": p.category, "hdc_depart": p.start_hcp, "hdc_actuel": p.current_hcp,
-            "rang_net": ranks["net"].rank if ranks["net"] else None, "total_net": ranks["net"].total if ranks["net"] else 0,
-            "rang_brut": ranks["brut"].rank if ranks["brut"] else None, "total_brut": ranks["brut"].total if ranks["brut"] else 0,
-            "semaines": weeks, "hdc_historique": history, "stats": _player_stats(season, p.name),
-        })
+            week = {"semaine": number, "parcours": a.course, "trous": a.holes_played, "par": par,
+                    "coups_brut": r.gross_total, "points_brut": r.points_gross, "stableford_brut": r.stableford_gross}
+            if not season.gross_only:  # en brut seulement, ni net ni handicap
+                week.update({"coups_net": r.net_total, "points_net": r.points_net, "stableford_net": r.stableford_net,
+                             "hdc_avant": r.hcp_before, "hdc_apres": int(r.hcp_after)})
+                history.append({"semaine": number, "hdc": int(r.hcp_after)})
+            weeks.append(week)
+        kinds = ("brut",) if season.gross_only else ("net", "brut")
+        ranks = {kind: next((r for r in season.rankings[(p.category, kind)] if r.player == p.name), None) for kind in kinds}
+        entry = {"joueur": p.name, "categorie": p.category}
+        for kind in kinds:
+            entry[f"rang_{kind}"] = ranks[kind].rank if ranks[kind] else None
+            entry[f"total_{kind}"] = ranks[kind].total if ranks[kind] else 0
+        if not season.gross_only:
+            entry.update({"hdc_depart": p.start_hcp, "hdc_actuel": p.current_hcp, "hdc_historique": history})
+        entry.update({"semaines": weeks, "stats": _player_stats(season, p.name)})
+        out.append(entry)
     return out
 
 
@@ -195,8 +202,9 @@ def _competition(season: Season, nom: str, prefixe: str, next_course: dict | Non
     return {
         "nom": nom,
         "prefixe": prefixe,
-        "categories": [{"nom": c, "classement": {"net": _ranking_rows(season, c, "net"),
-                                                  "brut": _ranking_rows(season, c, "brut")},
+        "brut_seul": season.gross_only,  # Short Game : seulement le classement brut, sans handicap
+        "categories": [{"nom": c, "classement": {kind: _ranking_rows(season, c, kind)
+                                                  for kind in (("brut",) if season.gross_only else ("net", "brut"))},
                         "stats": _leaders(season, c)} for c in categories],
         "semaines": _week_summaries(season),
         "joueurs": _players(season),

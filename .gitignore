@@ -6,6 +6,8 @@ data/
 *.xlsm
 *.xlsx
 *.csv
+# sauf les handicaps réels (pseudo, catégorie, handicap : ni nom ni e-mail), lus par la mise à jour automatique
+!config/joueurs.csv
 
 # Données générées pour le site (régénérées par scripts/export_site_data.py)
 site/donnees/

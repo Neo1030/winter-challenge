@@ -1,0 +1,17 @@
+/* Winter Challenge Results · page télé réduite (tvreduit.html), pour une zone d'écran de 1229 × 1080
+   S'ajoute à tv.css (même code, même script) : seul l'en-tête du classement change, car titre, légende et numéro de page
+   ne tiennent plus côte à côte dans une zone aussi étroite. Les tailles restent en vh / vw : la page remplit sa zone. */
+
+/* Titre sur une première ligne, légende et numéro de page sur une seconde : la hauteur de l'en-tête est la même sur toutes
+   les pages (sinon les lignes du tableau changeraient de taille d'une page à l'autre) */
+.reduit .tv-title { flex-direction: column; align-items: stretch; justify-content: center; gap: .5vh; padding: 1vh 1.5vw .9vh; }
+.reduit .tv-title h1 { font-size: 2.7vh; overflow: hidden; text-overflow: ellipsis; }
+.reduit .tv-title .meta { justify-content: space-between; gap: 1.5vw; font-size: 1.7vh; min-height: 2.2vh; }
+.reduit .tv-legend i { width: 1.6vh; height: 1.6vh; }
+.reduit #tv-page { font-size: 1.9vh; }
+
+/* Cartes : un peu plus serrées pour que les noms tiennent sans trop se réduire */
+.reduit .tv-stats { gap: .9vw; }
+.reduit .tv-stat { padding: 1.2vh .8vw 1.3vh; }
+.reduit .tv-stat .value { font-size: 2.9vh; }
+.reduit .tv-stat .value.long { font-size: 2.4vh; }

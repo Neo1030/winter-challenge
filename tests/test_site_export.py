@@ -66,5 +66,41 @@ class SiteExportTest(unittest.TestCase):
         self.assertNotIn("Admin", text)  # le compte administrateur n'est pas un joueur
 
 
+class SiteExportBrutSeulTest(unittest.TestCase):
+    """Short Game : aucune trace de net ni de handicap dans les données du site."""
+
+    def setUp(self):
+        t1 = tournament(1, 1, [card("Ana", [3] * 9), card("Bob", [6] * 9)])
+        season = build_season(tour([t1], label="Mixte"), today=TODAY, gross_only=True)
+        self.data = build_site_data(season, "2026-2027", now=NOW)
+
+    def test_pas_de_net_ni_de_handicap(self):
+        self.assertTrue(self.data["brut_seul"])
+        cat = self.data["categories"][0]
+        self.assertEqual(list(cat["classement"]), ["brut"])
+        self.assertEqual(cat["classement"]["brut"][0]["joueur"], "Ana")
+        self.assertNotIn("hdc_actuel", cat["classement"]["brut"][0])
+        def keys(node):
+            if isinstance(node, dict):
+                for k, v in node.items():
+                    yield k
+                    yield from keys(v)
+            elif isinstance(node, list):
+                for v in node:
+                    yield from keys(v)
+        self.assertEqual([k for k in keys(self.data) if "net" in k or "hdc" in k], [])
+        ana = next(j for j in self.data["joueurs"] if j["joueur"] == "Ana")
+        self.assertEqual(ana["rang_brut"], 1)
+        self.assertNotIn("rang_net", ana)
+        self.assertNotIn("points_net", ana["semaines"][0])
+        self.assertNotIn("meilleur_net", self.data["semaines"][0]["categories"][0])
+
+    def test_le_winter_challenge_garde_le_net(self):
+        t1 = tournament(1, 1, [card("Ana", [3] * 9), card("Bob", [6] * 9)])
+        data = build_site_data(build_season(tour([t1]), today=TODAY), "2026-2027", now=NOW)
+        self.assertFalse(data["brut_seul"])
+        self.assertEqual(sorted(data["categories"][0]["classement"]), ["brut", "net"])
+
+
 if __name__ == "__main__":
     unittest.main()

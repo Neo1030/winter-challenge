@@ -23,8 +23,9 @@ python3 scripts/build_workbook.py --tour 3901:Test --saison 2026-2027 --sortie W
 ```
 
 - `--tour ID:Catégorie` : un tour SGT par catégorie, à répéter (Hommes, Femmes, Seniors…).
-- `--joueurs fichier.csv` : fichier optionnel `pseudo;categorie;handicap_reel` pour imposer catégorie et handicap
-  de départ. Sans lui, le handicap fixé par le club dans SGT est utilisé, puis l'index SGT.
+- `--joueurs fichier.csv` : fichier `pseudo;categorie;handicap_reel` (celui du dépôt est `config/joueurs.csv`, tenu à jour par
+  `scripts/inscrire_joueurs.py`) pour imposer catégorie et handicap réel ; le handicap de jeu de départ en est la moitié. Sans lui, le handicap
+  fixé par le club dans SGT est utilisé, sinon tout le monde part à 0 (l'index SGT n'est plus utilisé).
 - `--depuis-fichier data/sgt_brut.json` : refait le classeur sans appeler l'API (les données du dernier appel sont
   enregistrées dans `data/sgt_brut.json`).
 
@@ -46,10 +47,27 @@ python3 scripts/parcours_sgt.py liste --difficulte moyen --style montagne --zone
 python3 scripts/parcours_sgt.py choisir 1416 --semaine 3 --neuf Front
 ```
 
+## Short Game : brut seulement
+
+Le Short Game se joue avec un handicap de 0 pour tous : pas de classement net, pas de calcul de handicap (ni dans le calcul, ni sur le
+site, ni sur la page télé). Voir `CLAUDE.md`.
+
+## Inscrire des joueurs
+
+Le skill `inscrire-joueurs` (dossier `.claude/skills/`) inscrit des joueurs à partir d'un fichier Excel ou d'un texte : pseudo, e-mail,
+prénom, nom, handicap réel, catégorie (Homme, Femme ou Senior), tous obligatoires. Chaque joueur est inscrit au Short Game et au tour de
+sa catégorie.
+
+```bash
+python3 scripts/inscrire_joueurs.py --fichier inscriptions.xlsx --simuler   # contrôle, n'écrit rien
+python3 scripts/inscrire_joueurs.py --fichier inscriptions.xlsx             # inscrit pour de bon
+python3 scripts/inscrire_joueurs.py --completer --simuler                   # membres à inscrire aux nouveaux tournois
+```
+
 ## Site web des résultats
 
 Le dossier `site/` contient le site pour winterchallenge.letsgolf.ch (classements, parcours de la semaine, semaines,
-fiches joueurs) et la page `tv.html` pour la télévision du centre (classements qui défilent tout seuls). C'est un site statique, sans base de données ni compilation, alimenté par `site/donnees/saison.json`
+fiches joueurs) et les pages `tv.html` et `tvreduit.html` (zone de 1229 × 1080) pour la télévision du centre (classements qui défilent tout seuls). C'est un site statique, sans base de données ni compilation, alimenté par `site/donnees/saison.json`
 que génère `scripts/export_site_data.py`. Voir [site/LISEZ-MOI.md](site/LISEZ-MOI.md) pour le voir en local, le mettre à jour
 et le mettre en ligne chez Infomaniak.
 

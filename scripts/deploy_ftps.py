@@ -2,6 +2,7 @@
 
 Usage :
   python3 scripts/deploy_ftps.py                 # demande le mot de passe au clavier (jamais écrit nulle part)
+  python3 scripts/deploy_ftps.py --avec-donnees  # envoi complet, y compris donnees/saison.json (normalement tenu à jour par GitHub)
   python3 scripts/deploy_ftps.py --essai         # liste ce qui serait envoyé, sans rien envoyer
   python3 scripts/deploy_ftps.py --donnees-seules  # envoie seulement donnees/saison.json (mise à jour des résultats)
   python3 scripts/deploy_ftps.py --donnees-seules --si-change   # idem, mais seulement si les résultats ont changé en ligne
@@ -31,10 +32,13 @@ SITE = ROOT / "site"
 SKIP = {".DS_Store", "LISEZ-MOI.md"}   # fichiers qui n'ont rien à faire en ligne
 
 
-def files_to_send(only_data):
+def files_to_send(only_data, with_data=False):
+    data = SITE / "donnees" / "saison.json"
     if only_data:
-        return [SITE / "donnees" / "saison.json"]
-    return sorted(p for p in SITE.rglob("*") if p.is_file() and p.name not in SKIP)
+        return [data]
+    # Les résultats en ligne sont tenus à jour par GitHub : l'envoi complet ne les écrase pas avec la copie de cet ordinateur,
+    # souvent en retard (sinon des joueurs et des semaines disparaissent du site jusqu'à la prochaine mise à jour).
+    return sorted(p for p in SITE.rglob("*") if p.is_file() and p.name not in SKIP and (with_data or p != data))
 
 
 def unchanged_online(url):
@@ -66,11 +70,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--essai", action="store_true")
     parser.add_argument("--donnees-seules", action="store_true")
+    parser.add_argument("--avec-donnees", action="store_true", help="l'envoi complet envoie aussi donnees/saison.json")
     parser.add_argument("--si-change", action="store_true", help="n'envoie rien si les résultats en ligne sont déjà à jour")
     args = parser.parse_args()
 
     load_env()
-    files = files_to_send(args.donnees_seules)
+    files = files_to_send(args.donnees_seules, args.avec_donnees)
     if args.essai:
         for p in files:
             print(p.relative_to(SITE))

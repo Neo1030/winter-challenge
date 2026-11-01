@@ -90,6 +90,7 @@ class Season:
     best_n: int
     stats: dict = field(default_factory=dict)  # (catégorie, semaine) -> statistiques du tournoi (voir stats.py)
     labels: list = field(default_factory=list)  # catégories des tours, même sans joueur ni tournoi pour l'instant
+    gross_only: bool = False  # Short Game : brut seulement, handicap 0 pour tous, ni classement net ni calcul de handicap
 
 
 def section_of(scores) -> str:
@@ -99,19 +100,25 @@ def section_of(scores) -> str:
 
 
 def starting_handicap(member: dict, override: dict | None) -> tuple[float | None, str]:
-    """Handicap réel de départ : fichier joueurs d'abord, puis handicap fixé par le club dans SGT, puis index SGT."""
+    """Handicap réel de départ : fichier joueurs d'abord, puis handicap fixé par le club dans SGT.
+
+    Sans les deux, pas de handicap réel : le handicap de jeu de départ est 0 pour tous (décision de Mike, 29.10.2026).
+    L'index SGT n'est plus utilisé : il bouge avec les tours joués hors du Challenge.
+    """
     if override and override.get("real_hcp") is not None:
         return override["real_hcp"], "Fichier joueurs"
     if member.get("custom_hcp") is not None:
         return float(member["custom_hcp"]), "SGT (fixé par le club)"
-    if member.get("hcp_index") is not None:
-        return float(member["hcp_index"]), "SGT (index)"
-    return None, "Inconnu"
+    return None, "Départ à 0 pour tous"
 
 
-def build_players(tours: list, overrides: dict | None = None) -> list:
-    """Un joueur par membre des tours (hors compte administrateur du club), plus ceux qui ont un scorecard."""
-    overrides = overrides or {}
+def build_players(tours: list, overrides: dict | None = None, gross_only: bool = False) -> list:
+    """Un joueur par membre des tours (hors compte administrateur du club), plus ceux qui ont un scorecard.
+
+    En brut seulement (Short Game), personne n'a de handicap, et la catégorie est celle du tour (« Mixte ») : le fichier
+    joueurs ne sert pas, sinon le Short Game serait coupé en Hommes, Femmes et Seniors.
+    """
+    overrides = {} if gross_only else (overrides or {})
     players = {}
     for tour in tours:
         admin = tour.get("admin")
@@ -123,6 +130,9 @@ def build_players(tours: list, overrides: dict | None = None) -> list:
             if name in players:
                 continue
             override = overrides.get(name.lower())
+            if gross_only:
+                players[name] = Player(name, tour["label"], None, 0, "Brut seulement : pas de handicap", 0)
+                continue
             real, source = starting_handicap(member, override)
             category = (override or {}).get("category") or tour["label"]
             start = game_handicap(real) if real is not None else 0
@@ -159,9 +169,12 @@ def schedule_weeks(weeks: list, today: date) -> None:
             w.phase = "en_cours"
 
 
-def build_season(tours: list, overrides: dict | None = None, best_n: int = 8, today: date | None = None) -> Season:
+def build_season(tours: list, overrides: dict | None = None, best_n: int = 8, today: date | None = None,
+                 gross_only: bool = False) -> Season:
+    """gross_only : Short Game. Tout le monde joue avec un handicap de 0, le handicap ne bouge jamais, et il n'y a que le
+    classement brut (le net serait identique, donc inutile)."""
     today = today or datetime.now(ZoneInfo("Europe/Zurich")).date()
-    players = build_players(tours, overrides)
+    players = build_players(tours, overrides, gross_only)
     by_name = {p.name: p for p in players}
     weeks, attempts, best, stats = [], [], {}, {}
 
@@ -204,7 +217,8 @@ def build_season(tours: list, overrides: dict | None = None, best_n: int = 8, to
                 if chosen:
                     chosen.status = STATUS_RETAINED
                     best[(player.category, name, number)] = chosen
-                    player.current_hcp = int(chosen.result.hcp_after)
+                    if not gross_only:
+                        player.current_hcp = int(chosen.result.hcp_after)
 
     reference = {}
     for tour_weeks in tour_weeks_by_tour:
@@ -215,9 +229,9 @@ def build_season(tours: list, overrides: dict | None = None, best_n: int = 8, to
             if w.number in reference:
                 w.phase = reference[w.number].phase
 
-    season = Season(players, weeks, attempts, best, {}, best_n, stats, [t["label"] for t in tours])
+    season = Season(players, weeks, attempts, best, {}, best_n, stats, [t["label"] for t in tours], gross_only)
     for category in dict.fromkeys(p.category for p in players):
-        for kind in ("net", "brut"):
+        for kind in (("brut",) if gross_only else ("net", "brut")):
             season.rankings[(category, kind)] = rank_category(season, category, kind)
     return season
 

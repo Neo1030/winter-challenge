@@ -33,7 +33,7 @@
   function leader(c, kind) {
     let best = null;
     for (const cat of c.categories) {
-      const r = cat.classement[kind].find((x) => x.rang === 1);
+      const r = (cat.classement[kind] || []).find((x) => x.rang === 1);
       if (r && (!best || r.total > best.total)) best = { name: r.joueur, total: r.total, cat: cat.nom };
     }
     return best;
@@ -53,16 +53,19 @@
       const b = leader(c, kind);
       return b ? [esc(b.name), `${multi ? esc(b.cat) + " · " : ""}${num(b.total)} points`] : ["–", "Pas encore de résultat"];
     };
-    const [netName, netNote] = best("net");
     const [brutName, brutNote] = best("brut");
     const cards = [
       [isWC(c) ? "Semaine" : "Mois", week ? `${c.prefixe}${week.numero}${week.statut === "en_cours" ? ' <span class="live">en cours</span>' : ""}` : "–",
         week ? (week.fin <= week.debut ? `le ${day(week.debut)}` : `du ${day(week.debut)} au ${day(week.fin)}`) : ""],
       [upcoming ? "Prochain parcours" : "Parcours", esc(course), esc(place)],
       ["Joueurs", c.joueurs.length, `${weeks.length} ${weeks.length > 1 && word === "semaine" ? "semaines" : word} ${(isWC(c) ? ["jouée", "jouées"] : ["joué", "joués"])[weeks.length > 1 ? 1 : 0]}`],
-      ["Meilleur net", netName, netNote],
-      ["Meilleur brut", brutName, brutNote],
     ];
+    if (!c.brut_seul) {                                          // Short Game : brut seulement, pas de carte « Meilleur net »
+      const [netName, netNote] = best("net");
+      cards.push(["Meilleur net", netName, netNote]);
+    }
+    cards.push(["Meilleur brut", brutName, brutNote]);
+    $("#tv-stats").style.gridTemplateColumns = "repeat(" + cards.length + ", 1fr)";
     $("#tv-stats").innerHTML = cards.map(([label, value, note]) =>
       `<div class="tv-stat"><div class="label">${label}</div><div class="value${String(value).replace(/<[^>]+>/g, "").length > 16 ? " long" : ""}">${value}</div><div class="note">${note || "&nbsp;"}</div></div>`).join("");
     $("#tv-demo").hidden = !data.demo;
@@ -89,9 +92,11 @@
   /* Largeurs des colonnes en multiples de la hauteur de ligne : le tableau garde les mêmes proportions sur un écran 16:9
      comme sur une zone plus carrée (par exemple 1229 × 1080) ; seul le nombre de semaines affichées change */
   const COLS = [1.1, 1.25, 4.2, 1.1, 1.5];                       // rang, évolution, joueur, handicap, total
+  const COLS_NO_HDC = [1.1, 1.25, 4.2, 1.5];                     // Short Game : pas de handicap
+  const colsOf = (comp) => (comp.brut_seul ? COLS_NO_HDC : COLS);
   const WEEK_COL = 0.95;                                         // une colonne de semaine
-  const weeksFit = () => {
-    const fixed = COLS.reduce((a, b) => a + b, 0) * rowHeight();
+  const weeksFit = (comp) => {
+    const fixed = colsOf(comp).reduce((a, b) => a + b, 0) * rowHeight();
     return Math.max(0, Math.floor((area.clientWidth - fixed) / (WEEK_COL * rowHeight())));
   };
 
@@ -101,7 +106,7 @@
     comps.forEach((comp, ci) => {
       for (const c of comp.categories) {
         for (const kind of ["net", "brut"]) {
-          const rows = c.classement[kind].filter((r) => r.rang);
+          const rows = (c.classement[kind] || []).filter((r) => r.rang);   // pas de classement net au Short Game
           if (!rows.length) continue;
           const pages = Math.ceil(rows.length / cap);
           const per = Math.ceil(rows.length / pages);              // pages équilibrées : 7 + 7 + 7 plutôt que 10 + 10 + 1
@@ -123,18 +128,18 @@
   function drawSlide(s) {
     const comp = comps[s.ci];
     if (shown !== comp) renderStats(comp);                       // les cartes du haut suivent la compétition du classement affiché
-    const weeks = comp.semaines.map((w) => w.numero).sort((a, b) => b - a).slice(0, weeksFit());
+    const weeks = comp.semaines.map((w) => w.numero).sort((a, b) => b - a).slice(0, weeksFit(comp));
     const rowH = rowHeight();
     const multi = comp.categories.length > 1;
     $("#tv-title").textContent = `${comps.length > 1 ? comp.nom + " · " : ""}Classement ${s.kind === "net" ? "net Stableford" : "brut"}${multi ? " · " + s.cat : ""}`;
     $("#tv-page").textContent = s.pages > 1 ? `Page ${s.page} / ${s.pages}` : "";
     area.innerHTML = `<table class="tv-table" style="--row-h:${rowH}px">
-      <colgroup>${COLS.map((w) => `<col style="width:${(w * rowH).toFixed(1)}px">`).join("")}${weeks.map(() => "<col>").join("")}</colgroup>
-      <thead><tr><th scope="col">#</th><th scope="col">Évol.</th><th class="name" scope="col">Joueur</th><th scope="col">Hdc</th><th scope="col">Total</th>
+      <colgroup>${colsOf(comp).map((w) => `<col style="width:${(w * rowH).toFixed(1)}px">`).join("")}${weeks.map(() => "<col>").join("")}</colgroup>
+      <thead><tr><th scope="col">#</th><th scope="col">Évol.</th><th class="name" scope="col">Joueur</th>${comp.brut_seul ? "" : '<th scope="col">Hdc</th>'}<th scope="col">Total</th>
         ${weeks.map((w) => `<th class="wk" scope="col">${comp.prefixe}${w}</th>`).join("")}</tr></thead>
       <tbody>${s.rows.map((r, i) => `<tr class="${r.rang <= 3 ? "top" : ""}" style="--i:${i}">
         <td class="rank ${r.rang <= 3 ? "r" + r.rang : ""}"><span>${r.rang}</span></td><td>${evo(r.evolution)}</td>
-        <td class="name"><span class="nm">${esc(r.joueur)}</span></td><td>${r.hdc_actuel}</td><td class="total">${num(r.total)}</td>
+        <td class="name"><span class="nm">${esc(r.joueur)}</span></td>${comp.brut_seul ? "" : `<td>${r.hdc_actuel}</td>`}<td class="total">${num(r.total)}</td>
         ${weeks.map((w) => {
           const p = r.points[String(w)];
           if (p == null) return '<td class="pt none">·</td>';
