@@ -110,7 +110,7 @@
     ["gir", "GIR", "Greens en régulation", (t) => [dec(t.valeur, 1) + " %", ""]],
     ["drive", "Longest drive", "Le plus long drive", (t) => [dec(t.valeur, 1) + " m", t.orig == null ? "" : dec(t.orig, 2) + " yds"]],
     ["gir_prox", "Closest to the pin", "Distance moyenne au drapeau, green atteint", (t) => [dec(t.valeur, 2) + " m", t.orig == null ? "" : dec(t.orig, 2) + " ft"]],
-    ["putts_faits", "Distance de putt total", "Longueur totale des putts rentrés", (t) => [dec(t.valeur, 2) + " m", t.orig == null ? "" : dec(t.orig, 2) + " ft"]],
+    ["putts_faits", "Total putt length", "Longueur totale des putts rentrés", (t) => [dec(t.valeur, 2) + " m", t.orig == null ? "" : dec(t.orig, 2) + " ft"]],
   ];
   /* Short Game (petit jeu, sans drive) : ni fairways touchés ni longest drive */
   const SHORT_GAME_TILES = ["gir", "gir_prox", "putts_faits"];

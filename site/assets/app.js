@@ -141,7 +141,7 @@
     ["gir", "GIR", "Greens en régulation", (t) => ({ big: dec(t.valeur, 1) + " %" })],
     ["drive", "Longest drive", "Le plus long drive", (t) => ({ big: dec(t.valeur, 1) + " m", small: t.orig == null ? "" : dec(t.orig, 2) + " yds" })],
     ["gir_prox", "Closest to the pin", "Distance moyenne au drapeau, green atteint en régulation", (t) => ({ big: dec(t.valeur, 2) + " m", small: t.orig == null ? "" : dec(t.orig, 2) + " ft" })],
-    ["putts_faits", "Distance de putt total", "Longueur totale des putts rentrés, par tour", (t) => ({ big: dec(t.valeur, 2) + " m", small: t.orig == null ? "" : dec(t.orig, 2) + " ft" })],
+    ["putts_faits", "Total putt length", "Longueur totale des putts rentrés, par tour", (t) => ({ big: dec(t.valeur, 2) + " m", small: t.orig == null ? "" : dec(t.orig, 2) + " ft" })],
   ];
   /* Short Game (petit jeu, sans drive) : ni fairways touchés ni longest drive */
   const SHORT_GAME_TILES = ["gir", "gir_prox", "putts_faits"];
@@ -173,7 +173,7 @@
       }).join("")}</div>
       <p class="hint">Le meilleur de chaque statistique parmi les joueurs de la catégorie ${esc(state.cat)}, pour ${esc(P())}${state.tw}.
         Closest to the pin : distance moyenne au drapeau quand le green est atteint en régulation (le plus petit gagne).
-        Distance de putt total : longueur totale des putts rentrés par tour. Distances en mètres, valeur d'origine de SGT en dessous.</p>`;
+        Total putt length : longueur totale des putts rentrés par tour. Distances en mètres, valeur d'origine de SGT en dessous.</p>`;
     $("#tw").addEventListener("change", (e) => { state.tw = Number(e.target.value); drawTiles(); });
   }
 
