@@ -108,10 +108,13 @@
   const TILES = [
     ["fir", "FIR", "Fairways touchés", (t) => [dec(t.valeur, 1) + " %", ""]],
     ["gir", "GIR", "Greens en régulation", (t) => [dec(t.valeur, 1) + " %", ""]],
-    ["drive", "Distance de drive", "Le plus long drive", (t) => [dec(t.valeur, 1) + " m", t.orig == null ? "" : dec(t.orig, 2) + " yds"]],
-    ["gir_prox", "Proximité GIR", "Au plus près du drapeau, green atteint", (t) => [dec(t.valeur, 2) + " m", t.orig == null ? "" : dec(t.orig, 2) + " ft"]],
-    ["putts_faits", "Putts rentrés", "Longueur des putts rentrés", (t) => [dec(t.valeur, 2) + " m", t.orig == null ? "" : dec(t.orig, 2) + " ft"]],
+    ["drive", "Longest drive", "Le plus long drive", (t) => [dec(t.valeur, 1) + " m", t.orig == null ? "" : dec(t.orig, 2) + " yds"]],
+    ["gir_prox", "Closest to the pin", "Distance moyenne au drapeau, green atteint", (t) => [dec(t.valeur, 2) + " m", t.orig == null ? "" : dec(t.orig, 2) + " ft"]],
+    ["putts_faits", "Distance de putt total", "Longueur totale des putts rentrés", (t) => [dec(t.valeur, 2) + " m", t.orig == null ? "" : dec(t.orig, 2) + " ft"]],
   ];
+  /* Short Game (petit jeu, sans drive) : ni fairways touchés ni longest drive */
+  const SHORT_GAME_TILES = ["gir", "gir_prox", "putts_faits"];
+  const tilesOf = (comp) => (comp.prefixe === "SG" ? TILES.filter((t) => SHORT_GAME_TILES.indexOf(t[0]) >= 0) : TILES);
 
   /* Semaine (ou mois) dont on montre les statistiques : le plus récent, ou à défaut la dernière qui en a */
   function statsWeek(comp, cat) {
@@ -125,7 +128,8 @@
     const names = (t) => (t ? t.joueurs.slice(0, 3).map(esc).join("<br>") + (t.joueurs.length > 3 ? "<br>+" + (t.joueurs.length - 3) : "") : "–");
     $("#tv-title").textContent = `${comps.length > 1 ? comp.nom + " · " : ""}Statistiques ${isWC(comp) ? "de la semaine" : "du mois"} · ${comp.prefixe}${s.week}${comp.categories.length > 1 ? " · " + s.cat : ""}`;
     $("#tv-page").textContent = "";
-    area.innerHTML = `<div class="tv-tiles">${TILES.map((def, i) => {
+    const defs = tilesOf(comp);
+    area.innerHTML = `<div class="tv-tiles${defs.length === 3 ? " n3" : ""}">${defs.map((def, i) => {
       const t = s.tiles[def[0]];
       const v = t ? def[3](t) : null;
       return `<div class="tv-tile" style="--i:${i}"><div class="tt">${def[1]}</div><div class="th">${def[2]}</div>

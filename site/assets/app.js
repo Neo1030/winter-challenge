@@ -139,10 +139,13 @@
   const TILES = [
     ["fir", "FIR", "Fairways touchés", (t) => ({ big: dec(t.valeur, 1) + " %" })],
     ["gir", "GIR", "Greens en régulation", (t) => ({ big: dec(t.valeur, 1) + " %" })],
-    ["drive", "Distance de drive", "Le plus long drive", (t) => ({ big: dec(t.valeur, 1) + " m", small: t.orig == null ? "" : dec(t.orig, 2) + " yds" })],
-    ["gir_prox", "Proximité GIR", "Distance au drapeau, green atteint", (t) => ({ big: dec(t.valeur, 2) + " m", small: t.orig == null ? "" : dec(t.orig, 2) + " ft" })],
-    ["putts_faits", "Putts rentrés", "Distance des putts rentrés", (t) => ({ big: dec(t.valeur, 2) + " m", small: t.orig == null ? "" : dec(t.orig, 2) + " ft" })],
+    ["drive", "Longest drive", "Le plus long drive", (t) => ({ big: dec(t.valeur, 1) + " m", small: t.orig == null ? "" : dec(t.orig, 2) + " yds" })],
+    ["gir_prox", "Closest to the pin", "Distance moyenne au drapeau, green atteint en régulation", (t) => ({ big: dec(t.valeur, 2) + " m", small: t.orig == null ? "" : dec(t.orig, 2) + " ft" })],
+    ["putts_faits", "Distance de putt total", "Longueur totale des putts rentrés, par tour", (t) => ({ big: dec(t.valeur, 2) + " m", small: t.orig == null ? "" : dec(t.orig, 2) + " ft" })],
   ];
+  /* Short Game (petit jeu, sans drive) : ni fairways touchés ni longest drive */
+  const SHORT_GAME_TILES = ["gir", "gir_prox", "putts_faits"];
+  const tiles = () => (P() === "SG" ? TILES.filter((t) => SHORT_GAME_TILES.indexOf(t[0]) >= 0) : TILES);
 
   function drawTiles() {
     const box = $("#tuiles");
@@ -161,7 +164,7 @@
       <h3 id="tuiles-titre">Statistiques ${u.end}</h3>
       <div class="toolbar"><label class="sub" for="tw">${u.Cap}</label>
         <select id="tw" class="select">${weeks.map((w) => `<option value="${w}"${w === state.tw ? " selected" : ""}>${P()}${w}</option>`).join("")}</select></div>
-      <div class="tiles">${TILES.map(([key, title, hint, fmt]) => {
+      <div class="tiles">${tiles().map(([key, title, hint, fmt]) => {
         const t = st[key];
         const v = t ? fmt(t) : null;
         return `<div class="tile" title="${esc(hint)}"><div class="tile-title">${esc(title)}</div>
@@ -169,8 +172,8 @@
           <div class="tile-value">${v ? v.big : "Pas de donnée"}</div>${v && v.small ? `<div class="tile-orig">${v.small}</div>` : ""}</div>`;
       }).join("")}</div>
       <p class="hint">Le meilleur de chaque statistique parmi les joueurs de la catégorie ${esc(state.cat)}, pour ${esc(P())}${state.tw}.
-        Proximité GIR : distance moyenne au drapeau quand le green est atteint en régulation (le plus petit gagne).
-        Putts rentrés : longueur des putts rentrés par tour. Distances en mètres, valeur d'origine de SGT en dessous.</p>`;
+        Closest to the pin : distance moyenne au drapeau quand le green est atteint en régulation (le plus petit gagne).
+        Distance de putt total : longueur totale des putts rentrés par tour. Distances en mètres, valeur d'origine de SGT en dessous.</p>`;
     $("#tw").addEventListener("change", (e) => { state.tw = Number(e.target.value); drawTiles(); });
   }
 
@@ -329,22 +332,23 @@
       return `${dec(best.m)} m <small>trou ${best.trou}${w.ctp.length > 1 ? ` · +${w.ctp.length - 1}` : ""}</small>`;
     };
     const avg = (k) => (r[k] == null ? "–" : k === "putts" ? dec(r[k]) : pct(r[k]));
+    const sg = P() === "SG";   // Short Game : ni drive ni fairways
     return `
       <section><h3>Statistiques</h3>
         <div class="kpis">
-          <div class="fact"><div class="label">Plus long drive</div><div class="value">${bd ? dec(bd.m, 0) + " m" : "–"}</div>
-            <div class="note">${bd ? `${P()}${bd.semaine} · ${place(driveWeek.drive_rang, driveWeek.drive_sur)}` : "pas encore"}</div></div>
+          ${sg ? "" : `<div class="fact"><div class="label">Plus long drive</div><div class="value">${bd ? dec(bd.m, 0) + " m" : "–"}</div>
+            <div class="note">${bd ? `${P()}${bd.semaine} · ${place(driveWeek.drive_rang, driveWeek.drive_sur)}` : "pas encore"}</div></div>`}
           <div class="fact"><div class="label">Plus près du drapeau</div><div class="value">${bc ? dec(bc.m) + " m" : "–"}</div>
             <div class="note">${bc ? `${P()}${bc.semaine} · trou ${bc.trou} · ${place(ctpHole.rang, ctpHole.sur)}` : "pas encore"}</div></div>
           <div class="fact"><div class="label">Putts par tour</div><div class="value">${avg("putts")}</div><div class="note">en moyenne</div></div>
         </div>
         <div class="table-wrap"><table class="mini-table"><caption class="sr">Statistiques par ${unit().cap}</caption>
-          <thead><tr><th scope="col">${unit().short}</th><th scope="col">Long drive</th><th scope="col">Près du drapeau</th><th scope="col">Fairways</th><th scope="col">Greens</th><th scope="col">Putts</th></tr></thead>
+          <thead><tr><th scope="col">${unit().short}</th>${sg ? "" : '<th scope="col">Long drive</th>'}<th scope="col">Près du drapeau</th>${sg ? "" : '<th scope="col">Fairways</th>'}<th scope="col">Greens</th><th scope="col">Putts</th></tr></thead>
           <tbody>${weeks.map((w) => `<tr><td>${P()}${w.semaine}</td>
-            <td>${w.drive_m == null ? "–" : `<b>${dec(w.drive_m, 0)} m</b> <small>${place(w.drive_rang, w.drive_sur)}</small>`}</td>
-            <td>${ctpCell(w)}</td><td>${pct(w.fairways)}</td><td>${pct(w.greens)}</td><td>${dec(w.putts)}</td></tr>`).join("")}</tbody>
-          <tfoot><tr><th scope="row" colspan="3">Moyenne par tour</th><td>${avg("fairways")}</td><td>${avg("greens")}</td><td>${avg("putts")}</td></tr></tfoot></table></div>
-        <p class="hint">Distances en mètres. Drive : le plus long ${unit().end}. Près du drapeau : par 3, green atteint au départ. Statistiques de ta partie ${unit().end}.</p>
+            ${sg ? "" : `<td>${w.drive_m == null ? "–" : `<b>${dec(w.drive_m, 0)} m</b> <small>${place(w.drive_rang, w.drive_sur)}</small>`}</td>`}
+            <td>${ctpCell(w)}</td>${sg ? "" : `<td>${pct(w.fairways)}</td>`}<td>${pct(w.greens)}</td><td>${dec(w.putts)}</td></tr>`).join("")}</tbody>
+          <tfoot><tr><th scope="row" colspan="${sg ? 2 : 3}">Moyenne par tour</th>${sg ? "" : `<td>${avg("fairways")}</td>`}<td>${avg("greens")}</td><td>${avg("putts")}</td></tr></tfoot></table></div>
+        <p class="hint">Distances en mètres.${sg ? "" : ` Drive : le plus long ${unit().end}.`} Près du drapeau : par 3, green atteint au départ. Statistiques de ta partie ${unit().end}.</p>
       </section>`;
   }
 
