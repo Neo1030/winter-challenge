@@ -11,7 +11,7 @@ from datetime import datetime
 from .parcours import CARD_URL, normalize, site_course
 from .scoring import COUNT_LABELS
 from .season import Season
-from .stats import rank_of
+from .stats import FOOT_M, rank_of
 
 STATS_KEYS = {"Albatross": "albatros", "Eagles": "eagles", "Birdies": "birdies", "Pars": "pars", "Bogeys": "bogeys",
               "Double-Bogeys": "doubles", "Triple-Bogeys": "triples", "More": "plus"}
@@ -74,7 +74,7 @@ def _player_stats(season: Season, name: str) -> dict | None:
         for hole, entries in sorted(st["ctp"].items()):
             for who, metres in entries:
                 if who == name:
-                    holes.append({"trou": hole, "m": round(metres, 1), "rang": rank_of(metres, [m for _, m in entries], False),
+                    holes.append({"trou": hole, "m": round(metres, 2), "rang": rank_of(metres, [m for _, m in entries], False),
                                   "sur": len(entries)})
         if not mine and not holes:
             continue
@@ -192,6 +192,12 @@ def _leaders(season: Season, category: str) -> dict:
             who = sorted(n for n, v in values.items() if v == best)
             tiles[key] = {"valeur": best, "joueurs": who,
                           "orig": st["joueurs"][who[0]].get(orig) if orig else None}
+        # Closest to the pin : le coup de départ le plus près du drapeau sur un par 3, tous joueurs et trous de la semaine
+        shots = [(metres, who, hole) for hole, entries in st["ctp"].items() for who, metres in entries]
+        if shots:
+            best = min(m for m, _, _ in shots)
+            tiles["ctp"] = {"valeur": round(best, 2), "joueurs": sorted({w for m, w, _ in shots if m == best}),
+                            "orig": round(best / FOOT_M, 2), "trou": min(h for m, _, h in shots if m == best)}
         if tiles:
             out[str(number)] = tiles
     return out

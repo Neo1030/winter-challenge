@@ -1,5 +1,8 @@
 """Statistiques de tournoi SGT (tournaments/stats) : plus long drive, plus près du drapeau, fairways, greens, putts.
 
+Attention : malgré son nom, « longest_drive » (drivingDistance) est la distance MOYENNE des drives du joueur (SGT le range
+dans « Driving distance » ; ex. 274.78 yds pour des drives de 225.99 à 335.58). Le vrai plus long drive n'est que dans l'onglet
+Long Drive du site SGT, pas dans l'API : le site affiche donc « Avg driving distance ».
 L'API ne donne pas les unités. Les drives sont en yards (confirmé le 27.10.2026 : 246.09 dans l'API = « 246.09 YDS / 224.94 M »
 sur le site SGT) ; les distances au drapeau et les putts sont en pieds (documentation SGT). Tout est converti en mètres ici,
 et seulement ici ; la valeur d'origine est gardée à côté pour pouvoir comparer avec ce qu'affiche SGT.

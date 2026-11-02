@@ -139,12 +139,12 @@
   const TILES = [
     ["fir", "FIR", "Fairways touchés", (t) => ({ big: dec(t.valeur, 1) + " %" })],
     ["gir", "GIR", "Greens en régulation", (t) => ({ big: dec(t.valeur, 1) + " %" })],
-    ["drive", "Longest drive", "Le plus long drive", (t) => ({ big: dec(t.valeur, 1) + " m", small: t.orig == null ? "" : dec(t.orig, 2) + " yds" })],
-    ["gir_prox", "Closest to the pin", "Distance moyenne au drapeau, green atteint en régulation", (t) => ({ big: dec(t.valeur, 2) + " m", small: t.orig == null ? "" : dec(t.orig, 2) + " ft" })],
+    ["drive", "Avg driving distance", "Distance moyenne des drives de la partie, mesurée par SGT", (t) => ({ big: dec(t.valeur, 1) + " m", small: t.orig == null ? "" : dec(t.orig, 2) + " yds" })],
+    ["ctp", "Closest to the pin", "Le coup de départ le plus près du drapeau sur un par 3", (t) => ({ big: dec(t.valeur, 2) + " m", small: (t.orig == null ? "" : dec(t.orig, 2) + " ft") + (t.trou ? " · trou " + t.trou : "") })],
     ["putts_faits", "Total putt length", "Longueur totale des putts rentrés, par tour", (t) => ({ big: dec(t.valeur, 2) + " m", small: t.orig == null ? "" : dec(t.orig, 2) + " ft" })],
   ];
   /* Short Game (petit jeu, sans drive) : ni fairways touchés ni longest drive */
-  const SHORT_GAME_TILES = ["gir", "gir_prox", "putts_faits"];
+  const SHORT_GAME_TILES = ["gir", "ctp", "putts_faits"];
   const tiles = () => (P() === "SG" ? TILES.filter((t) => SHORT_GAME_TILES.indexOf(t[0]) >= 0) : TILES);
 
   function drawTiles() {
@@ -172,7 +172,8 @@
           <div class="tile-value">${v ? v.big : "Pas de donnée"}</div>${v && v.small ? `<div class="tile-orig">${v.small}</div>` : ""}</div>`;
       }).join("")}</div>
       <p class="hint">Le meilleur de chaque statistique parmi les joueurs de la catégorie ${esc(state.cat)}, pour ${esc(P())}${state.tw}.
-        Closest to the pin : distance moyenne au drapeau quand le green est atteint en régulation (le plus petit gagne).
+        Avg driving distance : distance moyenne des drives de la partie (SGT ne donne pas le plus long drive dans son API).
+        Closest to the pin : le coup de départ le plus près du drapeau sur un par 3 (le plus petit gagne).
         Total putt length : longueur totale des putts rentrés par tour. Distances en mètres, valeur d'origine de SGT en dessous.</p>`;
     $("#tw").addEventListener("change", (e) => { state.tw = Number(e.target.value); drawTiles(); });
   }
@@ -329,26 +330,26 @@
     const ctpCell = (w) => {
       if (!w.ctp.length) return "–";
       const best = w.ctp.reduce((a, b) => (b.m < a.m ? b : a));
-      return `${dec(best.m)} m <small>trou ${best.trou}${w.ctp.length > 1 ? ` · +${w.ctp.length - 1}` : ""}</small>`;
+      return `${dec(best.m, 2)} m <small>trou ${best.trou}${w.ctp.length > 1 ? ` · +${w.ctp.length - 1}` : ""}</small>`;
     };
     const avg = (k) => (r[k] == null ? "–" : k === "putts" ? dec(r[k]) : pct(r[k]));
     const sg = P() === "SG";   // Short Game : ni drive ni fairways
     return `
       <section><h3>Statistiques</h3>
         <div class="kpis">
-          ${sg ? "" : `<div class="fact"><div class="label">Plus long drive</div><div class="value">${bd ? dec(bd.m, 0) + " m" : "–"}</div>
-            <div class="note">${bd ? `${P()}${bd.semaine} · ${place(driveWeek.drive_rang, driveWeek.drive_sur)}` : "pas encore"}</div></div>`}
-          <div class="fact"><div class="label">Plus près du drapeau</div><div class="value">${bc ? dec(bc.m) + " m" : "–"}</div>
+          ${sg ? "" : `<div class="fact"><div class="label">Avg driving distance</div><div class="value">${bd ? dec(bd.m, 1) + " m" : "–"}</div>
+            <div class="note">${bd ? `meilleure moyenne · ${P()}${bd.semaine} · ${place(driveWeek.drive_rang, driveWeek.drive_sur)}` : "pas encore"}</div></div>`}
+          <div class="fact"><div class="label">Closest to the pin</div><div class="value">${bc ? dec(bc.m, 2) + " m" : "–"}</div>
             <div class="note">${bc ? `${P()}${bc.semaine} · trou ${bc.trou} · ${place(ctpHole.rang, ctpHole.sur)}` : "pas encore"}</div></div>
           <div class="fact"><div class="label">Putts par tour</div><div class="value">${avg("putts")}</div><div class="note">en moyenne</div></div>
         </div>
         <div class="table-wrap"><table class="mini-table"><caption class="sr">Statistiques par ${unit().cap}</caption>
-          <thead><tr><th scope="col">${unit().short}</th>${sg ? "" : '<th scope="col">Long drive</th>'}<th scope="col">Près du drapeau</th>${sg ? "" : '<th scope="col">Fairways</th>'}<th scope="col">Greens</th><th scope="col">Putts</th></tr></thead>
+          <thead><tr><th scope="col">${unit().short}</th>${sg ? "" : '<th scope="col">Avg drive</th>'}<th scope="col">Closest to the pin</th>${sg ? "" : '<th scope="col">FIR</th>'}<th scope="col">GIR</th><th scope="col">Putts</th></tr></thead>
           <tbody>${weeks.map((w) => `<tr><td>${P()}${w.semaine}</td>
-            ${sg ? "" : `<td>${w.drive_m == null ? "–" : `<b>${dec(w.drive_m, 0)} m</b> <small>${place(w.drive_rang, w.drive_sur)}</small>`}</td>`}
+            ${sg ? "" : `<td>${w.drive_m == null ? "–" : `<b>${dec(w.drive_m, 1)} m</b> <small>${place(w.drive_rang, w.drive_sur)}</small>`}</td>`}
             <td>${ctpCell(w)}</td>${sg ? "" : `<td>${pct(w.fairways)}</td>`}<td>${pct(w.greens)}</td><td>${dec(w.putts)}</td></tr>`).join("")}</tbody>
           <tfoot><tr><th scope="row" colspan="${sg ? 2 : 3}">Moyenne par tour</th>${sg ? "" : `<td>${avg("fairways")}</td>`}<td>${avg("greens")}</td><td>${avg("putts")}</td></tr></tfoot></table></div>
-        <p class="hint">Distances en mètres.${sg ? "" : ` Drive : le plus long ${unit().end}.`} Près du drapeau : par 3, green atteint au départ. Statistiques de ta partie ${unit().end}.</p>
+        <p class="hint">Distances en mètres.${sg ? "" : ` Avg drive : distance moyenne de tes drives ${unit().end}, mesurée par SGT (la meilleure en haut).`} Closest to the pin : ton coup de départ le plus près du drapeau sur un par 3, green atteint (le trou est indiqué, « +2 » = deux autres par 3 réussis).${sg ? "" : " FIR : fairways touchés."} GIR : greens en régulation. Statistiques de ta partie ${unit().end}.</p>
       </section>`;
   }
 

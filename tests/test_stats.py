@@ -76,6 +76,16 @@ class TuilesTest(unittest.TestCase):
         self.assertEqual((t["gir_prox"]["joueurs"], t["gir_prox"]["orig"]), (["Bob"], 10.35))  # plus près = meilleur
         self.assertEqual(t["putts_faits"]["joueurs"], ["Ana"])
 
+    def test_closest_to_the_pin_est_le_meilleur_coup_de_la_semaine(self):
+        t1 = tournament(1, 1, [card("Ana", [4] * 9), card("Bob", [5] * 9)])
+        t1["stats"] = {"closestToPin": {"1": {"2": {"ctps": [{"user_name": "Ana", "distanceToPin": 20.0},
+                                                             {"user_name": "Bob", "distanceToPin": 11.8933402756}]},
+                                              "7": {"ctps": [{"user_name": "Ana", "distanceToPin": 15.0}]}}}}
+        data = build_site_data(build_season(tour([t1]), today=TODAY), "2026-2027")
+        ctp = data["categories"][0]["stats"]["1"]["ctp"]
+        self.assertEqual((ctp["joueurs"], ctp["trou"], ctp["orig"]), (["Bob"], 2, 11.89))
+        self.assertAlmostEqual(ctp["valeur"], 3.63, places=2)   # 11.89 pieds = 3.63 m : un seul coup, pas une moyenne
+
 
 class CompetitionsTest(unittest.TestCase):
     def test_autre_competition_a_la_meme_forme(self):
@@ -101,9 +111,9 @@ class FicheJoueurTest(unittest.TestCase):
         self.assertEqual([w["semaine"] for w in st["semaines"]], [1])
         w = st["semaines"][0]
         self.assertEqual((w["drive_rang"], w["drive_sur"]), (1, 2))
-        self.assertEqual(w["ctp"], [{"trou": 3, "m": 1.5, "rang": 1, "sur": 2}])
+        self.assertEqual(w["ctp"], [{"trou": 3, "m": 1.52, "rang": 1, "sur": 2}])   # au centimètre
         self.assertEqual(st["resume"]["meilleur_drive"], {"m": 228.6, "semaine": 1})
-        self.assertEqual(st["resume"]["meilleur_ctp"], {"m": 1.5, "semaine": 1, "trou": 3})
+        self.assertEqual(st["resume"]["meilleur_ctp"], {"m": 1.52, "semaine": 1, "trou": 3})
         self.assertEqual(st["resume"]["putts"], 15.5)
         bob = next(j for j in data["joueurs"] if j["joueur"] == "Bob")
         self.assertEqual(bob["stats"]["semaines"][0]["ctp"][0]["rang"], 2)

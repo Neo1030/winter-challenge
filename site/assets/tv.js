@@ -108,12 +108,12 @@
   const TILES = [
     ["fir", "FIR", "Fairways touchés", (t) => [dec(t.valeur, 1) + " %", ""]],
     ["gir", "GIR", "Greens en régulation", (t) => [dec(t.valeur, 1) + " %", ""]],
-    ["drive", "Longest drive", "Le plus long drive", (t) => [dec(t.valeur, 1) + " m", t.orig == null ? "" : dec(t.orig, 2) + " yds"]],
-    ["gir_prox", "Closest to the pin", "Distance moyenne au drapeau, green atteint", (t) => [dec(t.valeur, 2) + " m", t.orig == null ? "" : dec(t.orig, 2) + " ft"]],
+    ["drive", "Avg driving distance", "Distance moyenne des drives", (t) => [dec(t.valeur, 1) + " m", t.orig == null ? "" : dec(t.orig, 2) + " yds"]],
+    ["ctp", "Closest to the pin", "Coup de départ le plus près du drapeau, par 3", (t) => [dec(t.valeur, 2) + " m", (t.orig == null ? "" : dec(t.orig, 2) + " ft") + (t.trou ? " · trou " + t.trou : "")]],
     ["putts_faits", "Total putt length", "Longueur totale des putts rentrés", (t) => [dec(t.valeur, 2) + " m", t.orig == null ? "" : dec(t.orig, 2) + " ft"]],
   ];
   /* Short Game (petit jeu, sans drive) : ni fairways touchés ni longest drive */
-  const SHORT_GAME_TILES = ["gir", "gir_prox", "putts_faits"];
+  const SHORT_GAME_TILES = ["gir", "ctp", "putts_faits"];
   const tilesOf = (comp) => (comp.prefixe === "SG" ? TILES.filter((t) => SHORT_GAME_TILES.indexOf(t[0]) >= 0) : TILES);
 
   /* Semaine (ou mois) dont on montre les statistiques : le plus récent, ou à défaut la dernière qui en a */
