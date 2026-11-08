@@ -78,6 +78,8 @@ main:focus { outline: none; }
 .eyebrow { display: block; font-size: .8rem; letter-spacing: .16em; text-transform: uppercase; color: var(--sky-ink); font-weight: 700; }
 .hero h1 { margin: 6px 0 8px; font-size: clamp(1.9rem, 6.2vw, 3.2rem); line-height: 1.05; font-weight: 700; letter-spacing: .01em; text-transform: uppercase; }
 .season { color: #1a93cf; white-space: nowrap; }
+.hero h1.hero-logo { margin: 4px 0 6px; line-height: 0; }
+.hero-logo img { width: min(520px, 100%); height: auto; display: block; }
 .hero p { margin: 0; max-width: 560px; color: var(--ink-soft); font-weight: 400; font-size: 1.1rem; }
 
 .demo { background: var(--warn); color: var(--warn-ink); font-size: .92rem; font-weight: 700; text-align: center; padding: 8px 0; }

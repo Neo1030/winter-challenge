@@ -530,16 +530,39 @@
         : rule(`Net et brut`, `Le ${esc(c.nom)} a un classement net et un classement brut, comme le ${esc(wc.nom)}.`),
       rule(`Un seul classement pour tous`, `${c.brut_seul ? "Hommes, Femmes et Seniors jouent ensemble : " : ""}il y a un seul classement${c.categories.length > 1 ? " par catégorie" : ""}. Les points se calculent comme au ${esc(wc.nom)} (Stableford, 100 points de référence), et <strong>tes ${n} résultats comptent tous</strong> au classement : pas de résultat à remplacer.`),
     ].join(""); };
-    app.innerHTML = `<h2>Règles</h2>
-      <p class="sub">Tout ce qu'il faut savoir pour jouer. Les joueurs sont inscrits à la fois au ${esc(wc.nom)} et ${others.length ? "au " + others.map((c) => esc(c.nom)).join(" et au ") : "aux autres compétitions"}.</p>
+    const sg = others.find((c) => c.id === state.comp);   // la compétition choisie en haut de la page
+    const stat = (label, value, note) => `<div class="card stat"><div class="label">${label}</div><div class="value">${value}</div><div class="note">${note}</div></div>`;
+    const play = (c) => `
+      <h3 class="rules-title">Pour jouer</h3>
+      <div class="rules">
+        ${c ? "" : rule("Le tee de départ", "Le capitaine se réserve le droit de <strong>déplacer le tee de départ</strong> des joueurs en haut du classement, si l'écart avec les autres devient trop important.")}
+        ${rule("Ton compte", "Ton pseudo est ton nom d'utilisateur Simulator Golf Tour, le même dans GSPro : c'est lui qui apparaît ici. Pour choisir ou changer ton mot de passe, utilise « mot de passe oublié » sur simulatorgolftour.com avec l'adresse e-mail de ton inscription.")}
+        ${rule("Où jouer", "Sur les simulateurs du Let's Golf, à Bussigny, avec GSPro : ton tour est envoyé tout seul au tournoi de Simulator Golf Tour.")}
+        ${rule("Les statistiques", c
+          ? `Sous le classement, trois tuiles donnent le meilleur ${unit().end} : greens en régulation (GIR), closest to the pin et total putt length. Ta fiche joueur garde les tiennes.`
+          : "Sous chaque classement, cinq tuiles donnent le meilleur de la semaine : fairways touchés (FIR), greens en régulation (GIR), avg driving distance, closest to the pin et total putt length. Ta fiche joueur garde les tiennes.")}
+        ${rule("Les résultats", "Ce site se met à jour tout seul, toutes les 5 minutes environ en journée : ton score apparaît peu après la fin de ton tour.")}
+      </div>`;
 
+    app.innerHTML = sg ? `${compBar()}<h2>Règles</h2>
+      <p class="sub">Tout ce qu'il faut savoir pour jouer au ${esc(sg.nom)}. Tu y es inscrit d'office, en même temps qu'au ${esc(wc.nom)}.</p>
       <section class="grid stats" aria-label="Les règles en bref">
-        <div class="card stat"><div class="label">Essais</div><div class="value">1 seul tour</div><div class="note">par tournoi, sans seconde chance</div></div>
-        <div class="card stat"><div class="label">Format</div><div class="value">9 trous</div><div class="note">sur le parcours du tournoi</div></div>
-        <div class="card stat"><div class="label">Classement</div><div class="value">${r.meilleurs} meilleurs</div><div class="note">résultats au ${esc(wc.nom)}${others.map((c) => ` · les ${c.meilleurs || r.meilleurs} au ${esc(c.nom)}`).join("")}</div></div>
-        <div class="card stat"><div class="label">Compétitions</div><div class="value">${comps.length}</div><div class="note">${comps.map((c) => esc(c.nom)).join(" · ")}</div></div>
+        ${stat("Essais", "1 seul tour", "par mois, sans seconde chance")}
+        ${stat("Durée", `${sg.meilleurs || r.meilleurs} mois`, `un parcours par mois`)}
+        ${stat("Classement", `${sg.meilleurs || r.meilleurs} résultats`, "ils comptent tous")}
+        ${stat("Handicap", "0 pour tous", sg.brut_seul ? "brut seulement" : "net et brut")}
       </section>
-
+      <h3 class="rules-title">${esc(sg.nom)}</h3>
+      <div class="rules">${short(sg)}</div>
+      ${play(sg)}`
+    : `${compBar()}<h2>Règles</h2>
+      <p class="sub">Tout ce qu'il faut savoir pour jouer au ${esc(wc.nom)}.${others.length ? ` Tu es aussi inscrit d'office au ${others.map((c) => esc(c.nom)).join(" et au ")} : ses règles sont dans l'autre onglet.` : ""}</p>
+      <section class="grid stats" aria-label="Les règles en bref">
+        ${stat("Essais", "1 seul tour", "par semaine, sans seconde chance")}
+        ${stat("Format", "9 trous", "sur le parcours de la semaine")}
+        ${stat("Classement", `${r.meilleurs} meilleurs`, "résultats de la saison")}
+        ${stat("Handicap", "75 %", "de ton handicap réel au départ")}
+      </section>
       <h3 class="rules-title">${esc(wc.nom)}</h3>
       <div class="rules">
         ${rule("Une semaine, un parcours", "Chaque semaine, un parcours est choisi sur Simulator Golf Tour. Tu joues <strong>9 trous</strong> depuis ton simulateur, quand tu veux pendant la semaine. Le parcours et ses réglages sont sur la page Parcours.")}
@@ -550,17 +573,8 @@
         ${rule("Les catégories", `${cats} : chaque catégorie a son propre classement, en net et en brut.`)}
         ${rule("Le classement final", `Seuls tes <strong>${r.meilleurs} meilleurs résultats</strong> de la saison comptent. Dans le tableau, ils sont en vert, et le plus petit d'entre eux est en rouge : c'est le premier que tu remplaceras si tu fais mieux. La flèche indique les places gagnées ou perdues depuis la semaine précédente.`)}
       </div>
-
-      ${others.map((c) => `<h3 class="rules-title">${esc(c.nom)}</h3><div class="rules">${short(c)}</div>`).join("")}
-
-      <h3 class="rules-title">Pour jouer</h3>
-      <div class="rules">
-        ${rule("Le tee de départ", "Le capitaine se réserve le droit de <strong>déplacer le tee de départ</strong> des joueurs en haut du classement, si l'écart avec les autres devient trop important.")}
-        ${rule("Ton compte", "Ton pseudo est ton nom d'utilisateur Simulator Golf Tour, le même dans GSPro : c'est lui qui apparaît ici. Pour choisir ou changer ton mot de passe, utilise « mot de passe oublié » sur simulatorgolftour.com avec l'adresse e-mail de ton inscription.")}
-        ${rule("Où jouer", "Sur les simulateurs du Let's Golf, à Bussigny, avec GSPro : ton tour est envoyé tout seul au tournoi de Simulator Golf Tour.")}
-        ${rule("Les statistiques", "Sous chaque classement, cinq tuiles donnent le meilleur de la semaine : fairways touchés (FIR), greens en régulation (GIR), plus long drive, proximité du drapeau et putts rentrés. Ta fiche joueur garde les tiennes.")}
-        ${rule("Les résultats", "Ce site se met à jour tout seul, toutes les 5 minutes environ en journée : ton score apparaît peu après la fin de ton tour.")}
-      </div>`;
+      ${play(null)}`;
+    bindComp("regles");
   }
 
   /* ---------- Démarrage ---------- */
