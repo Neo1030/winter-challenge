@@ -95,6 +95,7 @@ h3 { font-size: 1.05rem; margin: 0 0 8px; font-weight: 700; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
 .grid { display: grid; gap: 16px; }
 .stats { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); margin-bottom: 28px; }
+.stats.five { grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); }   /* cinq cartes sur une ligne (règles du Short Game) */
 .stat { padding: 16px 18px; border-top: 4px solid var(--sky); }
 .stat .label { font-size: .75rem; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-soft); font-weight: 600; }
 .stat .value { font-size: 1.3rem; font-weight: 700; line-height: 1.25; margin-top: 2px; }

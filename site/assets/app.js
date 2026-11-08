@@ -515,6 +515,15 @@
   }
 
   /* ---------- Règles ---------- */
+  /* Fin de la saison du Winter Challenge (donnée par Mike, 08.11.2026) : sert à la durée affichée dans les règles */
+  const SEASON_END = "2027-03-25";
+  function seasonWeeks() {
+    const starts = (Array.isArray(comps[0].parcours) ? comps[0].parcours : []).map((e) => e.debut).filter(Boolean).sort();
+    if (!starts.length) return null;
+    const days = (Date.parse(SEASON_END) - Date.parse(starts[0])) / 86400000;
+    return Math.ceil((days + 1) / 7);   // semaines du début de la WC1 jusqu'au dernier jour de la saison compris
+  }
+
   function viewRules() {
     const r = data.regles;
     const wc = comps[0], others = comps.slice(1);
@@ -523,7 +532,7 @@
     const cats = catNames.map((n) => `<strong>${esc(n)}</strong>`).join(", ");
     const rule = (title, html) => `<div class="card rule"><h3>${title}</h3><p>${html}</p></div>`;
     const short = (c) => { const n = c.meilleurs || r.meilleurs; return [
-      rule(`${n} mois, ${n} parcours`, `Le ${esc(c.nom)} dure <strong>${n} mois</strong> : un tournoi par mois sur Simulator Golf Tour (${esc(c.prefixe)}1 à ${esc(c.prefixe)}${n}), sur <strong>${n} parcours</strong> différents, propres au ${esc(c.nom)}. Tu es inscrit d'office, en même temps que dans le ${esc(wc.nom)}.`),
+      rule(`${n} mois, ${n} parcours`, `Le ${esc(c.nom)} dure <strong>${n} mois</strong> : un tournoi par mois sur Simulator Golf Tour (${esc(c.prefixe)}1 à ${esc(c.prefixe)}${n}), sur <strong>${n} parcours</strong> différents, propres au ${esc(c.nom)}. Tu joues les <strong>18 trous</strong>. Tu es inscrit d'office, en même temps que dans le ${esc(wc.nom)}.`),
       rule(`Un seul tour par mois`, `Comme au ${esc(wc.nom)}, tu n'as droit qu'à <strong>un seul tour</strong> par tournoi : pas de seconde chance.`),
       c.brut_seul
         ? rule(`Brut seulement, sans handicap`, `<strong>Tout le monde joue avec un handicap de 0</strong>, sans exception. Il n'y a donc ni classement net, ni handicap de jeu à suivre : seul compte ton score brut.`)
@@ -546,8 +555,9 @@
 
     app.innerHTML = sg ? `${compBar()}<h2>Règles</h2>
       <p class="sub">Tout ce qu'il faut savoir pour jouer au ${esc(sg.nom)}. Tu y es inscrit d'office, en même temps qu'au ${esc(wc.nom)}.</p>
-      <section class="grid stats" aria-label="Les règles en bref">
+      <section class="grid stats five" aria-label="Les règles en bref">
         ${stat("Essais", "1 seul tour", "par mois, sans seconde chance")}
+        ${stat("Format", "18 trous", "sur le parcours du mois")}
         ${stat("Durée", `${sg.meilleurs || r.meilleurs} mois`, `un parcours par mois`)}
         ${stat("Classement", `${sg.meilleurs || r.meilleurs} résultats`, "ils comptent tous")}
         ${stat("Handicap", "0 pour tous", sg.brut_seul ? "brut seulement" : "net et brut")}
@@ -557,9 +567,10 @@
       ${play(sg)}`
     : `${compBar()}<h2>Règles</h2>
       <p class="sub">Tout ce qu'il faut savoir pour jouer au ${esc(wc.nom)}.${others.length ? ` Tu es aussi inscrit d'office au ${others.map((c) => esc(c.nom)).join(" et au ")} : ses règles sont dans l'autre onglet.` : ""}</p>
-      <section class="grid stats" aria-label="Les règles en bref">
+      <section class="grid stats five" aria-label="Les règles en bref">
         ${stat("Essais", "1 seul tour", "par semaine, sans seconde chance")}
         ${stat("Format", "9 trous", "sur le parcours de la semaine")}
+        ${stat("Durée", seasonWeeks() ? `${seasonWeeks()} semaines` : "–", `jusqu'au ${day(SEASON_END)}`)}
         ${stat("Classement", `${r.meilleurs} meilleurs`, "résultats de la saison")}
         ${stat("Handicap", "75 %", "de ton handicap réel au départ")}
       </section>
