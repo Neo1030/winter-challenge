@@ -39,6 +39,7 @@ class SgtClient:
         # Accepte « LetsGolf » ou l'adresse complète https://simulatorgolftour.com/club/LetsGolf
         self.club_url = club_url.strip().rstrip("/").split("/")[-1]
         self.api_key = api_key
+        self._credentials = None  # gardés après login() pour se reconnecter si SGT invalide la clé
 
     @classmethod
     def from_env(cls) -> "SgtClient":
@@ -73,11 +74,22 @@ class SgtClient:
         req = urllib.request.Request(self._url(endpoint), data=body, method="POST")
         return self._send(req)
 
+    def _expired(self, res) -> bool:
+        """SGT garde une seule clé par compte : une autre connexion (la mise à jour automatique) invalide la nôtre.
+        On se reconnecte alors une fois ; la requête refusée n'a rien fait chez SGT, on peut la relancer."""
+        if isinstance(res, str) and "INVALID API KEY" in res and self._credentials:
+            self.login(*self._credentials)
+            return True
+        return False
+
     def _get(self, endpoint: str, **params):
         if not self.api_key:
             raise SgtApiError("Pas de clé API : appelle login() d'abord")
         params["api-key"] = self.api_key
         res = self._send(urllib.request.Request(self._url(endpoint, params)))
+        if self._expired(res):
+            params["api-key"] = self.api_key
+            res = self._send(urllib.request.Request(self._url(endpoint, params)))
         if isinstance(res, str):  # SGT répond parfois par un simple message au lieu de données
             raise SgtApiError(f"Réponse inattendue sur {endpoint} : {res[:120]}")
         return res
@@ -88,6 +100,7 @@ class SgtClient:
         if not res.get("success"):
             raise SgtApiError("Connexion refusée")
         self.api_key = res["key"]
+        self._credentials = (username, password)
         return self.api_key
 
     def refresh(self) -> str:
@@ -127,6 +140,8 @@ class SgtClient:
         if not self.api_key:
             raise SgtApiError("Pas de clé API : appelle login() d'abord")
         res = self._post(endpoint, {"api-key": self.api_key, **data})
+        if self._expired(res):
+            res = self._post(endpoint, {"api-key": self.api_key, **data})
         if isinstance(res, str):
             raise SgtApiError(f"Réponse inattendue sur {endpoint} : {res[:120]}")
         return res

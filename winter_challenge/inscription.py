@@ -41,7 +41,7 @@ def _plain(text) -> str:
 
 
 HEADERS = {
-    "pseudo": {"pseudo", "surnom", "nickname", "nick", "username", "nomdutilisateur", "pseudosgt", "pseudogspro", "identifiant"},
+    "pseudo": {"pseudo", "surnom", "nickname", "nick", "username", "nomdutilisateur", "nomutilisateur", "pseudosgt", "pseudogspro", "identifiant"},
     "email": {"email", "mail", "emailadresse", "courriel", "adresseemail", "adressemail", "adresse"},
     "prenom": {"prenom", "firstname", "prenomjoueur"},
     "nom": {"nom", "nomdefamille", "lastname", "famille", "nomjoueur"},
