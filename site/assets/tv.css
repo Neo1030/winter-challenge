@@ -6,6 +6,7 @@ body { display: flex; flex-direction: column; gap: 1.5vh; padding: 1.5vh 1.8vw 1
 .tv-top { display: flex; align-items: center; justify-content: space-between; flex: none; height: 6.4vh; }
 .tv-top img { height: 6vh; width: auto; display: block; }
 .tv-top .tv-right { display: flex; align-items: center; gap: 2vw; }
+.tv-credit { font-size: 1.5vh; color: var(--ink-soft); white-space: nowrap; }   /* crédit à Simulator Golf Tour, source des résultats */
 .tv-top img.tv-wc { height: 7.4vh; margin: -0.6vh 0; }   /* logo Winter Challenge en haut à droite */
 .tv-demo { background: var(--warn); color: var(--warn-ink); font-weight: 700; font-size: 1.9vh; padding: .7vh 1.8vh; border-radius: 999px; }
 
