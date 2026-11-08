@@ -1,7 +1,7 @@
 """Durée d'un tour complet de la page télé (tv.html et tvreduit.html), d'après les joueurs inscrits : à reporter dans Zebrix.
 
 Usage :
-  python3 scripts/duree_tv.py              # durée par page de 8 s (défaut de la page) et de 10 s
+  python3 scripts/duree_tv.py              # durée par page de 10 s (défaut de la page)
   python3 scripts/duree_tv.py --duree 12
 
 Hypothèse : tous les inscrits ont joué (c'est le maximum ; avant leurs premiers résultats, la télé affiche moins de pages).
@@ -43,7 +43,7 @@ def pages(players: dict) -> tuple[int, list]:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--duree", type=float, nargs="*", default=[8, 10], help="secondes par page (défaut : 8 et 10)")
+    parser.add_argument("--duree", type=float, nargs="*", default=[10], help="secondes par page (défaut : 10, comme la page télé)")
     args = parser.parse_args()
     total, lines = pages(read_players_csv())
     print("\n".join(lines))

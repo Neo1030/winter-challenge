@@ -3,7 +3,7 @@
    puis les statistiques de la semaine en cours de chaque catégorie, puis le Short Game (classements et statistiques du mois),
    par pages qui remplissent tout l'écran. Lit donnees/saison.json et le relit chaque minute.
    Écrit pour les anciens navigateurs des lecteurs d'affichage (Zebrix…) : pas de « ?. » ni de « ?? ».
-   Réglages dans l'adresse :  tv.html?duree=15  (secondes par page, 8 par défaut)   tv.html?lignes=5  (lignes par page au maximum)
+   Réglages dans l'adresse :  tv.html?duree=15  (secondes par page, 10 par défaut)   tv.html?lignes=5  (lignes par page au maximum)
    tv.html?debut=stats  (commence par les statistiques, pour les vérifier sans attendre) */
 (() => {
   "use strict";
@@ -15,7 +15,7 @@
   const pl = (n, word) => `${n} ${word}${n > 1 ? "s" : ""}`;
 
   const params = new URLSearchParams(location.search);
-  const DURATION = Math.max(2, Number(params.get("duree")) || 8) * 1000;
+  const DURATION = Math.max(2, Number(params.get("duree")) || 10) * 1000;
   const MAX_ROWS = Number(params.get("lignes")) || 0;
   const START_STATS = params.get("debut") === "stats";
   const REFRESH = 60 * 1000;

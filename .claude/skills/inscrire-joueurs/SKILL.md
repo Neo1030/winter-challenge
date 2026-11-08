@@ -30,7 +30,7 @@ Les outils sont dans le dépôt, à lancer depuis sa racine : `scripts/inscrire_
 4. **Demande la confirmation** avant d'écrire. La création d'un compte SGT est durable : l'API ne permet pas de le supprimer. Si la personne a déjà dit « vas-y, inscris-les » après avoir vu les informations, ne redemande pas.
 5. **Exécute** la même commande sans `--simuler`. Vérifie la fin du compte rendu (« N joueur(s) traité(s), 0 en erreur ») et dis ce qui s'est passé.
 6. **Mets en ligne les handicaps** : `config/joueurs.csv` (pseudo, catégorie, handicap réel ; ni nom ni e-mail) a reçu une ligne par nouveau joueur. Propose de le commiter et de le pousser : la mise à jour automatique du site le lit (le site se met à jour dans les minutes qui suivent le push). Ne commite pas sans accord.
-7. **Donne la durée d'un tour complet de la télé**, à chaque inscription, sans qu'on la demande : `python3 scripts/duree_tv.py` (nombre de pages × secondes par page, pour 8 et 10 s). Mike la reporte dans Zebrix.
+7. **Donne la durée d'un tour complet de la télé**, à chaque inscription, sans qu'on la demande : `python3 scripts/duree_tv.py` (nombre de pages × 10 s par page, la durée par défaut de la télé). Mike la reporte dans Zebrix.
 8. **Rappelle aux joueurs** (ou à la personne qui les a donnés) de choisir leur mot de passe avec « mot de passe oublié » sur simulatorgolftour.com, avec l'adresse e-mail donnée. Le compte est créé avec un mot de passe aléatoire que personne ne connaît.
 
 ## Ce que fait le script, joueur par joueur

@@ -119,7 +119,7 @@ Une page à part, indépendante du site des joueurs, à afficher sur l'écran du
 Elle lit le même fichier `saison.json`, mais n'affiche que le logo, cinq cartes (semaine, prochain parcours, joueurs, meilleur net,
 meilleur brut) et le classement, qui occupe tout le reste de l'écran.
 
-- **Défilement automatique** toutes les 8 secondes : Hommes net, Hommes brut, Femmes net, Femmes brut, Seniors net, Seniors brut
+- **Défilement automatique** toutes les 10 secondes : Hommes net, Hommes brut, Femmes net, Femmes brut, Seniors net, Seniors brut
   (Winter Challenge, colonnes WC1, WC2…), puis le Short Game (colonnes SG1, SG2…), puis on recommence. Les cinq cartes du haut
   suivent la compétition affichée (semaine ou mois, parcours, joueurs, meilleurs net et brut). Un classement sans résultat
   n'apparaît pas. Chaque classement est coupé en pages équilibrées qui remplissent l'écran (par exemple 30 hommes en 3 pages de 10,
@@ -131,7 +131,7 @@ meilleur brut) et le classement, qui occupe tout le reste de l'écran.
   portent un numéro de version (`?v=3`) à augmenter quand on change `tv.js` ou les feuilles de style.
 - **Fondu** entre deux pages : le tableau s'efface, puis la nouvelle page apparaît ligne après ligne. Une barre fine en bas de la
   carte montre le temps restant avant la page suivante.
-- **Réglages dans l'adresse** : `tv.html?duree=15` (secondes par page, 8 par défaut), `tv.html?lignes=5` (5 lignes au maximum par page).
+- **Réglages dans l'adresse** : `tv.html?duree=15` (secondes par page, 10 par défaut), `tv.html?lignes=5` (5 lignes au maximum par page).
 - **Mise en place** : ouvrir l'adresse dans le navigateur de la télévision ou d'un mini-PC, puis plein écran avec F11, la touche F
   ou un double-clic. Pour un affichage permanent, Chrome peut se lancer en mode kiosque :
   `chrome --kiosk https://winterchallenge.letsgolf.ch/tv.html`.
