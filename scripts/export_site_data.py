@@ -121,7 +121,8 @@ def main():
     groups = {}
     for tour in tours:
         groups.setdefault(tour.get("competition") or "Winter Challenge", []).append(tour)
-    seasons = {name: build_season(group, overrides, best_n=BRUT_SEUL.get(name, 8), today=today, gross_only=name in BRUT_SEUL)
+    seasons = {name: build_season(group, overrides, best_n=BRUT_SEUL.get(name, 8), today=today, gross_only=name in BRUT_SEUL,
+                                 monthly=name in BRUT_SEUL)   # le Short Game se joue par mois
                for name, group in groups.items()}
     season = seasons.pop("Winter Challenge", None)
     if season is None:

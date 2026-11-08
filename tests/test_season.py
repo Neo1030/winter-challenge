@@ -124,7 +124,7 @@ class CalendrierTest(unittest.TestCase):
 
     def test_fin_la_veille_du_tournoi_suivant(self):
         weeks = self.weeks(date(2026, 11, 10), days=(1, 8, 29))  # trois semaines d'écart : pause de fin d'année
-        self.assertEqual([w.end for w in weeks], ["2026-11-07", "2026-11-28", "2027-03-14"])  # le dernier garde la fin prévue
+        self.assertEqual([w.end for w in weeks], ["2026-11-07", "2026-11-28", "2026-12-06"])  # le dernier : le dimanche qui suit son début
 
     def test_les_autres_categories_suivent_le_calendrier_des_hommes(self):
         hommes = tour([tournament(1, 1, []), tournament(2, 8, [], status="In Progress")], label="Hommes")
@@ -166,4 +166,21 @@ class GrossOnlyTest(unittest.TestCase):
     def test_un_seul_classement_le_brut_et_une_seule_categorie(self):
         self.assertEqual({p.category for p in self.season.players}, {"Mixte"})
         self.assertEqual(list(self.season.rankings), [("Mixte", "brut")])
+
+
+class LastEndTest(unittest.TestCase):
+    """Sans tournoi suivant : le dimanche qui suit le début (Winter Challenge), le dernier jour du mois (Short Game)."""
+
+    def test_dimanche_qui_suit(self):
+        from winter_challenge.season import last_end
+        self.assertEqual(last_end("2026-11-16"), "2026-11-22")   # lundi -> dimanche
+        self.assertEqual(last_end("2026-11-08"), "2026-11-15")   # dimanche -> le dimanche suivant
+        self.assertEqual(last_end("2026-11-01", monthly=True), "2026-11-30")
+        self.assertEqual(last_end("2026-12-01", monthly=True), "2026-12-31")
+
+    def test_le_dernier_tournoi_ne_garde_pas_la_fin_de_saison(self):
+        t1 = tournament(1, 9, [])
+        t1["end_date"] = "2027-03-14 00:00:00"   # fin de saison saisie chez SGT
+        s = build_season(tour([t1]), today=date(2026, 11, 10))
+        self.assertEqual((s.weeks[0].start, s.weeks[0].end), ("2026-11-09", "2026-11-15"))
 

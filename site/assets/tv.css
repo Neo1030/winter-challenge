@@ -85,3 +85,4 @@ body { display: flex; flex-direction: column; gap: 1.5vh; padding: 1.5vh 1.8vw 1
 
 /* Diagnostic : tv.html?debug=1 affiche les erreurs et le navigateur en bas de l'écran */
 #tv-debug { position: fixed; left: 0; right: 0; bottom: 0; z-index: 9; margin: 0; padding: 6px 10px; background: #001c33; color: #fff; font: 14px/1.3 monospace; white-space: pre-wrap; }
+#tv-debug::after { content: "\A" attr(data-cycle); }   /* durée d'un tour complet, à reporter dans Zebrix */

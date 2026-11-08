@@ -50,6 +50,8 @@ conversation. **S'il manque une information, demande-la avant d'écrire quoi que
   confirmer. Le mot de passe est aléatoire et inconnu : le joueur utilise « mot de passe oublié » avec son e-mail.
 - Après une inscription : commite et pousse `config/joueurs.csv` (la mise à jour des résultats le lit). Nom, prénom et e-mail
   restent dans `data/joueurs_inscrits.csv` (non versionné, sur cet ordinateur), pour créer plus tard les joueurs dans GSPro.
+- **Après chaque inscription, donne toujours la durée d'un tour complet de la page télé** (`python3 scripts/duree_tv.py`,
+  9 joueurs par page) : Mike la reporte dans Zebrix. La page télé l'affiche aussi d'après les résultats réels avec `tv.html?debug=1`.
 - Quand le capitaine crée un nouveau tournoi chez SGT : `python3 scripts/inscrire_joueurs.py --completer` inscrit les membres
   qui manquent (handicap réel, ou 0 au Short Game).
 

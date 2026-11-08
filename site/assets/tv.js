@@ -156,6 +156,10 @@
       }
     });
     slides = out;
+    /* Durée d'un tour complet (toutes les pages), à reporter dans Zebrix : visible avec ?debug=1 et dans window.TV_CYCLE */
+    window.TV_CYCLE = { pages: out.length, secondes: Math.round(out.length * DURATION / 1000), lignes_par_page: cap };
+    const box = document.getElementById("tv-debug");
+    if (box) box.setAttribute("data-cycle", out.length + " pages × " + DURATION / 1000 + " s = " + window.TV_CYCLE.secondes + " s pour un tour complet");
   }
 
   const evo = (e) => {

@@ -144,12 +144,24 @@ def sorted_tournaments(tour: dict) -> list:
     return sorted(tour["tournaments"], key=lambda t: (t["start_date"], t["end_date"], t["tournamentId"]))
 
 
-def schedule_weeks(weeks: list, today: date) -> None:
+def last_end(start: str, monthly: bool = False) -> str:
+    """Fin d'un tournoi qui n'a pas encore de suivant (décision de Mike, 08.11.2026) : le dimanche qui suit la date de début
+    (une semaine du Winter Challenge), ou le dernier jour du mois de début (un mois du Short Game). La date de fin saisie chez
+    SGT (souvent la fin de la saison, pour pouvoir rattraper) n'est pas affichée."""
+    d = date.fromisoformat(start)
+    if monthly:
+        first_next = date(d.year + d.month // 12, d.month % 12 + 1, 1)
+        return (first_next - timedelta(days=1)).isoformat()
+    return (d + timedelta(days=(6 - d.weekday()) % 7 or 7)).isoformat()
+
+
+def schedule_weeks(weeks: list, today: date, monthly: bool = False) -> None:
     """Fixe la date de fin et la phase de chaque tournoi d'un tour, d'après les dates de DÉBUT.
 
     Chez SGT, les tournois restent ouverts bien après leur date de fin (on rattrape jusqu'en mars) et tous affichent
     « In Progress » : ni cette date ni ce statut ne disent où en est le championnat. On prend donc :
-    - fin = la veille du début du tournoi suivant (le dernier garde la fin prévue chez SGT) ;
+    - fin = la veille du début du tournoi suivant ; sans suivant, le dimanche qui suit le début (le dernier jour du mois au
+      Short Game, monthly=True), voir last_end ;
     - en cours = le dernier tournoi commencé à la date du jour (aujourd'hui, ou le plus récent avant) ;
     - terminé = un tournoi dont le suivant a commencé ; à venir = pas encore commencé.
 
@@ -161,6 +173,8 @@ def schedule_weeks(weeks: list, today: date) -> None:
         nxt = ordered[i + 1] if i + 1 < len(ordered) else None
         if nxt:
             w.end = max(w.start, (date.fromisoformat(nxt.start) - timedelta(days=1)).isoformat())
+        else:
+            w.end = last_end(w.start, monthly)
         if date.fromisoformat(w.start) > today:
             w.phase = "a_venir"
         elif (nxt and date.fromisoformat(nxt.start) <= today) or (not nxt and w.status == "Completed"):
@@ -170,7 +184,7 @@ def schedule_weeks(weeks: list, today: date) -> None:
 
 
 def build_season(tours: list, overrides: dict | None = None, best_n: int = 8, today: date | None = None,
-                 gross_only: bool = False) -> Season:
+                 gross_only: bool = False, monthly: bool = False) -> Season:
     """gross_only : Short Game. Tout le monde joue avec un handicap de 0, le handicap ne bouge jamais, et il n'y a que le
     classement brut (le net serait identique, donc inutile)."""
     today = today or datetime.now(ZoneInfo("Europe/Zurich")).date()
@@ -222,7 +236,7 @@ def build_season(tours: list, overrides: dict | None = None, best_n: int = 8, to
 
     reference = {}
     for tour_weeks in tour_weeks_by_tour:
-        schedule_weeks(tour_weeks, today)
+        schedule_weeks(tour_weeks, today, monthly)
         if not reference:  # le premier tour donne le calendrier : même numéro de semaine, même phase pour tout le monde
             reference = {w.number: w for w in tour_weeks}
         for w in tour_weeks:
