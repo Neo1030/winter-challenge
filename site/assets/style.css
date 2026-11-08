@@ -335,3 +335,8 @@ dialog[open] { display: flex; flex-direction: column; overflow: hidden; }
   .dlg-body { padding-inline: 16px; }
   main { padding-top: 22px; }
 }
+
+/* Réglage différent selon la catégorie (départ, gimmies) : une ligne par catégorie */
+.percat { display: block; font-size: .95rem; font-weight: 600; line-height: 1.35; }
+.percat b { display: inline-block; min-width: 4.6em; font-weight: 700; color: var(--ink-soft); font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+.fact.wide { grid-column: span 2; }

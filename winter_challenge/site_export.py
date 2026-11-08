@@ -130,6 +130,7 @@ def _players(season: Season) -> list:
     return out
 
 
+PER_CATEGORY_KEYS = ("depart", "pente", "cotation", "gimmies")   # réglages qui peuvent changer d'une catégorie à l'autre
 DETAIL_KEYS = ("lieu", "difficulte", "styles", "description", "vent", "lien_video", "longueur_jaune_m")
 
 # Les statistiques en tuiles du classement : (clé, champ en mètres ou en %, champ d'origine, plus grand = meilleur)
@@ -146,7 +147,8 @@ def _courses(season: Season, history: list, next_course: dict | None) -> list:
     """Parcours de chaque semaine : réglages lus chez SGT, neuf joué, par, longueur.
 
     Les parcours sont les mêmes pour toutes les catégories (un tournoi par catégorie, mais le même parcours) : on lit
-    ceux du premier tour (les Hommes). Les infos du capitaine (longueur, description, vidéo…) viennent de l'archive des
+    ceux du premier tour (les Hommes). Les réglages propres à chaque catégorie (départ, slope, course rating, gimmies)
+    sont dans « par_categorie » : chez SGT, chaque catégorie a son tournoi et ses réglages. Les infos du capitaine (longueur, description, vidéo…) viennent de l'archive des
     parcours choisis, par nom de parcours et numéro de semaine. Le site n'en montre que trois groupes : la semaine en
     cours, la suivante et l'historique.
     """
@@ -170,6 +172,13 @@ def _courses(season: Season, history: list, next_course: dict | None) -> list:
                  "reglages": settings or None,
                  "lien_carte": CARD_URL.format(id=w.course_id) if w.course_id else None}
         entry.update({k: info.get(k) for k in DETAIL_KEYS if info and info.get(k) is not None})
+        per_cat = []
+        for label in season.labels:
+            other = next((o for o in season.weeks if o.category == label and o.number == w.number), None)
+            if other and other.settings:
+                per_cat.append({"categorie": label, **{k: other.settings.get(k) for k in PER_CATEGORY_KEYS}})
+        if len(per_cat) > 1:
+            entry["par_categorie"] = per_cat
         entries.append(entry)
     return entries
 
