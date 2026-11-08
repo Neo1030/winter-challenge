@@ -46,10 +46,15 @@ def _round_half_up(x: float) -> int:
     return int(Decimal(str(x)).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
 
 
+GAME_HANDICAP_SHARE = 0.75   # part du handicap réel qui donne le handicap de jeu de départ
+
+
 def game_handicap(real: float) -> int:
-    """Handicap de jeu de départ à 50 % du handicap réel (règle du formulaire « nouveau joueur »)."""
+    """Handicap de jeu de départ à 75 % du handicap réel (décision de Mike, 08.11.2026 ; 50 % dans l'ancien classeur).
+
+    Les handicaps très bas et « plus » gardent la règle du formulaire « nouveau joueur » de l'ancien classeur."""
     if real >= 1.1:
-        return _round_half_up(real / 2)
+        return _round_half_up(real * GAME_HANDICAP_SHARE)
     if real >= 0.5:
         return 0
     if real > -1:

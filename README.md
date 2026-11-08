@@ -11,7 +11,7 @@ classeur Excel (sans macros).
 - Classement final : somme des **8 meilleurs** résultats de la saison. Dans le classeur, ces résultats sont en vert et le
   plus petit d'entre eux (le premier à être remplacé) est en rouge.
 - Handicap de jeu : +1 sous les 100 points nets, sinon `− (points − 100) / 10`. Il ne change qu'à la fin de la semaine,
-  en cours de semaine. Handicap de départ : 50 % du handicap réel.
+  en cours de semaine. Handicap de départ : 75 % du handicap réel.
 
 Ces règles sont dans `winter_challenge/scoring.py` et `winter_challenge/season.py`.
 
@@ -24,7 +24,7 @@ python3 scripts/build_workbook.py --tour 3901:Test --saison 2026-2027 --sortie W
 
 - `--tour ID:Catégorie` : un tour SGT par catégorie, à répéter (Hommes, Femmes, Seniors…).
 - `--joueurs fichier.csv` : fichier `pseudo;categorie;handicap_reel` (celui du dépôt est `config/joueurs.csv`, tenu à jour par
-  `scripts/inscrire_joueurs.py`) pour imposer catégorie et handicap réel ; le handicap de jeu de départ en est la moitié. Sans lui, le handicap
+  `scripts/inscrire_joueurs.py`) pour imposer catégorie et handicap réel ; le handicap de jeu de départ en est 75 %. Sans lui, le handicap
   fixé par le club dans SGT est utilisé, sinon tout le monde part à 0 (l'index SGT n'est plus utilisé).
 - `--depuis-fichier data/sgt_brut.json` : refait le classeur sans appeler l'API (les données du dernier appel sont
   enregistrées dans `data/sgt_brut.json`).

@@ -159,7 +159,7 @@ def write_params(wb: Workbook, season: Season, season_label: str, tours: list):
         ("Points", "100 + (Stableford − 36) × 10 sur 18 trous, − 18 sur 9 trous, minimum 30"),
         ("Un tour par semaine", "un seul tour par joueur et par semaine ; ses Stableford brut et net donnent les points bruts et nets"),
         ("Handicap de jeu", "+1 sous 100 points nets, sinon − (points − 100) / 10, mis à jour à la fin de chaque semaine"),
-        ("Handicap de départ", "50 % du handicap réel (fichier joueurs, sinon handicap fixé par le club dans SGT, sinon 0)"),
+        ("Handicap de départ", "75 % du handicap réel (fichier joueurs, sinon handicap fixé par le club dans SGT, sinon 0)"),
         ("", ""),
         ("Ce fichier est généré par Python à partir de l'API SGT : ne pas le corriger à la main.", ""),
     ]

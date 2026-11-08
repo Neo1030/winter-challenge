@@ -47,8 +47,8 @@ class SeasonTest(unittest.TestCase):
     def test_handicap_de_depart_et_admin_exclu(self):
         s = build_season(tour([tournament(1, 1, [])]))
         self.assertEqual({p.name for p in s.players}, {"Ana", "Bob"})
-        self.assertEqual(s.players[0].start_hcp, 5)  # 10 / 2
-        self.assertEqual(game_handicap(17.3), 9)
+        self.assertEqual(s.players[0].start_hcp, 8)  # 75 % de 10 = 7,5, arrondi à 8
+        self.assertEqual(game_handicap(17.3), 13)   # 75 % : 12,975
         self.assertEqual(game_handicap(0.7), 0)
         self.assertEqual(game_handicap(0), -1)
         self.assertEqual(game_handicap(-2), -3)

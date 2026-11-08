@@ -26,8 +26,8 @@ Réponds en français, en tutoyant, ton concret. Francs suisses (CHF), dates JJ.
 
 ### Winter Challenge : handicaps
 
-- On reçoit le **handicap réel** du joueur. Le calcul utilise la **moitié** (handicap de jeu de départ = 50 % du réel,
-  `game_handicap` dans scoring.py : 11 → 6). Les deux valeurs existent, comme dans l'Excel d'origine.
+- On reçoit le **handicap réel** du joueur. Le calcul utilise **75 %** du réel (handicap de jeu de départ, décision de Mike du 08.11.2026 ;
+  `game_handicap` et `GAME_HANDICAP_SHARE` dans scoring.py : 11 → 8). L'ancien classeur prenait 50 %. Les deux valeurs existent, comme dans l'Excel d'origine.
 - Sans handicap réel connu, le handicap de jeu de départ est 0. L'index SGT n'est pas utilisé.
 - Le handicap de jeu bouge à la fin de chaque semaine (+1 sous 100 points nets, sinon − (points − 100) / 10).
 - Les handicaps réels sont dans `config/joueurs.csv` (`pseudo;categorie;handicap_reel`), lu par la mise à jour automatique.
