@@ -30,6 +30,7 @@ from winter_challenge.sgt_api import load_env  # noqa: E402
 ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
 SKIP = {".DS_Store", "LISEZ-MOI.md"}   # fichiers qui n'ont rien à faire en ligne
+SKIP_DIRS = {"visites"}                  # données du compteur de visites : écrites en ligne par compteur.php, jamais envoyées
 
 
 def files_to_send(only_data, with_data=False):
@@ -38,7 +39,8 @@ def files_to_send(only_data, with_data=False):
         return [data]
     # Les résultats en ligne sont tenus à jour par GitHub : l'envoi complet ne les écrase pas avec la copie de cet ordinateur,
     # souvent en retard (sinon des joueurs et des semaines disparaissent du site jusqu'à la prochaine mise à jour).
-    return sorted(p for p in SITE.rglob("*") if p.is_file() and p.name not in SKIP and (with_data or p != data))
+    return sorted(p for p in SITE.rglob("*") if p.is_file() and p.name not in SKIP
+                  and not SKIP_DIRS & set(p.relative_to(SITE).parts) and (with_data or p != data))
 
 
 def unchanged_online(url):

@@ -74,6 +74,15 @@ conversation. **S'il manque une information, demande-la avant d'écrire quoi que
   semaine suivante : jamais plus loin. Fin affichée d'une semaine = veille du début du tournoi suivant (chez SGT, les tournois
   restent ouverts jusqu'en fin de saison).
 
+## Visites du site
+
+- `site/compteur.php` compte les pages vues du site des joueurs (appelé par app.js, seulement sur winterchallenge.letsgolf.ch).
+  La télé n'est jamais comptée. Pas de cookie, pas d'adresse IP gardée : un code brouillé qui change chaque jour.
+  Les données restent en ligne dans `visites/` (fermé au public, jamais versionné ni envoyé par le déploiement).
+- `https://winterchallenge.letsgolf.ch/stats.php` : statistiques avec mot de passe. Mot de passe : `python3 scripts/mot_de_passe_stats.py`
+  (tapé dans un terminal, seule l'empreinte va dans `site/stats-cle.php`, **hors Git** : à envoyer à la main avec
+  `python3 scripts/deploy_ftps.py`, la mise en ligne automatique ne l'envoie ni ne l'efface). `?compter=non` exclut un navigateur du compteur.
+
 ## Contrôles
 
 `python3 -m unittest discover tests` avant tout commit. Aperçu local : `python3 scripts/serve_site.py` (`--demo` pour les données fictives).

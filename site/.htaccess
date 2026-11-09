@@ -15,6 +15,11 @@ AddDefaultCharset UTF-8
   </FilesMatch>
 </IfModule>
 
+# Données du compteur de visites (compteur.php) : jamais lisibles depuis le web, seul stats.php les lit sur le serveur
+<IfModule mod_alias.c>
+  RedirectMatch 404 ^/visites(/|$)
+</IfModule>
+
 <IfModule mod_deflate.c>
   AddOutputFilterByType DEFLATE application/json text/css application/javascript text/html
 </IfModule>

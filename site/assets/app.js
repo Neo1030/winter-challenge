@@ -610,7 +610,26 @@
     document.querySelectorAll(".tabs a").forEach((a) => (a.dataset.route === name ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current")));
     VIEWS[name](params);
   }
-  window.addEventListener("hashchange", () => { render(); window.scrollTo(0, 0); });
+  /* ---------- Compteur de visites (compteur.php, sans cookie) ----------
+     Une page vue = l'arrivée sur le site ou un changement d'onglet. Seulement sur le vrai site : ni en aperçu local, ni sur
+     la télé (qui n'utilise pas ce fichier). « ?compter=non » exclut ce navigateur (Mike, le capitaine), « ?compter=oui » l'y remet. */
+  const COUNT_HOST = "winterchallenge.letsgolf.ch";
+  function countingOff() {
+    try {
+      const q = new URLSearchParams(location.search).get("compter");
+      if (q === "non") localStorage.setItem("wc_pas_compter", "1");
+      if (q === "oui") localStorage.removeItem("wc_pas_compter");
+      return localStorage.getItem("wc_pas_compter") === "1";
+    } catch (e) { return false; }
+  }
+  const noCount = location.hostname !== COUNT_HOST || countingOff();
+  function count() {
+    if (noCount) return;
+    const touchMac = navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent) ? "&t=1" : "";
+    new Image().src = `compteur.php?p=${encodeURIComponent(parseHash().route)}&c=${encodeURIComponent(state.comp)}${touchMac}&r=${Date.now()}`;
+  }
+
+  window.addEventListener("hashchange", () => { render(); window.scrollTo(0, 0); count(); });
 
   fetch("donnees/saison.json?v=" + Date.now())
     .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
@@ -623,6 +642,7 @@
       $("#demo-banner").hidden = !data.demo;
       if (!data.semaines.length) { app.innerHTML = '<p class="empty">La saison n\'a pas encore commencé.</p>'; return; }
       render();
+      count();
     })
     .catch(() => { app.innerHTML = '<p class="empty">Impossible de charger les données pour le moment. Réessaie dans quelques minutes.</p>'; });
 })();

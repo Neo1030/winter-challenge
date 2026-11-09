@@ -1,7 +1,8 @@
 # Site du Winter Challenge
 
 Site statique (HTML, CSS, JavaScript) pour winterchallenge.letsgolf.ch : classements net et brut, parcours de la semaine,
-résultats par semaine et fiches joueurs. Aucun outil de compilation, aucune base de données, aucun cookie ni traceur.
+résultats par semaine et fiches joueurs. Aucun outil de compilation, aucune base de données, aucun cookie ni traceur publicitaire.
+Un petit compteur de visites anonyme (compteur.php, sans cookie ni adresse IP gardée) alimente la page stats.php, réservée.
 
 ```
 site/
@@ -9,6 +10,8 @@ site/
 ├── tv.html               la page pour la télévision du centre (Winter Challenge Results)
 ├── tvreduit.html         la même page pour une zone d'écran de 1229 × 1080 (même script, en-tête du classement sur deux lignes)
 ├── tvdemo.html, tvreduitdemo.html   les mêmes pages avec des données fictives (demo/saison_demo.json : 18 semaines, 60 joueurs, 20 au Short Game)
+├── compteur.php          compteur de visites anonyme, appelé par app.js (jamais par la télé) ; écrit visites/AAAA-MM.csv
+├── stats.php             statistiques de visite, avec mot de passe (empreinte dans stats-cle.php, voir scripts/mot_de_passe_stats.py)
 ├── .htaccess             réglages Apache (le fichier de données n'est jamais gardé en cache)
 ├── assets/
 │   ├── style.css         l'apparence (couleurs en tête de fichier)

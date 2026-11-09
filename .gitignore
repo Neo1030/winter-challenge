@@ -22,3 +22,8 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Visites du site : écrites en ligne par compteur.php, jamais versionnées
+site/visites/
+# Empreinte du mot de passe de stats.php : hors Git, envoyée à la main (scripts/deploy_ftps.py)
+site/stats-cle.php
