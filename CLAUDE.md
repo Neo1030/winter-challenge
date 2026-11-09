@@ -46,8 +46,12 @@ conversation. **S'il manque une information, demande-la avant d'écrire quoi que
   Seniors 3912), avec son handicap réel, dans tous les tournois de ces tours.
 - Commande : `python3 scripts/inscrire_joueurs.py --fichier liste.xlsx --simuler`, puis sans `--simuler`. Voir le skill.
 - Ne touche jamais aux joueurs déjà en place (compte, handicap, inscriptions, ligne de `config/joueurs.csv`).
-- La création d'un compte SGT est **durable** (l'API ne peut pas supprimer un compte) : toujours simuler d'abord et faire
-  confirmer. Le mot de passe est aléatoire et inconnu : le joueur utilise « mot de passe oublié » avec son e-mail.
+- La création d'un compte SGT est **durable** (l'API ne peut pas supprimer un compte) : toujours simuler d'abord.
+  **Feu vert de Mike (09.11.2026)** : quand on demande d'inscrire un joueur et que la simulation est propre (les six
+  informations présentes, pseudo et e-mail libres, e-mail sans faute apparente, « 0 en erreur »), crée le compte et inscris-le
+  chez SGT **sans demander**, puis commite et pousse `config/joueurs.csv` **sans demander**. Au moindre doute (pseudo ou e-mail
+  déjà pris, e-mail suspect ou proche d'un compte existant, handicap inhabituel, joueur déjà en place, erreur), arrête-toi et demande.
+  Le mot de passe est aléatoire et inconnu : le joueur utilise « mot de passe oublié » avec son e-mail.
 - Après une inscription : commite et pousse `config/joueurs.csv` (la mise à jour des résultats le lit). Nom, prénom et e-mail
   restent dans `data/joueurs_inscrits.csv` (non versionné, sur cet ordinateur), pour créer plus tard les joueurs dans GSPro.
 - **Après chaque inscription, donne toujours la durée d'un tour complet de la page télé** (`python3 scripts/duree_tv.py`,
