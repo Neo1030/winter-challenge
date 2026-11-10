@@ -81,6 +81,7 @@ main:focus { outline: none; }
 .hero h1.hero-logo { margin: 4px 0 6px; line-height: 0; }
 .hero-logo img { width: min(520px, 100%); height: auto; display: block; }
 .hero p { margin: 0; max-width: 560px; color: var(--ink-soft); font-weight: 400; font-size: 1.1rem; }
+.hero p.hero-note { margin-top: 10px; font-size: 1rem; }
 
 .demo { background: var(--warn); color: var(--warn-ink); font-size: .92rem; font-weight: 700; text-align: center; padding: 8px 0; }
 
