@@ -508,19 +508,29 @@
   }
 
   /* ---------- Joueurs ---------- */
-  function viewPlayers() {
+  function viewPlayers(params) {
+    /* Filtre par catégorie (Hommes, Femmes, Seniors) ; « Tous » par défaut. Le Short Game, mixte, n'a qu'une catégorie : pas de filtre. */
+    const cats = data.categories.map((c) => c.nom);
+    state.pcat = cats.indexOf(params.cat) >= 0 ? params.cat : null;
+    const chip = (val, label) => `<button type="button" data-pcat="${esc(val)}" aria-pressed="${(state.pcat || "") === val}">${esc(label)}</button>`;
     app.innerHTML = `${compBar()}<h2>Joueurs</h2><p class="sub">Touche un joueur pour voir sa fiche.</p>
-      <div class="toolbar"><input class="search" id="pq" type="search" placeholder="Chercher un joueur" aria-label="Chercher un joueur"></div>
+      <div class="toolbar">
+        ${cats.length > 1 ? `<div class="chips" role="group" aria-label="Catégorie">${chip("", "Tous")}${cats.map((c) => chip(c, c)).join("")}</div>` : ""}
+        <input class="search" id="pq" type="search" placeholder="Chercher un joueur" aria-label="Chercher un joueur">
+      </div>
       <div class="grid players" id="plist"></div>`;
     const draw = () => {
       const q = $("#pq").value.trim().toLowerCase();
-      const list = data.joueurs.filter((j) => j.joueur.toLowerCase().includes(q));
+      const list = data.joueurs.filter((j) => j.joueur.toLowerCase().includes(q) && (!state.pcat || j.categorie === state.pcat));
       $("#plist").innerHTML = list.length ? list.map((j) => `<button type="button" class="card pcard" data-player="${esc(j.joueur)}">
         <span><span class="n">${nm(j.joueur)}</span><br><span class="c">${esc(j.categorie)}${grossOnly() ? "" : ` · hdc ${j.hdc_actuel}`}</span></span>
         <span class="r">${(grossOnly() ? j.rang_brut : j.rang_net) ? "#" + (grossOnly() ? j.rang_brut : j.rang_net) : "–"}</span></button>`).join("") : '<p class="empty">Aucun joueur.</p>';
       bindPlayers();
     };
     $("#pq").addEventListener("input", draw);
+    app.querySelectorAll("[data-pcat]").forEach((b) => b.addEventListener("click", () => {
+      go("joueurs", b.dataset.pcat ? { cat: b.dataset.pcat } : {}); render();
+    }));
     bindComp("joueurs");
     draw();
   }
