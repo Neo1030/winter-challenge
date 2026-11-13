@@ -32,6 +32,7 @@
 
   /* ---------- Les cinq cartes (celles de la compétition affichée) ---------- */
   const isWC = (c) => c.prefixe === "WC";
+  const NINE = { Front: "trous 1 à 9", Back: "trous 10 à 18", All: "les 18 trous" };
 
   function leader(c, kind) {
     let best = null;
@@ -50,6 +51,11 @@
     const upcoming = pc && week && pc.semaine === week.numero + 1;   // jamais plus loin que la semaine suivante
     const course = upcoming ? pc.nom : week ? week.parcours : "–";
     const place = pc && week && (upcoming || pc.semaine === week.numero) ? pc.lieu : "";
+    /* Neuf joué (front 9, back 9, 18 trous) de la semaine affichée : tiré des cartes de score ou de l'archive des parcours */
+    const shownNo = upcoming ? pc.semaine : week ? week.numero : null;
+    let nine = "";
+    for (const e of c.parcours || []) if (e.semaine === shownNo && NINE[e.neuf]) nine = NINE[e.neuf];
+    const courseNote = [place, nine].filter((s) => s).join(" · ");
     const multi = c.categories.length > 1;
     const word = isWC(c) ? "semaine" : "mois";
     const best = (kind) => {
@@ -60,7 +66,7 @@
     const cards = [
       [isWC(c) ? "Semaine" : "Mois", week ? `${c.prefixe}${week.numero}${week.statut === "en_cours" ? ' <span class="live">en cours</span>' : ""}` : "–",
         week ? (week.fin <= week.debut ? `le ${day(week.debut)}` : `du ${day(week.debut)} au ${day(week.fin)}`) : ""],
-      [upcoming ? "Prochain parcours" : "Parcours", esc(course), esc(place)],
+      [upcoming ? "Prochain parcours" : "Parcours", esc(course), esc(courseNote)],
       ["Joueurs", c.joueurs.length, `${weeks.length} ${weeks.length > 1 && word === "semaine" ? "semaines" : word} ${(isWC(c) ? ["jouée", "jouées"] : ["joué", "joués"])[weeks.length > 1 ? 1 : 0]}`],
     ];
     if (!c.brut_seul) {                                          // Short Game : brut seulement, pas de carte « Meilleur net »
