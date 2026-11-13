@@ -398,7 +398,6 @@
   const FIRMNESS = { soft: "Soft", medium: "Medium", middle: "Medium", firm: "Firm", hard: "Hard" };
   const TEES = { par3: "Par 3", white: "Blanc", yellow: "Jaune", blue: "Bleu", black: "Noir", red: "Rouge", gold: "Or", green: "Vert", orange: "Orange", silver: "Argent" };
   const WINDS = { nowind: "No wind", calm: "Calm", breezy: "Breezy", gusty: "Gusty", windy: "Windy" };
-  const WEATHER = { clear: "Dégagé", sunny: "Ensoleillé", cloudy: "Nuageux", partlycloudy: "Peu nuageux", overcast: "Couvert", rain: "Pluie", rainy: "Pluie", fog: "Brouillard", foggy: "Brouillard" };
   const DAYS = { monday: "lundi", tuesday: "mardi", wednesday: "mercredi", thursday: "jeudi", friday: "vendredi", saturday: "samedi", sunday: "dimanche" };
   const PUTTING = { normal: "Normal", nogimmes: "Sans gimmie", nogimmies: "Sans gimmie" };
   const metres = (v) => { // les distances de SGT sont en pieds : on les affiche en mètres
@@ -425,28 +424,36 @@
     const stimp = perCategory(e, "stimp", (p) => (p.stimp ?? null), true);
     const rows = [
       tee ? ["Départ", tee, null] : ["Départ", e.depart ? tr(TEES, e.depart) : null, r.pente ? `slope ${r.pente} · course rating ${r.cotation ?? "–"}` : null],
+      stimp ? ["Stimp", stimp, null] : ["Stimp", r.stimp ?? null, "vitesse des greens"],
+      ["Gimmies", gim || (r.gimmies ? metres(r.gimmies) : null)],
+      /* les trois premiers (MAIN_FACTS) forment la première ligne de la fiche ; la météo n'est plus affichée (demande de Mike, 13.11.2026) */
       ["On joue", e.neuf ? NINE[e.neuf] ?? e.neuf : null, e.par ? `par ${e.par}` : null],
       ["Longueur", e.longueur_jaune_m ? `${num(e.longueur_jaune_m)} m` : null, e.longueur_jaune_m ? "18 trous, départ jaune" : null],
-      stimp ? ["Stimp", stimp, null] : ["Stimp", r.stimp ?? null, "vitesse des greens"],
       ["Greens", tr(FIRMNESS, r.greens)],
       ["Fairways", tr(FIRMNESS, r.fairways)],
       ["Vent", r.vent ? tr(WINDS, r.vent) : e.vent ? tr(WINDS, e.vent) : null, r.vent ? null : e.vent ? "conseillé" : null],
-      ["Météo", tr(WEATHER, r.meteo)],
       ["Drapeaux", r.drapeaux ? tr(DAYS, r.drapeaux) : null],
-      ["Gimmies", gim || (r.gimmies ? metres(r.gimmies) : null)],
       ["Putting", tr(PUTTING, r.putting)],
     ];
     return rows.filter(([, v]) => v != null && v !== "");
   }
   const dates = (e) => (!e.fin || e.fin <= e.debut ? `le ${day(e.debut)}` : `du ${day(e.debut)} au ${day(e.fin)}`);
-  const factsHtml = (e) => courseParams(e).map(([l, v, n]) =>
-    `<div class="fact${typeof v === "object" ? " wide" : ""}"><div class="label">${esc(l)}</div><div class="value">${typeof v === "object" ? v.html : esc(v)}</div>${n ? `<div class="note">${esc(n)}</div>` : ""}</div>`).join("");
+  const MAIN_FACTS = ["Départ", "Stimp", "Gimmies"];
+  const factHtml = ([l, v, n]) =>
+    `<div class="fact${typeof v === "object" ? " wide" : ""}"><div class="label">${esc(l)}</div><div class="value">${typeof v === "object" ? v.html : esc(v)}</div>${n ? `<div class="note">${esc(n)}</div>` : ""}</div>`;
+  /* Deux lignes de tuiles qui prennent toute la largeur : départ, stimp et gimmies, puis le reste (extra : tuiles ajoutées à la fin) */
+  const factsHtml = (e, extra = "") => {
+    const rows = courseParams(e);
+    const main = rows.filter(([l]) => MAIN_FACTS.indexOf(l) >= 0).map(factHtml).join("");
+    const rest = rows.filter(([l]) => MAIN_FACTS.indexOf(l) < 0).map(factHtml).join("") + extra;
+    return (main ? `<div class="facts-row main">${main}</div>` : "") + (rest ? `<div class="facts-row">${rest}</div>` : "");
+  };
   const chipsHtml = (e) => courseParams(e).map(([l, v]) => `<span><b>${esc(l)}</b> ${esc(typeof v === "object" ? v.text : v)}</span>`).join("");
 
   /* Grande fiche : semaine en cours ou semaine suivante */
   function courseCard(e, kicker) {
     const diff = e.difficulte == null ? null : e.difficulte <= 3 ? "facile" : e.difficulte <= 6 ? "moyen" : "difficile";
-    const facts = factsHtml(e) + (diff ? `<div class="fact"><div class="label">Difficulté</div><div class="value">${e.difficulte}/10</div><div class="note">${diff}</div></div>` : "");
+    const facts = factsHtml(e, diff ? `<div class="fact"><div class="label">Difficulté</div><div class="value">${e.difficulte}/10</div><div class="note">${diff}</div></div>` : "");
     return `<article class="card course">
       <div class="course-head"><span class="kicker">${esc(kicker)}</span><h2>${esc(e.nom)}</h2><p>${esc(e.lieu || "")}${e.debut ? `${e.lieu ? " · " : ""}${dates(e)}` : ""}</p></div>
       <div class="course-body">
