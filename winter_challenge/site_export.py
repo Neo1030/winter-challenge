@@ -130,7 +130,7 @@ def _players(season: Season) -> list:
     return out
 
 
-PER_CATEGORY_KEYS = ("depart", "pente", "cotation", "gimmies")   # réglages qui peuvent changer d'une catégorie à l'autre
+PER_CATEGORY_KEYS = ("depart", "pente", "cotation", "gimmies", "stimp")   # réglages qui peuvent changer d'une catégorie à l'autre
 DETAIL_KEYS = ("lieu", "difficulte", "styles", "description", "vent", "lien_video", "longueur_jaune_m")
 
 # Les statistiques en tuiles du classement : (clé, champ en mètres ou en %, champ d'origine, plus grand = meilleur)
@@ -147,7 +147,7 @@ def _courses(season: Season, history: list, next_course: dict | None) -> list:
     """Parcours de chaque semaine : réglages lus chez SGT, neuf joué, par, longueur.
 
     Les parcours sont les mêmes pour toutes les catégories (un tournoi par catégorie, mais le même parcours) : on lit
-    ceux du premier tour (les Hommes). Les réglages propres à chaque catégorie (départ, slope, course rating, gimmies)
+    ceux du premier tour (les Hommes). Les réglages propres à chaque catégorie (départ, slope, course rating, gimmies, stimp)
     sont dans « par_categorie » : chez SGT, chaque catégorie a son tournoi et ses réglages. Les infos du capitaine (longueur, description, vidéo…) viennent de l'archive des
     parcours choisis, par nom de parcours et numéro de semaine. Le site n'en montre que trois groupes : la semaine en
     cours, la suivante et l'historique.

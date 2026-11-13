@@ -407,10 +407,12 @@
   };
 
   /* Les réglages du parcours, sous forme de [titre, valeur, note]. Une valeur { html, text } liste une valeur par catégorie
-     (chez SGT, chaque catégorie a son tournoi : départ, slope et gimmies peuvent différer) */
-  function perCategory(e, key, fmt) {
+     (chez SGT, chaque catégorie a son tournoi : départ, slope, gimmies et stimp peuvent différer).
+     always : liste par catégorie même si les valeurs sont identiques (gimmies et stimp, demande de Mike du 13.11.2026) */
+  function perCategory(e, key, fmt, always) {
     const per = e.par_categorie;
-    if (!per || new Set(per.map((p) => JSON.stringify([p[key], key === "depart" ? p.pente : null]))).size < 2) return null;
+    if (!per || per.every((p) => p[key] == null)) return null;
+    if (!always && new Set(per.map((p) => JSON.stringify([p[key], key === "depart" ? p.pente : null]))).size < 2) return null;
     return {
       html: per.map((p) => `<span class="percat"><b>${esc(p.categorie)}</b> ${esc(fmt(p) ?? "–")}</span>`).join(""),
       text: per.map((p) => `${p.categorie} ${fmt(p) ?? "–"}`).join(" · "),
@@ -419,12 +421,13 @@
   function courseParams(e) {
     const r = e.reglages || {};
     const tee = perCategory(e, "depart", (p) => (p.depart ? `${tr(TEES, p.depart)}${p.pente ? ` · slope ${p.pente} · CR ${p.cotation ?? "–"}` : ""}` : null));
-    const gim = perCategory(e, "gimmies", (p) => (p.gimmies ? metres(p.gimmies) : null));
+    const gim = perCategory(e, "gimmies", (p) => (p.gimmies ? metres(p.gimmies) : null), true);
+    const stimp = perCategory(e, "stimp", (p) => (p.stimp ?? null), true);
     const rows = [
       tee ? ["Départ", tee, null] : ["Départ", e.depart ? tr(TEES, e.depart) : null, r.pente ? `slope ${r.pente} · course rating ${r.cotation ?? "–"}` : null],
       ["On joue", e.neuf ? NINE[e.neuf] ?? e.neuf : null, e.par ? `par ${e.par}` : null],
       ["Longueur", e.longueur_jaune_m ? `${num(e.longueur_jaune_m)} m` : null, e.longueur_jaune_m ? "18 trous, départ jaune" : null],
-      ["Stimp", r.stimp ?? null, "vitesse des greens"],
+      stimp ? ["Stimp", stimp, null] : ["Stimp", r.stimp ?? null, "vitesse des greens"],
       ["Greens", tr(FIRMNESS, r.greens)],
       ["Fairways", tr(FIRMNESS, r.fairways)],
       ["Vent", r.vent ? tr(WINDS, r.vent) : e.vent ? tr(WINDS, e.vent) : null, r.vent ? null : e.vent ? "conseillé" : null],
@@ -462,7 +465,7 @@
     const u = unit();
     app.innerHTML = `${compBar()}
       <h2>Parcours</h2>
-      <p class="sub">Les réglages ${u.end}, le parcours à venir et ceux déjà joués. C'est le même parcours pour toutes les catégories ; le départ, et parfois les gimmies, changent selon la catégorie.</p>
+      <p class="sub">Les réglages ${u.end}, le parcours à venir et ceux déjà joués. C'est le même parcours pour toutes les catégories ; le départ, les gimmies et le stimp peuvent changer selon la catégorie.</p>
       ${current ? `<section><h3>${u.this}</h3>${courseCard(current, `${u.Cap} ${P()}${current.semaine} · en cours`)}
         <p class="sub" style="margin-top:12px">Joue ton tour sur Simulator Golf Tour avant la fin ${u.end} (jusqu'au ${day(current.fin)}) : tu n'as droit qu'à un seul tour.</p></section>`
         : `<section><h3>${u.this}</h3><p class="empty">Aucun tournoi en cours pour le ${esc(data.nom)}.</p></section>`}

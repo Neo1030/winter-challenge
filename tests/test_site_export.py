@@ -112,9 +112,9 @@ class ReglagesParCategorieTest(unittest.TestCase):
     def test_depart_par_categorie(self):
         hommes = tour([tournament(1, 1, [card("Ana", [4] * 9)])], label="Hommes")[0]
         femmes = tour([tournament(2, 1, [card("Eve", [4] * 9)])], members=("Eve",), label="Femmes")[0]
-        hommes["tournaments"][0]["reglages"] = {"depart": "Blue", "pente": 131, "cotation": 71.8, "gimmies": "10 Feet"}
-        femmes["tournaments"][0]["reglages"] = {"depart": "Red", "pente": 121, "cotation": 68.1, "gimmies": "6 Feet"}
+        hommes["tournaments"][0]["reglages"] = {"depart": "Blue", "pente": 131, "cotation": 71.8, "gimmies": "10 Feet", "stimp": 10}
+        femmes["tournaments"][0]["reglages"] = {"depart": "Red", "pente": 121, "cotation": 68.1, "gimmies": "6 Feet", "stimp": 9}
         data = build_site_data(build_season([hommes, femmes], today=TODAY), "2026-2027", now=NOW)
         per = data["parcours"][0]["par_categorie"]
-        self.assertEqual([(p["categorie"], p["depart"], p["gimmies"]) for p in per],
-                         [("Hommes", "Blue", "10 Feet"), ("Femmes", "Red", "6 Feet")])
+        self.assertEqual([(p["categorie"], p["depart"], p["gimmies"], p["stimp"]) for p in per],
+                         [("Hommes", "Blue", "10 Feet", 10), ("Femmes", "Red", "6 Feet", 9)])
