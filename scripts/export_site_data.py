@@ -63,11 +63,9 @@ def parse_tour_spec(spec):
     return int(tour_id), label or tour_id, (competition or "Winter Challenge").replace("_", " ")
 
 
-def published_settings(site_url=None, path="site/donnees/saison.json"):
-    """Réglages de tournois déjà publiés {id de tournoi: réglages} : on ne relit pas chez SGT un tournoi terminé.
-
-    Source : le fichier en ligne (SITE_URL) quand on tourne chez GitHub, sinon le fichier local. Sans fichier : rien.
-    """
+def read_published(site_url=None, path="site/donnees/saison.json"):
+    """Le fichier de données déjà publié. Source : le fichier en ligne (SITE_URL) quand on tourne chez GitHub, sinon le
+    fichier local. Sans fichier lisible : un fichier vide."""
     try:
         if site_url:
             with urllib.request.urlopen(site_url.rstrip("/") + "/donnees/saison.json", timeout=20) as r:
@@ -77,6 +75,65 @@ def published_settings(site_url=None, path="site/donnees/saison.json"):
                 published = json.load(f)
     except (OSError, ValueError):
         return {}
+    return published if isinstance(published, dict) else {}
+
+
+def published_drives(published):
+    """Plus longs drives déjà publiés {id de tournoi: {"cle", "yd"}} : le site SGT n'est relu que si les drives ont changé."""
+    out = {}
+    for tournament_id, drives in (published.get("drives_sgt") or {}).items():
+        if isinstance(drives, dict) and drives.get("cle") and isinstance(drives.get("yd"), dict):
+            try:
+                out[int(tournament_id)] = drives
+            except ValueError:
+                continue
+    return out
+
+
+SHOTS_FILE = "coups.json"       # à côté de saison.json : le coup par coup, lu par la fiche joueur seulement quand on l'ouvre
+SHOTS_PER_RUN = 60              # pages « Shot data » lues au plus par mise à jour ; le reste suit à la mise à jour suivante
+
+
+def read_published_shots(site_url=None, folder="site/donnees"):
+    """Coup par coup déjà publié {id de tournoi: {pseudo: {"cle", "trous"}}} : la page d'un joueur n'est relue chez SGT que
+    si sa carte a changé. Sans fichier lisible : rien (tout sera relu, par tranches de SHOTS_PER_RUN)."""
+    try:
+        if site_url:
+            with urllib.request.urlopen(site_url.rstrip("/") + "/donnees/" + SHOTS_FILE, timeout=20) as r:
+                published = json.load(r)
+        else:
+            with open(os.path.join(folder, SHOTS_FILE), encoding="utf-8") as f:
+                published = json.load(f)
+    except (OSError, ValueError):
+        return {}
+    out = {}
+    for tournament_id, players in (published.get("tournois") or {}).items() if isinstance(published, dict) else []:
+        if isinstance(players, dict):
+            try:
+                out[int(tournament_id)] = players
+            except ValueError:
+                continue
+    return out
+
+
+def shots_data(tours, generated):
+    """Contenu de coups.json : les coups par tournoi et par joueur, et pour chaque compétition les tournois de chaque
+    semaine (un par catégorie), pour que le site retrouve la partie d'un joueur."""
+    from winter_challenge.season import sorted_tournaments
+    index, tournaments = {}, {}
+    for tour in tours:
+        prefix = prefix_of(tour.get("competition") or "Winter Challenge")
+        for number, t in enumerate(sorted_tournaments(tour), start=1):
+            if t.get("coups"):
+                tournaments[str(t["tournamentId"])] = t["coups"]
+                index.setdefault(prefix, {}).setdefault(str(number), []).append(t["tournamentId"])
+    return {"genere_le": generated, "unite": "m", "index": index, "tournois": tournaments}
+
+
+def published_settings(site_url=None, path="site/donnees/saison.json", published=None):
+    """Réglages de tournois déjà publiés {id de tournoi: réglages} : on ne relit pas chez SGT un tournoi terminé."""
+    if published is None:
+        published = read_published(site_url, path)
     lists = [published.get("parcours")] + [c.get("parcours") for c in published.get("competitions_autres") or []]
     entries = [e for lst in lists for e in (lst if isinstance(lst, list) else [])]  # (l'ancien format : un dict par catégorie)
     return {e["tournoi_id"]: e["reglages"] for e in entries
@@ -102,11 +159,15 @@ def main():
             if not args.tour:
                 sys.exit("Indique au moins un tour : --tour 3910:Hommes")
             client = SgtClient.from_env()
-            known = published_settings(os.environ.get("SITE_URL"), args.sortie)
+            published = read_published(os.environ.get("SITE_URL"), args.sortie)
+            known = published_settings(published=published)
+            known_drives = published_drives(published)
+            known_shots = read_published_shots(os.environ.get("SITE_URL"), os.path.dirname(args.sortie))
+            shots_budget = [SHOTS_PER_RUN]
             tours = []
             for spec in args.tour:
                 tour_id, label, competition = parse_tour_spec(spec)
-                tour = client.fetch_tour(tour_id, label, known)
+                tour = client.fetch_tour(tour_id, label, known, known_drives, known_shots, shots_budget)
                 tour["competition"] = competition
                 tours.append(tour)
     except SgtApiError as e:
@@ -133,10 +194,19 @@ def main():
     data = build_site_data(season, args.saison, next_course, demo=args.demo,
                            history=[] if args.demo else parcours.read_history(),
                            autres=[(name, prefix_of(name), other) for name, other in seasons.items()])
+    # Plus longs drives lus sur le site SGT, gardés tels quels : la prochaine mise à jour ne relit que les tournois qui ont bougé
+    data["drives_sgt"] = {str(t["tournamentId"]): t["drives"] for tour in tours for t in tour["tournaments"] if t.get("drives")}
 
     os.makedirs(os.path.dirname(args.sortie), exist_ok=True)
     with open(args.sortie, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
+    # Coup par coup : un fichier à part (la fiche joueur le lit à la demande). Jamais en démonstration : pas de coups fictifs.
+    if not args.depuis_fichier:
+        shots = shots_data(tours, data.get("genere_le"))
+        with open(os.path.join(os.path.dirname(args.sortie), SHOTS_FILE), "w", encoding="utf-8") as f:
+            json.dump(shots, f, ensure_ascii=False, separators=(",", ":"))
+        print(f"coup par coup : {sum(len(p) for p in shots['tournois'].values())} cartes dans {len(shots['tournois'])} tournois"
+              f" ({SHOTS_PER_RUN - shots_budget[0]} pages lues chez SGT)")
     print(f"{len(data['joueurs'])} joueurs, {len(data['semaines'])} semaines, {len(data['categories'])} catégories -> {args.sortie}")
     for other in data["competitions_autres"]:
         print(f"  + {other['nom']} : {len(other['joueurs'])} joueurs, {len(other['semaines'])} mois")

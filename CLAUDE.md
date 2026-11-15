@@ -64,6 +64,10 @@ conversation. **S'il manque une information, demande-la avant d'écrire quoi que
 
 - SGT garde **une seule clé API par compte administrateur** : chaque connexion locale peut invalider celle de la mise à jour
   automatique (échec « INVALID API KEY » à la prochaine exécution, sans gravité). Évite de multiplier les connexions locales.
+- Deux données viennent des **pages publiques du site SGT**, pas de l'API (voir winter_challenge/sgt_page.py) : les réglages
+  du tournoi (stimp, gimmies, vent…) et le **plus long drive** (l'API n'a que la moyenne, qu'on n'affiche pas). SGT a refait son
+  site le 14.11.2026 et la lecture des réglages s'était arrêtée sans erreur : si des réglages ou des drives disparaissent du site,
+  regarde d'abord si SGT a changé ses pages.
 - Variable GitHub `SGT_TOURS` : `3910:Hommes 3911:Femmes 3912:Seniors 3909:Mixte:Short_Game` (le tiret bas remplace l'espace).
 - La mise à jour automatique (« Mise à jour des résultats », toutes les ~5 minutes) écrit `donnees/saison.json` en ligne.
   `python3 scripts/deploy_ftps.py` n'envoie **pas** ce fichier (sinon des joueurs et des semaines disparaissent) : `--avec-donnees`
@@ -78,6 +82,19 @@ conversation. **S'il manque une information, demande-la avant d'écrire quoi que
   WC1, WC2… = l'ordre des dates de début. Le site et la télé n'affichent que la semaine en cours et, au plus, le parcours de la
   semaine suivante : jamais plus loin. Fin affichée d'une semaine = veille du début du tournoi suivant (chez SGT, les tournois
   restent ouverts jusqu'en fin de saison).
+
+## Coup par coup (fiche joueur)
+
+- La fiche d'un joueur montre son tour **coup par coup** (un arc par coup, coloré selon l'endroit où la balle s'arrête, putts,
+  pénalités). L'API SGT ne donne pas ces données : elles viennent de l'onglet « Shot data » d'une carte de score du site SGT,
+  `https://simulatorgolftour.com/sgt-api/scorecard/<tournoi>/<id joueur>/indv/shots` (page publique, sans connexion).
+  **Accord de Mike du 15.11.2026**, pour tous les joueurs, tous les tournois, chaque semaine. C'est une lecture de page, plus
+  fragile que l'API : si SGT change sa page, le bloc disparaît de la fiche et le reste du site ne bouge pas.
+- Code : `parse_shots`, `shots_of` dans `winter_challenge/sgt_page.py` ; la mise à jour des résultats écrit `donnees/coups.json`
+  à côté de `saison.json` (jamais envoyé par la mise en ligne du site, comme `saison.json`). Une page n'est relue que si la carte
+  du joueur a changé ; au plus 60 pages par mise à jour (`SHOTS_PER_RUN`), le reste suit à la suivante.
+- Distances converties en mètres. Rien n'est inventé : un texte que SGT écrit autrement est montré tel quel, une fin de trou
+  absente chez SGT est signalée comme telle. Pas de coups fictifs dans les données de démonstration.
 
 ## Organisation du site (depuis le 15.11.2026)
 

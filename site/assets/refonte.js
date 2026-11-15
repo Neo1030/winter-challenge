@@ -228,7 +228,7 @@
     };
   }
 
-  /* ───────── Le coup d'ouverture : la meilleure moyenne au drive de la saison, tracée comme sur le simulateur ───────── */
+  /* ───────── Le coup d'ouverture : le plus long drive de la saison, tracé comme sur le simulateur ───────── */
   function initCoup(recInitial, ciel) {
     const hero = $(".hero"), svg = $("#coup"), bloc = $("#record"), num = $("#record-m");
     /* part : part de la trajectoire parcourue (0 = au départ, à gauche ; 1 = à l'arrivée, à droite). C'est le défilement qui la fait avancer. */
@@ -324,7 +324,7 @@
     return { construire: () => { cancelAnimationFrame(raf); construire(); }, avancer, annoncer, changer, estArrivee: () => arrivee, depart: () => ({ x: geo.xb, y: geo.y }), partir(v) { svg.classList.toggle("parti", v); } };
   }
 
-  /* Le record du haut de page. Winter Challenge : la meilleure moyenne au drive de la saison. Short Game (petit jeu, sans
+  /* Le record du haut de page. Winter Challenge : le plus long drive de la saison. Short Game (petit jeu, sans
      drive) : le closest to the pin de la saison ; à défaut, le plus long total de putts rentrés. */
   function recordPour(c) {
     let m = null;
@@ -341,7 +341,7 @@
       return { vide: true, m: 40, mode: "drive", dec: 0 };
     }
     chercher("drive", (a, b) => a > b);
-    return m ? Object.assign(m, { mode: "drive", dec: 1, texte: `${noms()} · meilleure moyenne au drive de la saison · ${esc(c.prefixe)}${m.semaine}, ${esc(m.cat)}` }) : { vide: true, m: 250, mode: "drive", dec: 0 };
+    return m ? Object.assign(m, { mode: "drive", dec: 1, texte: `${noms()} · plus long drive de la saison · ${esc(c.prefixe)}${m.semaine}, ${esc(m.cat)}` }) : { vide: true, m: 250, mode: "drive", dec: 0 };
   }
 
   /* ───────── Bandeau défilant ───────── */
@@ -794,7 +794,7 @@
   const TUILES = [
     ["fir", "FIR", "Fairways touchés", "%", 1, ""],
     ["gir", "GIR", "Greens en régulation", "%", 1, ""],
-    ["drive", "Avg driving distance", "Distance moyenne des drives de la partie, mesurée par SGT", "m", 1, "yds"],
+    ["drive", "Longest drive", "Plus long drive de la partie arrêté sur le fairway, mesuré par SGT", "m", 1, "yds"],
     ["ctp", "Closest to the pin", "Le coup de départ le plus près du drapeau sur un par 3", "m", 2, "ft"],
     ["putts_faits", "Total putt length", "Longueur totale des putts rentrés, par tour", "m", 2, "ft"],
   ];
@@ -827,7 +827,7 @@
       </article>`;
     }).join("");
     $("#stats-aide").textContent = `Le meilleur de chaque statistique parmi les joueurs de la catégorie ${cat.nom}, pour ${P()}${etat.sem}. ` + (P() === "SG" ? "" :
-      "Avg driving distance : distance moyenne des drives de la partie (SGT ne donne pas le plus long drive dans son API). ") +
+      "Longest drive : le plus long drive de la partie arrêté sur le fairway, sur un par 4 ou 5 (onglet Long Drive de SGT). ") +
       "Closest to the pin : le coup de départ le plus près du drapeau sur un par 3 (le plus petit gagne). Total putt length : longueur totale des putts rentrés par tour. Distances en mètres, valeur d'origine de SGT en dessous.";
     nombres(boite);
     rafraichir();
@@ -961,7 +961,7 @@
       ${regle("Où jouer", "Sur les simulateurs du Let's Golf, à Bussigny, avec GSPro : ton tour est envoyé tout seul au tournoi de Simulator Golf Tour.", SCENES.ou)}
       ${regle("Les statistiques", c
         ? `Dans la section Statistiques, trois tuiles donnent le meilleur ${unite().fin} : greens en régulation (GIR), closest to the pin et total putt length. Ta fiche joueur garde les tiennes.`
-        : "Dans la section Statistiques, cinq tuiles donnent le meilleur de la semaine : fairways touchés (FIR), greens en régulation (GIR), avg driving distance, closest to the pin et total putt length. Ta fiche joueur garde les tiennes.", SCENES.stats)}
+        : "Dans la section Statistiques, cinq tuiles donnent le meilleur de la semaine : fairways touchés (FIR), greens en régulation (GIR), longest drive, closest to the pin et total putt length. Ta fiche joueur garde les tiennes.", SCENES.stats)}
       ${regle("Les résultats", "Ce site se met à jour tout seul, toutes les 5 minutes environ en journée : ton score apparaît peu après la fin de ton tour.", SCENES.maj)}
     </div>`;
 
@@ -1024,18 +1024,18 @@
     const jauge = (v, lib) => (v == null ? "" : `<div class="jauge"><svg viewBox="0 0 64 64" aria-hidden="true"><circle class="fond" cx="32" cy="32" r="26"/><circle class="val" cx="32" cy="32" r="26" pathLength="100" stroke-dasharray="${v} 100"/></svg><b>${pct(v)}</b><span>${lib}</span></div>`);
     return `<h4>Statistiques</h4>
       <dl class="trio">
-        ${sg ? "" : fait("Avg driving distance", bd ? dec(bd.m, 1) + " m" : "–", bd ? `meilleure moyenne · ${P()}${bd.semaine}${semDrive && semDrive.drive_rang ? " · " + place(semDrive.drive_rang, semDrive.drive_sur) : ""}` : "pas encore")}
+        ${sg ? "" : fait("Longest drive", bd ? dec(bd.m, 1) + " m" : "–", bd ? `meilleur drive · ${P()}${bd.semaine}${semDrive && semDrive.drive_rang ? " · " + place(semDrive.drive_rang, semDrive.drive_sur) : ""}` : "pas encore")}
         ${fait("Closest to the pin", bc ? dec(bc.m, 2) + " m" : "–", bc ? `${P()}${bc.semaine} · trou ${bc.trou}${trouCtp ? " · " + place(trouCtp.rang, trouCtp.sur) : ""}` : "pas encore")}
         ${fait("Putts par tour", moy("putts"), "en moyenne")}
       </dl>
       <div class="jauges deux">${sg ? "" : jauge(r.fairways, "FIR · fairways touchés, en moyenne")}${jauge(r.greens, "GIR · greens en régulation, en moyenne")}</div>
       <div class="table-zone"><table><caption class="sr">Statistiques par ${u.cap}</caption>
-        <thead><tr><th scope="col">${u.court}</th>${sg ? "" : '<th scope="col">Avg drive</th>'}<th scope="col">Closest to the pin</th>${sg ? "" : '<th scope="col">FIR</th>'}<th scope="col">GIR</th><th scope="col">Putts</th></tr></thead>
+        <thead><tr><th scope="col">${u.court}</th>${sg ? "" : '<th scope="col">Longest drive</th>'}<th scope="col">Closest to the pin</th>${sg ? "" : '<th scope="col">FIR</th>'}<th scope="col">GIR</th><th scope="col">Putts</th></tr></thead>
         <tbody>${lignes.map((w) => `<tr><td>${P()}${w.semaine}</td>
           ${sg ? "" : `<td>${w.drive_m == null ? "–" : `<b>${dec(w.drive_m, 1)} m</b>${w.drive_rang ? ` <small>${place(w.drive_rang, w.drive_sur)}</small>` : ""}`}</td>`}
           <td>${ctp(w)}</td>${sg ? "" : `<td>${pct(w.fairways)}</td>`}<td>${pct(w.greens)}</td><td>${dec(w.putts)}</td></tr>`).join("")}</tbody>
         <tfoot><tr><th scope="row" colspan="${sg ? 2 : 3}">Moyenne par tour</th>${sg ? "" : `<td>${moy("fairways")}</td>`}<td>${moy("greens")}</td><td>${moy("putts")}</td></tr></tfoot></table></div>
-      <p class="expl">Distances en mètres.${sg ? "" : ` Avg drive : distance moyenne de tes drives ${u.fin}, mesurée par SGT (la meilleure en haut).`} Closest to the pin : ton coup de départ le plus près du drapeau sur un par 3, green atteint (le trou est indiqué, « +2 » = deux autres par 3 réussis).${sg ? "" : " FIR : fairways touchés."} GIR : greens en régulation. Statistiques de ta partie ${u.fin}.</p>`;
+      <p class="expl">Distances en mètres.${sg ? "" : ` Longest drive : ton plus long drive ${u.fin} arrêté sur le fairway, sur un par 4 ou 5 (le meilleur en haut).`} Closest to the pin : ton coup de départ le plus près du drapeau sur un par 3, green atteint (le trou est indiqué, « +2 » = deux autres par 3 réussis).${sg ? "" : " FIR : fairways touchés."} GIR : greens en régulation. Statistiques de ta partie ${u.fin}.</p>`;
   }
 
   function ouvrirFiche(pseudo) {
@@ -1065,6 +1065,8 @@
         </div>
       </div>
 
+      <div id="coups" hidden></div>
+
       ${brutSeul() ? "" : `<h4>Évolution du handicap</h4>
       <div class="graphe" id="hdc"></div>
       <p class="carnet-info" id="hdc-info" aria-live="polite">Un handicap plus bas est meilleur. Survole ou touche un point pour voir le détail.</p>`}
@@ -1084,6 +1086,105 @@
     fiche.showModal();
     fiche.scrollTop = 0;
     if (parties.length && ligne) { trouParties(p, ligne); if (!brutSeul()) handicap(p); }
+    if (parties.length) coupsJoueur(p, parties);
+  }
+
+  /* ───────── Le tour, coup par coup ─────────
+     Les coups viennent de l'onglet « Shot data » du site SGT (donnees/coups.json, écrit par la mise à jour des résultats) :
+     distance de chaque coup, endroit où la balle finit, distance restante, putts. Le fichier n'est lu qu'à la première
+     fiche ouverte. S'il manque, ou si le joueur n'y est pas, le bloc reste caché : rien n'est inventé. */
+  let coupsPromis = null;
+  const lireCoups = () => coupsPromis || (coupsPromis = fetch("donnees/coups.json?v=" + Date.now()).then((r) => (r.ok ? r.json() : null)).catch(() => null));
+  const LIES = { fairway: "fairway", semirough: "semi-rough", rough: "rough", deeprough: "rough épais", sand: "bunker", green: "green", holecup: "dans le trou" };
+  const lieNom = (l) => LIES[l] || l || "";
+  const metresC = (v) => (v == null ? "" : (v < 10 ? nb(v, 1) : nb(Math.round(v))) + " m");
+
+  function coupsDe(coups, p, semaine) {
+    const ids = coups && coups.index && coups.index[P()] ? coups.index[P()][String(semaine)] || [] : [];
+    for (const id of ids) {
+      const t = coups.tournois[String(id)];
+      if (t && t[p.joueur] && t[p.joueur].trous && t[p.joueur].trous.length) return t[p.joueur].trous;
+    }
+    return null;
+  }
+
+  /* le dessin d'un trou : du départ au drapeau, un arc par coup, d'autant plus haut que le coup est long */
+  function dessinTrou(trou, k) {
+    const L = 300, sol = 60, x0 = 12, x1 = 288;
+    const joues = trou.c.filter((c) => c[1] === "c" && typeof c[2] === "number");
+    const total = trou.m || joues.reduce((a, c) => a + c[2], 0) || 1;
+    const X = (reste) => x0 + (x1 - x0) * borne(1 - reste / total, 0, 1);
+    let x = x0, i = 0, h = "", points = "";
+    const titre = (c) => `<title>${esc(texteCoup(c).replace(/<[^>]+>/g, ""))}</title>`;
+    trou.c.forEach((c) => {
+      if (c[1] !== "c" || typeof c[2] !== "number") return;
+      const fin = c[4] != null ? X(c[4]) : Math.min(x1, x + (x1 - x0) * c[2] / total);
+      const haut = sol - borne(Math.abs(fin - x) * 0.42, 5, 50);
+      h += `<path class="cp-arc lie-${esc(c[3])}" pathLength="1" style="--i:${k * 0.12 + i * 0.28}s" d="M${x.toFixed(1)} ${sol}Q${((x + fin) / 2).toFixed(1)} ${(2 * haut - sol).toFixed(1)} ${fin.toFixed(1)} ${sol}">${titre(c)}</path>`;
+      points += c[3] === "holecup" ? "" : `<circle class="cp-pt lie-${esc(c[3])}" style="--i:${k * 0.12 + i * 0.28 + 0.3}s" cx="${fin.toFixed(1)}" cy="${sol}" r="3.4">${titre(c)}</circle>`;
+      x = fin; i++;
+    });
+    const putts = trou.c.filter((c) => c[1] === "p" || c[1] === "g").length;
+    if (putts && x < x1 - 0.5) h += `<path class="cp-putt" pathLength="1" style="--i:${k * 0.12 + i * 0.28}s" d="M${x.toFixed(1)} ${sol}H${x1}"/>`;
+    return `<svg viewBox="0 0 ${L} 70" role="img" aria-label="Trou ${trou.t} : ${trou.c.length} coups détaillés">
+      <path class="cp-sol" d="M${x0} ${sol}H${x1}"/><rect class="cp-tee" x="${x0 - 3}" y="${sol - 3}" width="6" height="6" rx="1.5"/>
+      ${h}${points}<path class="cp-mat" d="M${x1} ${sol}V${sol - 17}"/><path class="cp-fanion" d="M${x1} ${sol - 17}l-9 3.4 9 3.4z"/></svg>`;
+  }
+
+  function texteCoup(c) {
+    const reste = c[4] ? ` · reste ${metresC(c[4])}` : "";
+    if (c[1] === "g") return "Putt donné";
+    if (c[1] === "p") return `Putt <b>${metresC(c[2])}</b>${c[4] === 0 ? " rentré" : reste}`;
+    if (c[1] === "c") return c[3] === "holecup" ? `<b>${metresC(c[2])}</b> rentré` : `<b>${metresC(c[2])}</b> → ${esc(lieNom(c[3]))}${reste}`;
+    return esc(String(c[2] == null ? "" : c[2]));               // un texte que SGT écrit autrement : montré tel quel
+  }
+
+  function carteTrou(trou, k) {
+    const ecart = trou.s - trou.p, lignes = [];
+    let attendu = 1;
+    trou.c.forEach((c) => {
+      for (; attendu < c[0]; attendu++) lignes.push(`<li class="pen"><i>${attendu}</i>Coup de pénalité</li>`);   // SGT saute un numéro
+      lignes.push(`<li><i class="lie-${esc(c[3])}">${c[0]}</i><span>${texteCoup(c)}</span></li>`);
+      attendu = c[0] + 1;
+    });
+    const dernier = trou.c[trou.c.length - 1];
+    if (dernier && (dernier[0] < trou.s || dernier[4] !== 0)) lignes.push('<li class="pen"><i>…</i>Fin du trou non détaillée par SGT</li>');
+    const putts = trou.c.filter((c) => c[1] === "p" || c[1] === "g").length;
+    return `<article class="cp-trou ${ecart < 0 ? "moins" : ecart === 0 ? "par" : ecart === 1 ? "plus" : "double"}">
+      <header><div><b>Trou ${trou.t}</b><small>par ${trou.p}${trou.m ? " · " + nb(trou.m) + " m" : ""}</small></div><span class="cp-score" title="${signe(ecart)}">${trou.s}</span></header>
+      ${dessinTrou(trou, k)}
+      <ol>${lignes.join("")}</ol>
+      <footer>${putts} putt${putts > 1 ? "s" : ""}</footer></article>`;
+  }
+
+  function coupsJoueur(p, parties) {
+    const pseudo = p.joueur, comp = etat.comp;
+    lireCoups().then((coups) => {
+      const zone = $("#coups");
+      if (!zone || !coups || $("#fiche-nom").textContent !== pseudo || etat.comp !== comp) return;   // la fiche a changé entre-temps
+      const dispo = parties.filter((w) => coupsDe(coups, p, w.semaine));
+      if (!dispo.length) return;
+      const u = unite();
+      const montrer = (semaine) => {
+        const trous = coupsDe(coups, p, semaine), w = parties.find((x) => x.semaine === semaine);
+        const tous = trous.reduce((a, t) => a.concat(t.c), []);
+        const putts = tous.filter((c) => c[1] === "p" || c[1] === "g").length;
+        const long = Math.max.apply(null, [0].concat(tous.filter((c) => c[1] === "c" && typeof c[2] === "number").map((c) => c[2])));
+        const score = trous.reduce((a, t) => a + t.s, 0), par = trous.reduce((a, t) => a + t.p, 0);
+        $("#coups-corps").innerHTML = `<dl class="trio cp-resume">
+            ${fait("Score", score, signe(score - par) + (w ? " · " + esc(w.parcours) : ""))}${fait("Putts", putts, "putts donnés compris")}${long ? fait("Plus long coup", nb(Math.round(long)) + " m", "") : ""}</dl>
+          <div class="cp-grille">${trous.map(carteTrou).join("")}</div>`;
+        $$("#coups-sem button").forEach((b) => b.setAttribute("aria-pressed", Number(b.dataset.s) === semaine));
+      };
+      zone.innerHTML = `<h4>Le tour, coup par coup</h4>
+        <p class="expl">Chaque arc est un coup, du départ au drapeau : sa couleur dit où la balle s'est arrêtée. Distances en mètres, relevées par Simulator Golf Tour.</p>
+        ${dispo.length > 1 ? `<div class="puces-filtre cp-sem" id="coups-sem" role="group" aria-label="${u.cap} à afficher">${dispo.map((w) => `<button type="button" data-s="${w.semaine}" aria-pressed="false">${P()}${w.semaine}</button>`).join("")}</div>` : ""}
+        <ul class="cles cp-cles">${["fairway", "semirough", "rough", "deeprough", "sand", "green"].map((l) => `<li><i class="lie-${l}"></i>${lieNom(l)}</li>`).join("")}</ul>
+        <div id="coups-corps"></div>`;
+      zone.hidden = false;
+      $$("#coups-sem button").forEach((b) => b.addEventListener("click", () => montrer(Number(b.dataset.s))));
+      montrer(dispo[0].semaine);
+    });
   }
 
   function fermerFiche() {

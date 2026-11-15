@@ -139,7 +139,7 @@
   const TILES = [
     ["fir", "FIR", "Fairways touchés", (t) => ({ big: dec(t.valeur, 1) + " %" })],
     ["gir", "GIR", "Greens en régulation", (t) => ({ big: dec(t.valeur, 1) + " %" })],
-    ["drive", "Avg driving distance", "Distance moyenne des drives de la partie, mesurée par SGT", (t) => ({ big: dec(t.valeur, 1) + " m", small: t.orig == null ? "" : dec(t.orig, 2) + " yds" })],
+    ["drive", "Longest drive", "Plus long drive de la partie arrêté sur le fairway, mesuré par SGT", (t) => ({ big: dec(t.valeur, 1) + " m", small: t.orig == null ? "" : dec(t.orig, 2) + " yds" })],
     ["ctp", "Closest to the pin", "Le coup de départ le plus près du drapeau sur un par 3", (t) => ({ big: dec(t.valeur, 2) + " m", small: (t.orig == null ? "" : dec(t.orig, 2) + " ft") + (t.trou ? " · trou " + t.trou : "") })],
     ["putts_faits", "Total putt length", "Longueur totale des putts rentrés, par tour", (t) => ({ big: dec(t.valeur, 2) + " m", small: t.orig == null ? "" : dec(t.orig, 2) + " ft" })],
   ];
@@ -172,7 +172,7 @@
           <div class="tile-value">${v ? v.big : "Pas de donnée"}</div>${v && v.small ? `<div class="tile-orig">${v.small}</div>` : ""}</div>`;
       }).join("")}</div>
       <p class="hint">Le meilleur de chaque statistique parmi les joueurs de la catégorie ${esc(state.cat)}, pour ${esc(P())}${state.tw}.
-        Avg driving distance : distance moyenne des drives de la partie (SGT ne donne pas le plus long drive dans son API).
+        Longest drive : le plus long drive de la partie arrêté sur le fairway, sur un par 4 ou 5 (onglet Long Drive de SGT).
         Closest to the pin : le coup de départ le plus près du drapeau sur un par 3 (le plus petit gagne).
         Total putt length : longueur totale des putts rentrés par tour. Distances en mètres, valeur d'origine de SGT en dessous.</p>`;
     $("#tw").addEventListener("change", (e) => { state.tw = Number(e.target.value); drawTiles(); });
@@ -337,19 +337,19 @@
     return `
       <section><h3>Statistiques</h3>
         <div class="kpis">
-          ${sg ? "" : `<div class="fact"><div class="label">Avg driving distance</div><div class="value">${bd ? dec(bd.m, 1) + " m" : "–"}</div>
-            <div class="note">${bd ? `meilleure moyenne · ${P()}${bd.semaine} · ${place(driveWeek.drive_rang, driveWeek.drive_sur)}` : "pas encore"}</div></div>`}
+          ${sg ? "" : `<div class="fact"><div class="label">Longest drive</div><div class="value">${bd ? dec(bd.m, 1) + " m" : "–"}</div>
+            <div class="note">${bd ? `meilleur drive · ${P()}${bd.semaine} · ${place(driveWeek.drive_rang, driveWeek.drive_sur)}` : "pas encore"}</div></div>`}
           <div class="fact"><div class="label">Closest to the pin</div><div class="value">${bc ? dec(bc.m, 2) + " m" : "–"}</div>
             <div class="note">${bc ? `${P()}${bc.semaine} · trou ${bc.trou} · ${place(ctpHole.rang, ctpHole.sur)}` : "pas encore"}</div></div>
           <div class="fact"><div class="label">Putts par tour</div><div class="value">${avg("putts")}</div><div class="note">en moyenne</div></div>
         </div>
         <div class="table-wrap"><table class="mini-table"><caption class="sr">Statistiques par ${unit().cap}</caption>
-          <thead><tr><th scope="col">${unit().short}</th>${sg ? "" : '<th scope="col">Avg drive</th>'}<th scope="col">Closest to the pin</th>${sg ? "" : '<th scope="col">FIR</th>'}<th scope="col">GIR</th><th scope="col">Putts</th></tr></thead>
+          <thead><tr><th scope="col">${unit().short}</th>${sg ? "" : '<th scope="col">Longest drive</th>'}<th scope="col">Closest to the pin</th>${sg ? "" : '<th scope="col">FIR</th>'}<th scope="col">GIR</th><th scope="col">Putts</th></tr></thead>
           <tbody>${weeks.map((w) => `<tr><td>${P()}${w.semaine}</td>
             ${sg ? "" : `<td>${w.drive_m == null ? "–" : `<b>${dec(w.drive_m, 1)} m</b> <small>${place(w.drive_rang, w.drive_sur)}</small>`}</td>`}
             <td>${ctpCell(w)}</td>${sg ? "" : `<td>${pct(w.fairways)}</td>`}<td>${pct(w.greens)}</td><td>${dec(w.putts)}</td></tr>`).join("")}</tbody>
           <tfoot><tr><th scope="row" colspan="${sg ? 2 : 3}">Moyenne par tour</th>${sg ? "" : `<td>${avg("fairways")}</td>`}<td>${avg("greens")}</td><td>${avg("putts")}</td></tr></tfoot></table></div>
-        <p class="hint">Distances en mètres.${sg ? "" : ` Avg drive : distance moyenne de tes drives ${unit().end}, mesurée par SGT (la meilleure en haut).`} Closest to the pin : ton coup de départ le plus près du drapeau sur un par 3, green atteint (le trou est indiqué, « +2 » = deux autres par 3 réussis).${sg ? "" : " FIR : fairways touchés."} GIR : greens en régulation. Statistiques de ta partie ${unit().end}.</p>
+        <p class="hint">Distances en mètres.${sg ? "" : ` Longest drive : ton plus long drive ${unit().end} arrêté sur le fairway, sur un par 4 ou 5 (le meilleur en haut).`} Closest to the pin : ton coup de départ le plus près du drapeau sur un par 3, green atteint (le trou est indiqué, « +2 » = deux autres par 3 réussis).${sg ? "" : " FIR : fairways touchés."} GIR : greens en régulation. Statistiques de ta partie ${unit().end}.</p>
       </section>`;
   }
 
@@ -580,7 +580,7 @@
         ${rule("Où jouer", "Sur les simulateurs du Let's Golf, à Bussigny, avec GSPro : ton tour est envoyé tout seul au tournoi de Simulator Golf Tour.")}
         ${rule("Les statistiques", c
           ? `Sous le classement, trois tuiles donnent le meilleur ${unit().end} : greens en régulation (GIR), closest to the pin et total putt length. Ta fiche joueur garde les tiennes.`
-          : "Sous chaque classement, cinq tuiles donnent le meilleur de la semaine : fairways touchés (FIR), greens en régulation (GIR), avg driving distance, closest to the pin et total putt length. Ta fiche joueur garde les tiennes.")}
+          : "Sous chaque classement, cinq tuiles donnent le meilleur de la semaine : fairways touchés (FIR), greens en régulation (GIR), longest drive, closest to the pin et total putt length. Ta fiche joueur garde les tiennes.")}
         ${rule("Les résultats", "Ce site se met à jour tout seul, toutes les 5 minutes environ en journée : ton score apparaît peu après la fin de ton tour.")}
       </div>`;
 

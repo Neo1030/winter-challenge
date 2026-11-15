@@ -24,17 +24,31 @@ RAW = {
 }
 
 
+# Plus longs drives lus sur le site SGT (sgt_page.long_drives). L'API, elle, ne donne que la moyenne (« longest_drive »).
+DRIVES = {"cle": "abc", "yd": {"Ana": 316.4, "Bob": 251.18}}
+
 TODAY = date(2026, 11, 10)
 
 
 class ParseTest(unittest.TestCase):
     def test_conversion_en_metres(self):
+        st = parse_tournament_stats(RAW, DRIVES)
+        self.assertEqual((st["joueurs"]["Ana"]["drive_m"], st["joueurs"]["Ana"]["drive_yd"]), (289.3, 316.4))  # 316.40 yards
+        self.assertEqual(st["joueurs"]["Bob"]["drive_m"], 229.7)
+
+    def test_sans_plus_long_drive_pas_de_drive_du_tout(self):
+        """La moyenne de l'API (250 yards pour Ana) ne remplace jamais le plus long drive."""
+        for drives in (None, {}, {"cle": "abc", "yd": {}}):
+            st = parse_tournament_stats(RAW, drives)
+            self.assertNotIn("drive_m", st["joueurs"]["Ana"])
+            self.assertNotIn("drive_yd", st["joueurs"]["Ana"])
+
+    def test_autres_statistiques(self):
         st = parse_tournament_stats(RAW)
-        self.assertEqual(st["joueurs"]["Ana"]["drive_m"], 228.6)  # 250 yards
         self.assertEqual(st["joueurs"]["Ana"]["fairways"], 50)
         self.assertEqual(st["joueurs"]["Ana"]["greens"], 61.1)
         self.assertEqual(st["joueurs"]["Ana"]["tours"], 2)
-        self.assertNotIn("sable", st["joueurs"]["Bob"])  # valeur absente (null) ignorée
+        self.assertNotIn("sable", st["joueurs"].get("Bob", {}))  # valeur absente (null) ignorée
 
     def test_pres_du_drapeau_meilleur_tour_par_joueur(self):
         ctp = parse_tournament_stats(RAW)["ctp"]
@@ -64,6 +78,7 @@ class TuilesTest(unittest.TestCase):
     def test_meilleur_de_chaque_statistique(self):
         t1 = tournament(1, 1, [card("Ana", [4] * 9), card("Bob", [5] * 9)])
         t1["stats"] = RAW_TUILES
+        t1["drives"] = {"cle": "abc", "yd": {"Ana": 246.09, "Bob": 190.04}}
         t2 = tournament(2, 8, [card("Ana", [4] * 9)])  # sans statistiques : pas de tuiles pour la semaine 2
         data = build_site_data(build_season(tour([t1, t2]), today=TODAY), "2026-2027")
         tiles = data["categories"][0]["stats"]
@@ -103,6 +118,7 @@ class FicheJoueurTest(unittest.TestCase):
     def test_statistiques_dans_la_fiche(self):
         t1 = tournament(1, 1, [card("Ana", [4] * 9), card("Bob", [5] * 9)])
         t1["stats"] = RAW
+        t1["drives"] = DRIVES
         t2 = tournament(2, 8, [card("Ana", [4] * 9)])  # aucune statistique : la fiche doit s'en passer
         season = build_season(tour([t1, t2]), today=TODAY)
         data = build_site_data(season, "2026-2027", now=datetime(2026, 11, 10, 12, 0))
@@ -112,7 +128,7 @@ class FicheJoueurTest(unittest.TestCase):
         w = st["semaines"][0]
         self.assertEqual((w["drive_rang"], w["drive_sur"]), (1, 2))
         self.assertEqual(w["ctp"], [{"trou": 3, "m": 1.52, "rang": 1, "sur": 2}])   # au centimètre
-        self.assertEqual(st["resume"]["meilleur_drive"], {"m": 228.6, "semaine": 1})
+        self.assertEqual(st["resume"]["meilleur_drive"], {"m": 289.3, "semaine": 1})
         self.assertEqual(st["resume"]["meilleur_ctp"], {"m": 1.52, "semaine": 1, "trou": 3})
         self.assertEqual(st["resume"]["putts"], 15.5)
         bob = next(j for j in data["joueurs"] if j["joueur"] == "Bob")

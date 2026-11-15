@@ -114,7 +114,7 @@
   const TILES = [
     ["fir", "FIR", "Fairways touchés", (t) => [dec(t.valeur, 1) + " %", ""]],
     ["gir", "GIR", "Greens en régulation", (t) => [dec(t.valeur, 1) + " %", ""]],
-    ["drive", "Avg driving distance", "Distance moyenne des drives", (t) => [dec(t.valeur, 1) + " m", t.orig == null ? "" : dec(t.orig, 2) + " yds"]],
+    ["drive", "Longest drive", "Plus long drive sur le fairway", (t) => [dec(t.valeur, 1) + " m", t.orig == null ? "" : dec(t.orig, 2) + " yds"]],
     ["ctp", "Closest to the pin", "Coup de départ le plus près du drapeau, par 3", (t) => [dec(t.valeur, 2) + " m", (t.orig == null ? "" : dec(t.orig, 2) + " ft") + (t.trou ? " · trou " + t.trou : "")]],
     ["putts_faits", "Total putt length", "Longueur totale des putts rentrés", (t) => [dec(t.valeur, 2) + " m", t.orig == null ? "" : dec(t.orig, 2) + " ft"]],
   ];

@@ -12,7 +12,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from .sgt_page import fetch_settings
+from .sgt_page import fetch_settings, long_drives, shots_of
 
 BASE_URL = "https://simulatorgolftour.com/sgt-api/club-admin"
 
@@ -192,13 +192,20 @@ class SgtClient:
     def delete_registration(self, tour_id: int, tournament_id: int, user_id: int) -> dict:
         return self._write("registrations/delete", tourId=tour_id, tournamentId=tournament_id, user_id=user_id)
 
-    def fetch_tour(self, tour_id: int, label: str, known_settings: dict | None = None) -> dict:
+    def fetch_tour(self, tour_id: int, label: str, known_settings: dict | None = None,
+                   known_drives: dict | None = None, known_shots: dict | None = None, shots_budget: list | None = None) -> dict:
         """Tout ce qu'il faut pour un tour : membres et, pour chaque tournoi, les scorecards, statistiques et réglages.
 
         known_settings : {id de tournoi: réglages} déjà publiés. Un tournoi terminé ne change plus : on ne relit
         pas sa page chez SGT, on reprend ce qu'on a.
+        known_drives : {id de tournoi: plus longs drives} déjà publiés (voir sgt_page.long_drives) : le site SGT n'est
+        relu que si les drives du tournoi ont changé.
+        known_shots : {id de tournoi: coup par coup déjà publié} (voir sgt_page.shots_of) : la page d'un joueur n'est relue
+        que si sa carte a changé. shots_budget : [pages qu'on peut encore lire pendant cette mise à jour], partagé entre les tours.
+        Sans known_shots (None), le coup par coup n'est pas lu du tout.
         """
         known_settings = known_settings or {}
+        known_drives = known_drives or {}
         info = next((t for t in self.tours() if t["tourId"] == tour_id), None)
         if info is None:
             raise SgtApiError(f"Tour {tour_id} introuvable dans ce club")
@@ -211,6 +218,9 @@ class SgtClient:
                 t["stats"] = None
             known = known_settings.get(t["tournamentId"])
             t["reglages"] = known if known and t["status"] == "Completed" else fetch_settings(t["tournamentId"])
+            t["drives"] = long_drives(t, known_drives.get(t["tournamentId"]))
+            if known_shots is not None:
+                t["coups"] = shots_of(t, known_shots.get(t["tournamentId"]), shots_budget)
         return {
             "tour_id": tour_id,
             "label": label,

@@ -134,8 +134,8 @@ meilleur brut) et le classement, qui occupe tout le reste de l'écran.
   n'apparaît pas. Chaque classement est coupé en pages équilibrées qui remplissent l'écran (par exemple 30 hommes en 3 pages de 10,
   plutôt que 10 + 10 + 10 lignes serrées ou 10 + 10 + 1). En Full HD, une page compte une dizaine de lignes ; le nombre de lignes et
   de semaines affichées s'adapte tout seul à la taille de l'écran.
-- **Statistiques de la semaine** : après les classements d'une compétition, une page par catégorie reprend les cinq tuiles du site (FIR, GIR, distance
-  de drive, proximité GIR, putts rentrés) pour la semaine en cours (le mois en cours au Short Game). `tv.html?debut=stats` commence par ces pages.
+- **Statistiques de la semaine** : après les classements d'une compétition, une page par catégorie reprend les cinq tuiles du site (FIR, GIR, longest
+  drive, closest to the pin, putts rentrés) pour la semaine en cours (le mois en cours au Short Game). `tv.html?debut=stats` commence par ces pages.
   Une catégorie sans statistique n'a pas de page. Les pages de la télé sont toujours revérifiées par le navigateur (`.htaccess`), et leurs fichiers
   portent un numéro de version (`?v=3`) à augmenter quand on change `tv.js` ou les feuilles de style.
 - **Fondu** entre deux pages : le tableau s'efface, puis la nouvelle page apparaît ligne après ligne. Une barre fine en bas de la
@@ -158,11 +158,16 @@ meilleur brut) et le classement, qui occupe tout le reste de l'écran.
 - La fiche contient aussi une section **Statistiques**, en mètres : plus long drive, plus près du drapeau (par 3), fairways,
   greens et putts, par semaine et en moyenne, avec le rang du joueur parmi les joueurs de son tour. Elles viennent de l'API SGT
   (`tournaments/stats`) et portent sur le tour de la semaine (un seul par joueur).
+  **Sauf le plus long drive** (décision de Mike, 15.11.2026) : l'API ne donne que la distance MOYENNE des drives (champ
+  `longest_drive`, mal nommé), qu'on n'affiche plus. Le vrai plus long drive est lu dans l'onglet Long Drive du site SGT
+  (`/sgt-api/leaderboard/<tournoi>/ld/<manche>-<trou>`, voir `winter_challenge/sgt_page.py`) : par 4 et 5, drives arrêtés sur
+  le fairway, comme SGT. Le résultat est gardé dans `drives_sgt` de saison.json et le site SGT n'est relu que si les drives
+  du tournoi changent dans l'API. Si SGT change ses pages, on garde le dernier chiffre publié ; jamais la moyenne à la place.
   Unités : les drives sont en **yards** (confirmé le 27.10.2026 : 246.09 dans l'API = « 246.09 YDS / 224.94 M » sur le site SGT) ;
   les distances au drapeau et les putts sont en pieds (documentation SGT). La conversion est dans `winter_challenge/stats.py`.
   Écart connu : pour la proximité GIR et les putts rentrés, SGT affiche des mètres un peu plus courts que la conversion exacte
   (10.35 ft = 3.16 m, SGT écrit 3.04 m). Le site affiche la conversion exacte, avec la valeur d'origine en dessous.
-- **Classement** : sous le tableau, cinq tuiles comme sur SGT (FIR, GIR, distance de drive, proximité GIR, putts rentrés) donnent le
+- **Classement** : sous le tableau, cinq tuiles comme sur SGT (FIR, GIR, longest drive, closest to the pin, putts rentrés) donnent le
   meilleur de la catégorie pour la semaine choisie. Les données viennent de `tournaments/stats` (les ex æquo sont tous cités).
 - **Compétitions** : le Winter Challenge et le Short Game (un tournoi par mois, SG1, SG2… : le site et la TV parlent de « mois ») ont chacun leur onglet de choix en haut des pages
   Classement, Parcours, Semaines et Joueurs.

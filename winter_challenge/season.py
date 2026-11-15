@@ -197,7 +197,7 @@ def build_season(tours: list, overrides: dict | None = None, best_n: int = 8, to
         tour_weeks = []
         tour_weeks_by_tour.append(tour_weeks)
         for number, t in enumerate(sorted_tournaments(tour), start=1):
-            stats[(tour["label"], number)] = parse_tournament_stats(t.get("stats"))
+            stats[(tour["label"], number)] = parse_tournament_stats(t.get("stats"), t.get("drives"))
             tour_weeks.append(Week(number, tour["tour_id"], tour["label"], t["tournamentId"], t["name"], t["courseName"],
                                    t["start_date"][:10], t["end_date"][:10], t["status"], t.get("courseId"), t.get("reglages")))
             weeks.append(tour_weeks[-1])

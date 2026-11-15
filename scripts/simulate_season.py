@@ -102,6 +102,13 @@ def simulate_stats(tour_id, week, cards):
             "feetPuttsMade": rows("putts_feet_per_round", 8, 60, 2), "puttsPerRound": rows("putts_per_round", 14, 21)}
 
 
+def simulate_drives(tour_id, week, cards):
+    """Plus longs drives fictifs, au format lu sur le site SGT (sgt_page.long_drives). Générateur à part, comme les statistiques."""
+    r = random.Random(f"drives-{tour_id}-{week}")
+    names = sorted({c["player_name"] for c in cards if any(c[f"hole{i}_gross"] for i in range(1, 19))})
+    return {"cle": "demo", "yd": {n: round(r.uniform(200, 320), 2) for n in names}} if names else None
+
+
 def simulate_tour(rng, courses, players, tour_id, label, weeks, card_start):
     """Un tour SGT fictif : players = {pseudo: handicap réel}."""
     tournaments, card_id = [], card_start
@@ -124,6 +131,7 @@ def simulate_tour(rng, courses, players, tour_id, label, weeks, card_start):
             "name": f"Semaine {week}", "status": "In Progress" if week == weeks else "Completed",
             "start_date": f"{start} 00:00:00", "end_date": f"{start + timedelta(days=6)} 00:00:00", "scorecards": cards,
             "stats": simulate_stats(tour_id, week, cards),
+            "drives": simulate_drives(tour_id, week, cards),
         })
     return {
         "tour_id": tour_id, "label": label, "name": f"Simulation {label}", "admin": "Lets_golf",

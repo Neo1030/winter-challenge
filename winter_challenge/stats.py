@@ -1,8 +1,9 @@
 """Statistiques de tournoi SGT (tournaments/stats) : plus long drive, plus près du drapeau, fairways, greens, putts.
 
 Attention : malgré son nom, « longest_drive » (drivingDistance) est la distance MOYENNE des drives du joueur (SGT le range
-dans « Driving distance » ; ex. 274.78 yds pour des drives de 225.99 à 335.58). Le vrai plus long drive n'est que dans l'onglet
-Long Drive du site SGT, pas dans l'API : le site affiche donc « Avg driving distance ».
+dans « Driving distance » ; ex. 274.78 yds pour des drives de 225.99 à 335.58). On ne l'affiche plus (décision de Mike,
+15.11.2026) : le drive du site est le vrai plus long drive, lu dans l'onglet Long Drive du site SGT (voir sgt_page.py) et
+passé ici dans « drives ». Sans cette lecture, il n'y a pas de drive du tout : jamais la moyenne à la place.
 L'API ne donne pas les unités. Les drives sont en yards (confirmé le 27.10.2026 : 246.09 dans l'API = « 246.09 YDS / 224.94 M »
 sur le site SGT) ; les distances au drapeau et les putts sont en pieds (documentation SGT). Tout est converti en mètres ici,
 et seulement ici ; la valeur d'origine est gardée à côté pour pouvoir comparer avec ce qu'affiche SGT.
@@ -26,21 +27,24 @@ def _by_player(rows, field):
     return {r["user_name"]: _num(r.get(field)) for r in rows or [] if r.get("user_name")}
 
 
-def parse_tournament_stats(raw: dict | None) -> dict:
+def parse_tournament_stats(raw: dict | None, drives: dict | None = None) -> dict:
     """Statistiques d'un tournoi, par joueur : {"joueurs": {pseudo: {...}}, "ctp": {trou: [(pseudo, mètres)]}}.
 
+    drives : plus longs drives lus sur le site SGT, {"yd": {pseudo: yards}} (voir sgt_page.long_drives).
     Une réponse absente ou vide (tournoi sans tour joué) donne un résultat vide, jamais une erreur.
     """
     raw = raw if isinstance(raw, dict) else {}
     players: dict = {}
+    for name, yards in ((drives or {}).get("yd") or {}).items():
+        value = _num(yards)
+        if value is not None:
+            players.setdefault(name, {}).update({"drive_m": round(value * YARD_M, 1), "drive_yd": round(value, 2)})
 
     def put(rows, field, key, factor=1.0, digits=1):
         for name, value in _by_player(rows, field).items():
             if value is not None:
                 players.setdefault(name, {})[key] = round(value * factor, digits)
 
-    put(raw.get("drivingDistance"), "longest_drive", "drive_m", YARD_M)
-    put(raw.get("drivingDistance"), "longest_drive", "drive_yd", digits=2)
     put(raw.get("drivingAccuracy"), "fir_percent", "fairways")
     put(raw.get("greenAccuracy"), "gir_percent", "greens")
     put(raw.get("girProx"), "girProx", "gir_prox_m", FOOT_M, digits=2)  # distance moyenne au drapeau, greens en régulation

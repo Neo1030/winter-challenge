@@ -43,6 +43,8 @@
   --halo: #0c4474; --halo-0: rgba(12, 68, 116, 0); --hero-haut: #001c33;
   --podium: #0d4a7c; --survol: #04192c; --ombre: #000;
   --demo-texte: #ffe19a; --rouge-texte: #ffd9d3; --neige: #fff;
+  /* où la balle s'arrête (coup par coup) : du meilleur au pire, puis le sable et le green */
+  --lie-fairway: #35abe2; --lie-semirough: #9ec3dc; --lie-rough: #8fa8bb; --lie-deeprough: #ff8f80; --lie-sand: #ffc83d; --lie-green: #5fd6a6; --lie-holecup: #eaf6fd;
   --t-rough: #062440; --t-fw: #0f4a78; --t-green: #1c6da6; --t-tee: #17609a; --t-bunker: #cfe3f1; --t-bunker-bord: #fff; --t-ombre: rgba(0, 12, 24, .55);
 }
 
@@ -77,6 +79,7 @@
   --halo: #c9e7f8; --halo-0: rgba(201, 231, 248, 0); --hero-haut: #e3f1fa;
   --podium: #cfe9f8; --survol: #e6f1f8; --ombre: rgba(0, 28, 51, .35);
   --demo-texte: #6b4a00; --rouge-texte: #9a2a20; --neige: #8fc8ea;
+  --lie-fairway: #1b8fcf; --lie-semirough: #6f9dbb; --lie-rough: #6b8296; --lie-deeprough: #d4483b; --lie-sand: #b58100; --lie-green: #12885b; --lie-holecup: #001c33;
   --t-rough: #e2eff7; --t-fw: #c6e2f3; --t-green: #9dd1ee; --t-tee: #b3d8ee; --t-bunker: #ffffff; --t-bunker-bord: rgba(0, 28, 51, .45); --t-ombre: rgba(0, 28, 51, .14);
 }
 :root[data-theme="clair"] body::after { opacity: .03; }
@@ -488,6 +491,45 @@ button.rangee:hover .fixe::before { transform: scaleY(1); }
 .carnet .arc.vu { stroke: var(--trace); stroke-width: 2.4; }
 .carnet .tee { fill: var(--trace); }
 @keyframes trace { to { stroke-dashoffset: 0; } }
+
+/* ───────── Fiche joueur : le tour, coup par coup ───────── */
+.lie-fairway { --lie: var(--lie-fairway); } .lie-semirough { --lie: var(--lie-semirough); } .lie-rough { --lie: var(--lie-rough); }
+.lie-deeprough { --lie: var(--lie-deeprough); } .lie-sand { --lie: var(--lie-sand); } .lie-green { --lie: var(--lie-green); } .lie-holecup { --lie: var(--lie-holecup); }
+.cp-sem { margin-top: 14px; }
+.cp-sem button { padding: 6px 13px; font-size: 13px; }
+.cp-cles { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 14px 0 0; padding: 0; list-style: none; font-size: 12.5px; color: var(--gris); }
+.cp-cles li { display: inline-flex; align-items: center; gap: 6px; }
+.cp-cles i { width: 16px; height: 4px; border-radius: 2px; background: var(--lie, var(--gris)); border: 0; }
+.cp-resume { margin-top: 18px; }
+.cp-grille { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+.cp-trou { display: flex; flex-direction: column; min-width: 0; padding: 14px 14px 12px; border-radius: 16px; border: 1px solid var(--trait); border-top: 2px solid var(--trait-fort); background: rgba(var(--fond), .45); }
+.cp-trou.moins { border-top-color: var(--vert); } .cp-trou.plus { border-top-color: var(--or); } .cp-trou.double { border-top-color: var(--corail); }
+.cp-trou header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.cp-trou header b { display: block; font-size: 15px; font-weight: 800; }
+.cp-trou header small { display: block; font-size: 12px; color: var(--gris); }
+.cp-score { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; font-weight: 800; font-size: 15px; background: rgba(var(--encre), .08); }
+.cp-trou.moins .cp-score { border-radius: 50%; background: var(--vert); color: var(--sur-ciel); }
+.cp-trou.plus .cp-score { box-shadow: inset 0 0 0 1.5px var(--or); }
+.cp-trou.double .cp-score { background: var(--corail); color: var(--sur-ciel); }
+:root[data-theme="clair"] .cp-trou.moins .cp-score, :root[data-theme="clair"] .cp-trou.double .cp-score { color: #fff; }
+.cp-trou svg { display: block; width: 100%; height: auto; margin: 6px 0 4px; overflow: visible; }
+.cp-sol { fill: none; stroke: var(--trait-fort); stroke-width: 1; }
+.cp-tee { fill: var(--gris); }
+.cp-arc { fill: none; stroke: var(--lie, var(--gris)); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: trace .7s var(--e) forwards; animation-delay: var(--i, 0s); }
+.cp-putt { fill: none; stroke: var(--lie-green); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: trace .5s ease-out forwards; animation-delay: var(--i, 0s); }
+.cp-pt { fill: var(--lie, var(--gris)); stroke: var(--navy); stroke-width: 1.5; opacity: 0; animation: apparait .3s ease-out forwards; animation-delay: var(--i, 0s); }
+.cp-mat { fill: none; stroke: var(--glace); stroke-width: 1.4; stroke-linecap: round; }
+.cp-fanion { fill: var(--corail); }
+.cp-trou ol { flex: 1; margin: 4px 0 0; padding: 0; list-style: none; font-size: 12.5px; line-height: 1.35; color: var(--texte-2); }
+.cp-trou li { display: flex; align-items: baseline; gap: 8px; padding: 3px 0; }
+.cp-trou li i { flex: none; display: grid; place-items: center; width: 17px; height: 17px; border-radius: 50%; font-style: normal; font-size: 10px; font-weight: 800; color: var(--sur-ciel); background: var(--lie, var(--gris)); transform: translateY(2px); }
+:root[data-theme="clair"] .cp-trou li i { color: #fff; }
+.cp-trou li b { color: var(--glace); font-weight: 700; }
+.cp-trou li.pen { color: var(--gris); font-style: italic; }
+.cp-trou li.pen i { background: none; box-shadow: inset 0 0 0 1px var(--trait-fort); color: var(--gris); }
+.cp-trou footer { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--trait); font-size: 11.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--gris); }
+@media (max-width: 560px) { .cp-grille { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .cp-arc, .cp-putt { stroke-dashoffset: 0; animation: none; } .cp-pt { opacity: 1; animation: none; } }
 @keyframes pop { from { opacity: 0; transform: scale(.2); } to { opacity: 1; transform: none; } }
 .carnet-info { min-height: 3em; margin: 10px 0 0; padding: 10px 14px; border-radius: 12px; background: rgba(var(--fond), .5); border: 1px solid var(--trait); font-size: 14px; color: var(--gris); }
 .carnet-info b { color: var(--glace); }

@@ -33,18 +33,22 @@ SKIP = {".DS_Store", "LISEZ-MOI.md"}   # fichiers qui n'ont rien à faire en lig
 SKIP_DIRS = {"visites"}                  # données du compteur de visites : écrites en ligne par compteur.php, jamais envoyées
 
 
+SHOTS = SITE / "donnees" / "coups.json"   # coup par coup, écrit avec saison.json par la mise à jour des résultats
+
+
 def files_to_send(only_data, with_data=False):
     data = SITE / "donnees" / "saison.json"
     if only_data:
-        return [data]
+        return [data] + ([SHOTS] if SHOTS.exists() else [])
     # Les résultats en ligne sont tenus à jour par GitHub : l'envoi complet ne les écrase pas avec la copie de cet ordinateur,
     # souvent en retard (sinon des joueurs et des semaines disparaissent du site jusqu'à la prochaine mise à jour).
     return sorted(p for p in SITE.rglob("*") if p.is_file() and p.name not in SKIP
-                  and not SKIP_DIRS & set(p.relative_to(SITE).parts) and (with_data or p != data))
+                  and not SKIP_DIRS & set(p.relative_to(SITE).parts) and (with_data or p not in (data, SHOTS)))
 
 
-def unchanged_online(url):
-    """Vrai si le saison.json en ligne contient déjà les mêmes résultats (la date de génération ne compte pas)."""
+def unchanged_online(url, local=None):
+    """Vrai si le fichier en ligne contient déjà les mêmes résultats (la date de génération ne compte pas)."""
+    local = local or SITE / "donnees" / "saison.json"
     def content(raw):
         data = json.loads(raw)
         data.pop("genere_le", None)
@@ -52,7 +56,7 @@ def unchanged_online(url):
     try:
         with urllib.request.urlopen(url + "?v=" + str(int(time.time())), timeout=20) as r:
             online = content(r.read())
-        return online == content((SITE / "donnees" / "saison.json").read_bytes())
+        return online == content(local.read_bytes())
     except (OSError, ValueError):
         return False                 # injoignable ou illisible : dans le doute, on envoie
 
@@ -86,7 +90,8 @@ def main():
 
     if args.si_change and args.donnees_seules:
         site_url = os.environ.get("SITE_URL", "https://winterchallenge.letsgolf.ch").rstrip("/")
-        if unchanged_online(site_url + "/donnees/saison.json"):
+        if unchanged_online(site_url + "/donnees/saison.json") and (
+                not SHOTS.exists() or unchanged_online(site_url + "/donnees/coups.json", SHOTS)):
             print("Résultats inchangés : rien à envoyer.")
             return 0
 
