@@ -101,6 +101,10 @@ conversation. **S'il manque une information, demande-la avant d'écrire quoi que
 - Code : `parse_shots`, `shots_of` dans `winter_challenge/sgt_page.py` ; la mise à jour des résultats écrit `donnees/coups.json`
   à côté de `saison.json` (jamais envoyé par la mise en ligne du site, comme `saison.json`). Une page n'est relue que si la carte
   du joueur a changé ; au plus 60 pages par mise à jour (`SHOTS_PER_RUN`), le reste suit à la suivante.
+- La fiche est animée (depuis le 15.11.2026) : ses blocs apparaissent au défilement (`animerFiche`), et chaque trou se rejoue
+  quand sa carte arrive à l'écran (`animerTrous`, `jouerTrou` dans refonte.js : la balle suit l'arc, les lignes s'allument dans
+  l'ordre des coups, bouton « Rejouer »). C'est le même dessin, joué dans l'ordre : aucune donnée ajoutée. Avec le réglage
+  « moins d'animations » du système, tout est affiché d'emblée (classes `attend` et `fv` jamais posées).
 - Distances converties en mètres. Rien n'est inventé : un texte que SGT écrit autrement est montré tel quel, une fin de trou
   absente chez SGT est signalée comme telle. Pas de coups fictifs dans les données de démonstration.
 

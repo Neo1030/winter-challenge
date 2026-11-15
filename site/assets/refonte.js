@@ -1083,7 +1083,7 @@
       <div id="fs-tuiles">${tuilesStats(p, 0)}</div>
       <div class="table-zone"><table id="fs-table"><caption class="sr">Statistiques par ${u.cap}</caption>
         <thead><tr><th scope="col">${u.court}</th>${sg ? "" : '<th scope="col">Longest drive</th>'}<th scope="col">Closest to the pin</th>${sg ? "" : '<th scope="col">FIR</th>'}<th scope="col">GIR</th><th scope="col">Putts</th></tr></thead>
-        <tbody>${lignes.map((w) => `<tr data-s="${w.semaine}"><td>${P()}${w.semaine}</td>
+        <tbody>${lignes.map((w, i) => `<tr data-s="${w.semaine}" style="--i:${Math.min(i, 14)}"><td>${P()}${w.semaine}</td>
           ${sg ? "" : `<td>${w.drive_m == null ? "–" : `<b>${dec(w.drive_m, 1)} m</b>${w.drive_rang ? ` <small>${place(w.drive_rang, w.drive_sur)}</small>` : ""}`}</td>`}
           <td>${ctp(w)}</td>${sg ? "" : `<td>${pct(w.fairways)}</td>`}<td>${pct(w.greens)}</td><td>${dec(w.putts)}</td></tr>`).join("")}</tbody>
         <tfoot><tr><th scope="row" colspan="${sg ? 2 : 3}">Moyenne par tour</th>${sg ? "" : `<td>${moy("fairways")}</td>`}<td>${moy("greens")}</td><td>${moy("putts")}</td></tr></tfoot></table></div>
@@ -1113,15 +1113,16 @@
     const u = unite(), cat = data.categories.find((c) => c.nom === p.categorie) || data.categories[0];
     const taille = (k) => cat.classement[k].filter((r) => r.rang).length, ligne = cat.classement[mode()].find((r) => r.joueur === p.joueur);
     const parties = p.semaines.slice().sort((a, b) => b.semaine - a.semaine), rang = (v) => (v == null ? "–" : v);
+    const monte = (v) => (typeof v === "number" ? `<span data-n="${v}">${nb(v)}</span>` : nb(v));   // le total de points monte à l'ouverture
 
     fiche.innerHTML = `<div class="fiche-in">
       <div class="fiche-haut">
         <div><p class="surtitre">${esc(p.categorie)} · ${esc(data.nom)}</p><h3 id="fiche-nom">${esc(p.joueur)}</h3></div>
         <button class="fermer" type="button" aria-label="Fermer la fiche"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
       </div>
-      <dl class="trio">${brutSeul()
-        ? fait("Rang brut", rang(p.rang_brut), `${nb(p.total_brut)} pts sur ${taille("brut")} classés`)
-        : fait("Rang net", rang(p.rang_net), `${nb(p.total_net)} pts sur ${taille("net")} classés`) + fait("Rang brut", rang(p.rang_brut), `${nb(p.total_brut)} pts`) +
+      <dl class="trio fiche-rangs">${brutSeul()
+        ? fait("Rang brut", rang(p.rang_brut), `${monte(p.total_brut)} pts sur ${taille("brut")} classés`)
+        : fait("Rang net", rang(p.rang_net), `${monte(p.total_net)} pts sur ${taille("net")} classés`) + fait("Rang brut", rang(p.rang_brut), `${monte(p.total_brut)} pts`) +
           fait("Handicap de jeu", nb(p.hdc_actuel), `au départ : ${nb(p.hdc_depart)}`)}</dl>
       ${parties.length ? `
       <h4>Points par partie</h4>
@@ -1143,9 +1144,9 @@
       <h4>Résultats par ${u.cap}</h4>
       <div class="table-zone"><table><caption class="sr">Résultats retenus par ${u.cap}</caption>${brutSeul()
         ? `<thead><tr><th scope="col">${u.court}</th><th scope="col">Parcours</th><th scope="col">Score</th><th scope="col">Stableford</th><th scope="col">Points</th></tr></thead>
-        <tbody>${parties.map((w) => `<tr><td>${P()}${w.semaine}</td><td>${esc(w.parcours)}</td><td>${w.coups_brut} <small>(${signe(w.coups_brut - w.par)})</small></td><td>${w.stableford_brut}</td><td><b>${w.points_brut}</b></td></tr>`).join("")}</tbody>`
+        <tbody>${parties.map((w, i) => `<tr style="--i:${Math.min(i, 14)}"><td>${P()}${w.semaine}</td><td>${esc(w.parcours)}</td><td>${w.coups_brut} <small>(${signe(w.coups_brut - w.par)})</small></td><td>${w.stableford_brut}</td><td><b>${w.points_brut}</b></td></tr>`).join("")}</tbody>`
         : `<thead><tr><th scope="col">${u.court}</th><th scope="col">Parcours</th><th scope="col">Score</th><th scope="col">Stab. net</th><th scope="col">Pts net</th><th scope="col">Pts brut</th><th scope="col">Hdc</th></tr></thead>
-        <tbody>${parties.map((w) => `<tr><td>${P()}${w.semaine}</td><td>${esc(w.parcours)}</td><td>${w.coups_brut} <small>(${signe(w.coups_brut - w.par)})</small></td><td>${w.stableford_net}</td>
+        <tbody>${parties.map((w, i) => `<tr style="--i:${Math.min(i, 14)}"><td>${P()}${w.semaine}</td><td>${esc(w.parcours)}</td><td>${w.coups_brut} <small>(${signe(w.coups_brut - w.par)})</small></td><td>${w.stableford_net}</td>
           <td><b>${w.points_net}</b></td><td>${w.points_brut}</td><td>${nb(w.hdc_avant)} → ${nb(w.hdc_apres)}</td></tr>`).join("")}</tbody>`}</table></div>`
       : '<p class="vide">Pas encore de résultat pour ce joueur.</p>'}
       ${statsJoueur(p)}
@@ -1157,6 +1158,11 @@
     if (parties.length && ligne) { trouParties(p, ligne); if (!brutSeul()) handicap(p); }
     coupsVoir = null;
     brancherStats(p);
+    nombres(fiche);
+    if (ioFiche) ioFiche.disconnect();
+    if (ioTrous) ioTrous.disconnect();
+    ouverteA = performance.now();
+    animerFiche($(".fiche-in", fiche));
     if (parties.length) coupsJoueur(p, parties);
   }
 
@@ -1179,8 +1185,9 @@
     return null;
   }
 
-  /* le dessin d'un trou : du départ au drapeau, un arc par coup, d'autant plus haut que le coup est long */
-  function dessinTrou(trou, k) {
+  /* le dessin d'un trou : du départ au drapeau, un arc par coup, d'autant plus haut que le coup est long.
+     La balle et l'onde ne servent qu'à rejouer le trou (jouerTrou) : sans animation, elles restent invisibles. */
+  function dessinTrou(trou) {
     const L = 300, sol = 60, x0 = 12, x1 = 288;
     const joues = trou.c.filter((c) => c[1] === "c" && typeof c[2] === "number");
     const total = trou.m || joues.reduce((a, c) => a + c[2], 0) || 1;
@@ -1191,15 +1198,16 @@
       if (c[1] !== "c" || typeof c[2] !== "number") return;
       const fin = c[4] != null ? X(c[4]) : Math.min(x1, x + (x1 - x0) * c[2] / total);
       const haut = sol - borne(Math.abs(fin - x) * 0.42, 5, 50);
-      h += `<path class="cp-arc lie-${esc(c[3])}" pathLength="1" style="--i:${k * 0.12 + i * 0.28}s" d="M${x.toFixed(1)} ${sol}Q${((x + fin) / 2).toFixed(1)} ${(2 * haut - sol).toFixed(1)} ${fin.toFixed(1)} ${sol}">${titre(c)}</path>`;
-      points += c[3] === "holecup" ? "" : `<circle class="cp-pt lie-${esc(c[3])}" style="--i:${k * 0.12 + i * 0.28 + 0.3}s" cx="${fin.toFixed(1)}" cy="${sol}" r="3.4">${titre(c)}</circle>`;
+      h += `<path class="cp-arc lie-${esc(c[3])}" pathLength="1" d="M${x.toFixed(1)} ${sol}Q${((x + fin) / 2).toFixed(1)} ${(2 * haut - sol).toFixed(1)} ${fin.toFixed(1)} ${sol}">${titre(c)}</path>`;
+      points += c[3] === "holecup" ? "" : `<circle class="cp-pt lie-${esc(c[3])}" data-a="${i}" cx="${fin.toFixed(1)}" cy="${sol}" r="3.4">${titre(c)}</circle>`;
       x = fin; i++;
     });
     const putts = trou.c.filter((c) => c[1] === "p" || c[1] === "g").length;
-    if (putts && x < x1 - 0.5) h += `<path class="cp-putt" pathLength="1" style="--i:${k * 0.12 + i * 0.28}s" d="M${x.toFixed(1)} ${sol}H${x1}"/>`;
+    if (putts && x < x1 - 0.5) h += `<path class="cp-putt" pathLength="1" d="M${x.toFixed(1)} ${sol}H${x1}"/>`;
     return `<svg viewBox="0 0 ${L} 70" role="img" aria-label="Trou ${trou.t} : ${trou.c.length} coups détaillés">
       <path class="cp-sol" d="M${x0} ${sol}H${x1}"/><rect class="cp-tee" x="${x0 - 3}" y="${sol - 3}" width="6" height="6" rx="1.5"/>
-      ${h}${points}<path class="cp-mat" d="M${x1} ${sol}V${sol - 17}"/><path class="cp-fanion" d="M${x1} ${sol - 17}l-9 3.4 9 3.4z"/></svg>`;
+      ${h}${points}<path class="cp-mat" d="M${x1} ${sol}V${sol - 17}"/><path class="cp-fanion" d="M${x1} ${sol - 17}l-9 3.4 9 3.4z"/>
+      <circle class="cp-onde" cx="${x0}" cy="${sol}" r="9"/><circle class="cp-balle" cx="${x0}" cy="${sol}" r="3.2"/></svg>`;
   }
 
   function texteCoup(c) {
@@ -1210,22 +1218,118 @@
     return esc(String(c[2] == null ? "" : c[2]));               // un texte que SGT écrit autrement : montré tel quel
   }
 
+  /* la carte d'un trou. Chaque ligne dit ce qu'elle rejoue : data-a = le numéro de son arc, data-f = jusqu'où roule le putt
+     (un pas égal par putt sur le trait vert : à cette échelle, la longueur réelle d'un putt ne se verrait pas). */
+  const ICONE_REJOUER = '<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M13.4 8a5.4 5.4 0 1 1-1.6-3.8M12.3 1.4v3.1H9.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   function carteTrou(trou, k) {
     const ecart = trou.s - trou.p, lignes = [];
-    let attendu = 1;
+    const putts = trou.c.filter((c) => c[1] === "p" || c[1] === "g").length;
+    let attendu = 1, arc = 0, putt = 0;
     trou.c.forEach((c) => {
       for (; attendu < c[0]; attendu++) lignes.push(`<li class="pen"><i>${attendu}</i>Coup de pénalité</li>`);   // SGT saute un numéro
-      lignes.push(`<li><i class="lie-${esc(c[3])}">${c[0]}</i><span>${texteCoup(c)}</span></li>`);
+      const joue = c[1] === "c" && typeof c[2] === "number" ? ` data-a="${arc++}"` : c[1] === "p" || c[1] === "g" ? ` data-f="${(++putt / putts).toFixed(3)}"` : "";
+      lignes.push(`<li${joue}><i class="lie-${esc(c[3])}">${c[0]}</i><span>${texteCoup(c)}</span></li>`);
       attendu = c[0] + 1;
     });
     const dernier = trou.c[trou.c.length - 1];
     if (dernier && (dernier[0] < trou.s || dernier[4] !== 0)) lignes.push('<li class="pen"><i>…</i>Fin du trou non détaillée par SGT</li>');
-    const putts = trou.c.filter((c) => c[1] === "p" || c[1] === "g").length;
-    return `<article class="cp-trou ${ecart < 0 ? "moins" : ecart === 0 ? "par" : ecart === 1 ? "plus" : "double"}">
+    return `<article class="cp-trou ${ecart < 0 ? "moins" : ecart === 0 ? "par" : ecart === 1 ? "plus" : "double"}" data-col="${k % 2}" style="--r:${(k % 2) * 0.12}s">
       <header><div><b>Trou ${trou.t}</b><small>par ${trou.p}${trou.m ? " · " + nb(trou.m) + " m" : ""}</small></div><span class="cp-score" title="${signe(ecart)}">${trou.s}</span></header>
-      ${dessinTrou(trou, k)}
+      ${dessinTrou(trou)}
       <ol>${lignes.join("")}</ol>
-      <footer>${putts} putt${putts > 1 ? "s" : ""}</footer></article>`;
+      <footer><span>${putts} putt${putts > 1 ? "s" : ""}</span>${CALME ? "" : `<button class="cp-rejouer" type="button" aria-label="Rejouer le trou ${trou.t}">${ICONE_REJOUER}Rejouer</button>`}</footer></article>`;
+  }
+
+  /* ───────── La fiche en mouvement ─────────
+     1. Les blocs de la fiche apparaissent quand ils arrivent à l'écran, en faisant défiler la fiche (classes « fv » puis « in ») ;
+        leurs propres animations (balles du trou du lac, courbe du handicap, jauges) attendent ce moment-là.
+     2. Chaque trou du coup par coup se rejoue quand sa carte arrive à l'écran : la balle suit l'arc pendant qu'il se trace, une
+        onde marque l'endroit où elle s'arrête, la ligne du coup s'allume en même temps, puis les putts roulent jusqu'au drapeau.
+     Rien n'est ajouté aux données : c'est le même dessin, joué dans l'ordre des coups. Avec le réglage « moins d'animations »
+     du système (CALME), aucune de ces classes n'est posée : tout est affiché d'emblée. */
+  let ioFiche = null, ioTrous = null, ouverteA = 0;
+  function animerFiche(racine) {
+    if (CALME || !racine) return;
+    if (!ioFiche) ioFiche = new IntersectionObserver((entrees) => {
+      const debut = performance.now() - ouverteA < 500 ? 260 : 0;   // à l'ouverture, l'en-tête passe d'abord
+      entrees.filter((e) => e.isIntersecting).forEach((e, i) => {
+        ioFiche.unobserve(e.target);
+        e.target.style.setProperty("--r", debut + Math.min(i, 6) * 70 + "ms");
+        e.target.classList.add("in");
+      });
+    }, { root: $("#fiche"), threshold: 0.08, rootMargin: "0px 0px -5% 0px" });
+    Array.from(racine.children).forEach((el) => {
+      if (el.hidden || el.id === "coups" || el.id === "coups-corps" || el.classList.contains("fiche-haut") || el.classList.contains("fiche-rangs")) return;
+      el.classList.add("fv");
+      ioFiche.observe(el);
+    });
+  }
+
+  function animerTrous(corps) {
+    if (CALME) return;
+    if (ioTrous) ioTrous.disconnect();
+    ioTrous = new IntersectionObserver((entrees) => entrees.forEach((e) => {
+      if (!e.isIntersecting) return;
+      const carte = e.target;
+      ioTrous.unobserve(carte);
+      carte.classList.add("in");
+      setTimeout(() => { if (carte.isConnected) jouerTrou(carte); }, 240 + Number(carte.dataset.col) * 160);
+    }), { root: $("#fiche"), threshold: 0.3 });
+    $$(".cp-trou", corps).forEach((carte) => { carte.classList.add("attend"); ioTrous.observe(carte); });
+  }
+
+  const lectures = new WeakMap();   // carte → sa lecture en cours : en rejouant un trou, on arrête la précédente
+  const elan = (e) => 1 - Math.pow(1 - e, 2.4);   // la balle part vite et ralentit en arrivant
+  function jouerTrou(carte) {
+    const svg = $("svg", carte), balle = $(".cp-balle", svg), onde = $(".cp-onde", svg), putt = $(".cp-putt", svg), arcs = $$(".cp-arc", svg);
+    const lignes = $$("ol li", carte), jeton = {};
+    lectures.set(carte, jeton);
+    carte.classList.remove("joue");
+    carte.classList.add("attend", "in");
+    lignes.forEach((li) => li.classList.remove("dit"));
+    $$(".cp-pt", svg).forEach((c) => c.classList.remove("pose"));
+    arcs.concat(putt ? [putt] : []).forEach((a) => { a.style.strokeDashoffset = 1; });
+    const placer = (pt) => { balle.setAttribute("cx", pt.x.toFixed(2)); balle.setAttribute("cy", pt.y.toFixed(2)); };
+    placer($(".cp-sol", svg).getPointAtLength(0));
+    let roule = 0;   // part du trait de putt déjà parcourue
+    const etapes = lignes.map((li) => {
+      if (li.dataset.a != null && arcs[+li.dataset.a]) {
+        const arc = arcs[+li.dataset.a], long = arc.getTotalLength(), point = $(`.cp-pt[data-a="${li.dataset.a}"]`, svg);
+        return {
+          li, ms: borne(300 + long * 1.7, 340, 800),
+          pas(e) { const k = elan(e); arc.style.strokeDashoffset = 1 - k; placer(arc.getPointAtLength(long * k)); },
+          fin() {
+            const pt = arc.getPointAtLength(long);
+            if (point) point.classList.add("pose");
+            onde.setAttribute("cx", pt.x.toFixed(2)); onde.setAttribute("cy", pt.y.toFixed(2));
+            onde.style.stroke = getComputedStyle(arc).stroke;
+            onde.classList.remove("va"); onde.getBoundingClientRect(); onde.classList.add("va");   // relance l'onde
+          },
+        };
+      }
+      if (li.dataset.f != null && putt) {
+        const de = roule, a = +li.dataset.f, long = putt.getTotalLength();
+        roule = a;
+        return { li, ms: 320, pas(e) { const f = de + (a - de) * elan(e); putt.style.strokeDashoffset = 1 - f; placer(putt.getPointAtLength(long * f)); }, fin() {} };
+      }
+      return { li, ms: 90, pas() {}, fin() {} };   // pénalité, putt sans trait, texte de SGT : la ligne s'allume, sans dessin
+    });
+    let i = 0, debut = 0;
+    (function image(t) {
+      if (lectures.get(carte) !== jeton || !carte.isConnected) return;
+      if (!debut) debut = t;
+      const e = etapes[i];
+      if (!e) {   // trou fini : le dessin reprend son état normal, le score se pose, le fanion bouge
+        arcs.concat(putt ? [putt] : []).forEach((a) => { a.style.strokeDashoffset = ""; });
+        carte.classList.remove("attend");
+        carte.classList.add("joue");
+        return;
+      }
+      const k = (t - debut) / e.ms;
+      if (k >= 0) { e.li.classList.add("dit"); e.pas(Math.min(1, k)); }
+      if (k >= 1) { e.fin(); i++; debut = t + 80; }
+      requestAnimationFrame(image);
+    })(performance.now());
   }
 
   function coupsJoueur(p, parties) {
@@ -1247,8 +1351,10 @@
           ? ` · ton dernier tour, rien encore en ${P()}${cour.numero}` : "";
         $("#coups-quand").innerHTML = `<b>${P()}${semaine}</b> · ${esc(w ? w.parcours : sem ? sem.parcours : "")}${sem ? " · " + periode(sem) : ""}${sem && sem.statut === "en_cours" ? ' <span class="direct">en cours</span>' : ""}${pasEncore}`;
         $("#coups-corps").innerHTML = `<dl class="trio cp-resume">
-            ${fait("Score", score, signe(score - par) + " · par " + par)}${fait("Putts", putts, "putts donnés compris")}${long ? fait("Plus long coup", nb(Math.round(long)) + " m", "") : ""}</dl>
+            ${fait("Score", `<span data-n="${score}">${score}</span>`, signe(score - par) + " · par " + par)}${fait("Putts", `<span data-n="${putts}">${putts}</span>`, "putts donnés compris")}${long ? fait("Plus long coup", `<span data-n="${Math.round(long)}">${nb(Math.round(long))}</span> m`, "") : ""}</dl>
           <div class="cp-grille">${trous.map(carteTrou).join("")}</div>`;
+        nombres($("#coups-corps"));
+        animerTrous($("#coups-corps"));
         $$("#coups-sem button").forEach((b) => b.setAttribute("aria-pressed", Number(b.dataset.s) === semaine));
       };
       zone.innerHTML = `<h4>Le tour, coup par coup</h4>
@@ -1258,6 +1364,8 @@
         <ul class="cles cp-cles">${["fairway", "semirough", "rough", "deeprough", "sand", "green"].map((l) => `<li><i class="lie-${l}"></i>${lieNom(l)}</li>`).join("")}</ul>
         <div id="coups-corps"></div>`;
       zone.hidden = false;
+      animerFiche(zone);
+      zone.addEventListener("click", (e) => { const b = e.target.closest(".cp-rejouer"); if (b) jouerTrou(b.closest(".cp-trou")); });
       $$("#coups-sem button").forEach((b) => b.addEventListener("click", () => { const x = Number(b.dataset.s); montrer(x); statsVoir(p, x); }));
       coupsVoir = (x) => { if (dispo.some((w) => w.semaine === x)) montrer(x); };
       montrer(dispo[0].semaine);   // la semaine en cours si le joueur l'a jouée, sinon son dernier tour

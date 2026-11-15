@@ -30,6 +30,16 @@ class TestSite(unittest.TestCase):
         self.assertTrue(css and js)
         self.assertEqual(css.group(1), js.group(1))
 
+    def test_player_sheet_motion_never_hides_anything_without_animation(self):
+        """Fiche joueur : sans animation (réglage du système), le coup par coup et les blocs sont affichés d'emblée."""
+        self.assertIn("function animerFiche(racine) {\n    if (CALME || !racine) return;", self.js)
+        self.assertIn("function animerTrous(corps) {\n    if (CALME) return;", self.js)
+        arc = re.search(r"^\.cp-arc \{[^}]*\}", self.css, re.M).group(0)
+        self.assertNotIn("stroke-dashoffset", arc)       # l'arc n'est caché que sous « .attend », posé par le script
+        self.assertIn(".cp-trou.attend .cp-arc, .cp-trou.attend .cp-putt { stroke-dashoffset: 1; }", self.css)
+        motion = self.css[self.css.index("@media (prefers-reduced-motion: no-preference) {\n  .fiche .fiche-haut"):]
+        self.assertIn("  .fv { opacity: 0;", motion[:motion.index("\n}")])
+
     def test_the_site_is_indexed_and_every_file_it_names_exists(self):
         self.assertNotIn("noindex", self.html)
         for ref in re.findall(r'(?:href|src)="(assets/[^"?#]+)', self.html):

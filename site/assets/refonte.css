@@ -505,12 +505,12 @@ button.rangee:hover .fixe::before { transform: scaleY(1); }
 .cp-cles i { width: 16px; height: 4px; border-radius: 2px; background: var(--lie, var(--gris)); border: 0; }
 .cp-resume { margin-top: 18px; }
 .cp-grille { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
-.cp-trou { display: flex; flex-direction: column; min-width: 0; padding: 14px 14px 12px; border-radius: 16px; border: 1px solid var(--trait); border-top: 2px solid var(--trait-fort); background: rgba(var(--fond), .45); }
+.cp-trou { display: flex; flex-direction: column; min-width: 0; padding: 14px 14px 12px; border-radius: 16px; border: 1px solid var(--trait); border-top: 2px solid var(--trait-fort); background: rgba(var(--fond), .45); transition: opacity .6s ease, transform .8s var(--e), border-color .3s; }
 .cp-trou.moins { border-top-color: var(--vert); } .cp-trou.plus { border-top-color: var(--or); } .cp-trou.double { border-top-color: var(--corail); }
 .cp-trou header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .cp-trou header b { display: block; font-size: 15px; font-weight: 800; }
 .cp-trou header small { display: block; font-size: 12px; color: var(--gris); }
-.cp-score { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; font-weight: 800; font-size: 15px; background: rgba(var(--encre), .08); }
+.cp-score { position: relative; flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; font-weight: 800; font-size: 15px; background: rgba(var(--encre), .08); transition: opacity .3s ease, transform .3s ease; }
 .cp-trou.moins .cp-score { border-radius: 50%; background: var(--vert); color: var(--sur-ciel); }
 .cp-trou.plus .cp-score { box-shadow: inset 0 0 0 1.5px var(--or); }
 .cp-trou.double .cp-score { background: var(--corail); color: var(--sur-ciel); }
@@ -518,21 +518,76 @@ button.rangee:hover .fixe::before { transform: scaleY(1); }
 .cp-trou svg { display: block; width: 100%; height: auto; margin: 6px 0 4px; overflow: visible; }
 .cp-sol { fill: none; stroke: var(--trait-fort); stroke-width: 1; }
 .cp-tee { fill: var(--gris); }
-.cp-arc { fill: none; stroke: var(--lie, var(--gris)); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: trace .7s var(--e) forwards; animation-delay: var(--i, 0s); }
-.cp-putt { fill: none; stroke: var(--lie-green); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: trace .5s ease-out forwards; animation-delay: var(--i, 0s); }
-.cp-pt { fill: var(--lie, var(--gris)); stroke: var(--navy); stroke-width: 1.5; opacity: 0; animation: apparait .3s ease-out forwards; animation-delay: var(--i, 0s); }
+.cp-arc { fill: none; stroke: var(--lie, var(--gris)); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 1; }
+.cp-putt { fill: none; stroke: var(--lie-green); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 1; }
+.cp-pt { fill: var(--lie, var(--gris)); stroke: var(--navy); stroke-width: 1.5; transform-box: fill-box; transform-origin: center; }
 .cp-mat { fill: none; stroke: var(--glace); stroke-width: 1.4; stroke-linecap: round; }
-.cp-fanion { fill: var(--corail); }
+.cp-fanion { fill: var(--corail); transform-box: fill-box; transform-origin: 100% 50%; }
+/* la balle et l'onde du trou rejoué : invisibles tant que le trou ne se joue pas */
+.cp-balle { fill: #fff; stroke: rgba(var(--vif), .55); stroke-width: 2.4; paint-order: stroke; opacity: 0; transform: scale(.2); transform-box: fill-box; transform-origin: center; transition: opacity .35s ease, transform .35s ease; pointer-events: none; }
+.cp-onde { fill: none; stroke: var(--gris); stroke-width: 1.6; opacity: 0; transform-box: fill-box; transform-origin: center; pointer-events: none; }
+.cp-onde.va { animation: onde .6s ease-out; }
 .cp-trou ol { flex: 1; margin: 4px 0 0; padding: 0; list-style: none; font-size: 12.5px; line-height: 1.35; color: var(--texte-2); }
-.cp-trou li { display: flex; align-items: baseline; gap: 8px; padding: 3px 0; }
+.cp-trou li { display: flex; align-items: baseline; gap: 8px; padding: 3px 0; transition: opacity .3s ease, transform .5s var(--e); }
 .cp-trou li i { flex: none; display: grid; place-items: center; width: 17px; height: 17px; border-radius: 50%; font-style: normal; font-size: 10px; font-weight: 800; color: var(--sur-ciel); background: var(--lie, var(--gris)); transform: translateY(2px); }
 :root[data-theme="clair"] .cp-trou li i { color: #fff; }
 .cp-trou li b { color: var(--glace); font-weight: 700; }
 .cp-trou li.pen { color: var(--gris); font-style: italic; }
 .cp-trou li.pen i { background: none; box-shadow: inset 0 0 0 1px var(--trait-fort); color: var(--gris); }
-.cp-trou footer { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--trait); font-size: 11.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--gris); }
+.cp-trou footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--trait); font-size: 11.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--gris); }
+.cp-trou footer span { transition: opacity .4s ease; }
+.cp-rejouer { display: inline-flex; align-items: center; gap: 6px; margin: -8px -8px -8px 0; padding: 8px; border: 0; border-radius: 10px; background: none; font: inherit; letter-spacing: inherit; text-transform: inherit; color: var(--gris); cursor: pointer; transition: color .3s, opacity .3s; }
+.cp-rejouer svg { transition: transform .7s var(--e); }
+.cp-rejouer:hover, .cp-rejouer:focus-visible { color: var(--ciel-vif); }
+.cp-rejouer:hover svg, .cp-rejouer:focus-visible svg { transform: rotate(360deg); }
 @media (max-width: 560px) { .cp-grille { grid-template-columns: minmax(0, 1fr); } }
-@media (prefers-reduced-motion: reduce) { .cp-arc, .cp-putt { stroke-dashoffset: 0; animation: none; } .cp-pt { opacity: 1; animation: none; } }
+
+/* Le trou rejoué (jouerTrou dans refonte.js). « attend » : le trou n'a pas encore été joué à l'écran, ou il se joue ;
+   « in » : la carte est arrivée à l'écran ; « joue » : le trou vient d'être joué. Sans ces classes, tout est affiché. */
+.cp-trou.attend { transition-delay: var(--r, 0s); }
+.cp-trou.attend:not(.in) { opacity: 0; transform: translateY(26px) scale(.975); }
+.cp-trou.attend .cp-arc, .cp-trou.attend .cp-putt { stroke-dashoffset: 1; }
+.cp-trou.attend .cp-pt { opacity: 0; }
+.cp-trou.attend .cp-pt.pose { opacity: 1; animation: pop .45s var(--e); }
+.cp-trou.attend .cp-balle { opacity: 1; transform: none; }
+.cp-trou.attend li { opacity: 0; transform: translateX(-10px); }
+.cp-trou.attend li.dit { opacity: 1; transform: none; }
+.cp-trou.attend li.dit i { animation: cp-pastille .5s var(--e); }
+.cp-trou.attend .cp-score { opacity: .3; transform: scale(.86); }
+.cp-trou.attend footer span { opacity: 0; }
+.cp-trou.attend .cp-rejouer { opacity: .35; }
+.cp-trou.joue .cp-score { animation: cp-tampon .65s var(--e); }
+.cp-trou.joue.moins .cp-score::after { content: ""; position: absolute; inset: 0; border-radius: inherit; border: 2px solid var(--vert); opacity: 0; animation: cp-eclat .9s ease-out .15s; }
+.cp-trou.joue .cp-fanion { animation: cp-fanion 1s ease-out; }
+@keyframes cp-pastille { from { transform: translateY(2px) scale(.2); } 60% { transform: translateY(2px) scale(1.3); } }
+@keyframes cp-tampon { from { opacity: .3; transform: scale(1.7); } 55% { opacity: 1; transform: scale(.9); } }
+@keyframes cp-eclat { from { opacity: .9; transform: scale(1); } to { opacity: 0; transform: scale(2.3); } }
+@keyframes cp-fanion { 20% { transform: scaleX(.5) skewY(-12deg); } 45% { transform: scaleX(1.14) skewY(8deg); } 70% { transform: scaleX(.86) skewY(-4deg); } }
+@media (hover: hover) { .cp-trou:not(.attend):hover { transform: translateY(-3px); border-color: var(--trait-fort); } }
+
+/* ───────── Fiche joueur en mouvement (animerFiche dans refonte.js) ─────────
+   L'en-tête s'installe à l'ouverture ; ensuite chaque bloc (« fv ») apparaît quand il arrive à l'écran (« in »), et ses propres
+   animations (balles du trou du lac, courbe du handicap, jauges) attendent ce moment-là. */
+@media (prefers-reduced-motion: no-preference) {
+  .fiche .fiche-haut .surtitre { animation: arrive .7s var(--e) .12s backwards; }
+  .fiche #fiche-nom { animation: fiche-nom .9s var(--e) .16s backwards; }
+  .fiche .fermer { animation: fiche-croix .8s var(--e) .3s backwards; }
+  .fiche-rangs > div, #fs-tuiles .trio > div, .cp-resume > div { animation: fiche-leve .7s var(--e) backwards; animation-delay: calc(var(--t0, 0s) + var(--k, 0) * .08s); }
+  .fiche-rangs { --t0: .28s; }
+  .trio > div:nth-child(2) { --k: 1; }
+  .trio > div:nth-child(3) { --k: 2; }
+  .cp-sem button[aria-pressed="true"] { animation: fiche-puce .45s var(--e); }
+  .fv { opacity: 0; transform: translateY(24px); transition: opacity .7s ease var(--r, 0ms), transform .9s var(--e) var(--r, 0ms); }
+  h4.fv { transform: translateX(-18px); }
+  .fv.in { opacity: 1; transform: none; }
+  .fv:not(.in) * { animation-play-state: paused !important; }
+  .fv tbody tr { transition: opacity .5s ease, transform .7s var(--e); transition-delay: calc(var(--r, 0ms) + 120ms + var(--i, 0) * 45ms); }
+  .fv:not(.in) tbody tr { opacity: 0; transform: translateY(10px); }
+}
+@keyframes fiche-nom { from { clip-path: inset(0 0 100% 0); transform: translateY(45%); } to { clip-path: inset(-.2em 0 -.2em 0); transform: none; } }
+@keyframes fiche-croix { from { opacity: 0; transform: rotate(-120deg) scale(.5); } }
+@keyframes fiche-leve { from { opacity: 0; transform: translateY(18px); } }
+@keyframes fiche-puce { from { transform: scale(.82); } }
 @keyframes pop { from { opacity: 0; transform: scale(.2); } to { opacity: 1; transform: none; } }
 .carnet-info { min-height: 3em; margin: 10px 0 0; padding: 10px 14px; border-radius: 12px; background: rgba(var(--fond), .5); border: 1px solid var(--trait); font-size: 14px; color: var(--gris); }
 .carnet-info b { color: var(--glace); }
