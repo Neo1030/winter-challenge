@@ -21,7 +21,7 @@ from zoneinfo import ZoneInfo
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from build_workbook import read_players_file  # noqa: E402
-from winter_challenge import parcours  # noqa: E402
+from winter_challenge import parcours, surveillance  # noqa: E402
 from winter_challenge.season import build_season  # noqa: E402
 from winter_challenge.site_export import build_site_data  # noqa: E402
 from winter_challenge.sgt_api import SgtApiError, SgtClient  # noqa: E402
@@ -92,6 +92,9 @@ def main():
     parser.add_argument("--joueurs", metavar="CSV")
     parser.add_argument("--aujourdhui", metavar="AAAA-MM-JJ", help="date du jour à utiliser (démonstration : 2 jours après le début du dernier tournoi)")
     parser.add_argument("--demo", action="store_true", help="marque les données comme fictives et ajoute un parcours d'exemple")
+    parser.add_argument("--accepter-disparitions", action="store_true",
+                        help="ce qui a disparu de l'API SGT devait disparaître (joueur retiré…) : fin de la maintenance")
+    parser.add_argument("--rapport", metavar="MD", help="où écrire le texte de l'alerte si des données SGT ont disparu")
     args = parser.parse_args()
 
     try:
@@ -133,6 +136,13 @@ def main():
     data = build_site_data(season, args.saison, next_course, demo=args.demo,
                            history=[] if args.demo else parcours.read_history(),
                            autres=[(name, prefix_of(name), other) for name, other in seasons.items()])
+
+    # Surveillance : ce que l'API SGT donnait et ne donne plus met la zone du site en maintenance et avertit Mike
+    # (voir winter_challenge/surveillance.py). Seulement avec l'API, pas avec un fichier déjà téléchargé.
+    if not args.depuis_fichier:
+        site_url = os.environ.get("SITE_URL")
+        result = surveillance.check(data, surveillance.read_published(site_url, args.sortie), accept=args.accepter_disparitions)
+        surveillance.signal(result, args.rapport, site_url or "https://winterchallenge.letsgolf.ch")
 
     os.makedirs(os.path.dirname(args.sortie), exist_ok=True)
     with open(args.sortie, "w", encoding="utf-8") as f:

@@ -610,6 +610,16 @@ main { position: relative; }
 /* statistiques */
 .carte .orig { margin: 4px 0 0; font-size: 12.5px; color: var(--gris); }
 .carte .val.rien { font-size: 20px; color: var(--gris); }
+
+/* maintenance : une donnée que l'API SGT ne donne plus (refonte.js, maintenance()) */
+.maintenance { display: inline-flex; align-items: center; gap: 14px; max-width: 34em; text-align: left; color: var(--gris); font-size: 14px; font-weight: 400; line-height: 1.4; }
+.maintenance svg { flex: none; width: 34px; height: 34px; fill: none; stroke: var(--or); stroke-width: 1.8; stroke-linejoin: round; stroke-linecap: round; }
+.maintenance b { display: block; color: var(--glace); font-size: 17px; font-weight: 700; }
+.maintenance small { display: block; margin-top: 3px; font-size: 13.5px; }
+.maintenance.court { gap: 8px; }
+.maintenance.court svg { width: 20px; height: 20px; }
+.maintenance.court b { font-size: 14.5px; }
+.carte .qui .maintenance { margin-top: 18px; }
 .aide { margin: 20px 0 0; max-width: 70em; font-size: 13.5px; color: var(--gris); }
 .parcours-intro { margin-top: clamp(34px, 5vw, 64px); max-width: 60em; }
 .parcours-intro + .fiche-parcours { margin-top: 18px; }

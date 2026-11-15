@@ -91,6 +91,34 @@
     etat.sem = null; etat.q = ""; etat.pq = ""; etat.pcat = "";
   }
 
+  /* ───────── Maintenance : une donnée que l'API SGT donnait et ne donne plus (voir winter_challenge/surveillance.py) ─────────
+     La mise à jour pose la liste des zones touchées dans « maintenance », pour chaque compétition. La partie du site concernée
+     est remplacée par un avis ; elle revient seule dès que la donnée revient. Zones : classement, parcours, et une par statistique. */
+  const STATS_ZONES = ["fir", "gir", "drive", "gir_prox", "putts_faits", "ctp", "putts"];
+  const enPanne = (z) => !!data && Array.isArray(data.maintenance) && data.maintenance.indexOf(z) >= 0;
+  const avisMaintenance = (titre, court) => '<span class="maintenance' + (court ? " court" : "") + '" role="status"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2 2.6 19.8h18.8z"/><path d="M12 9.6v4.6M12 16.9v.2"/></svg>' +
+    `<span><b>${titre}</b>${court ? "" : "<small>Simulator Golf Tour a changé la façon de donner ces données. Elles reviennent dès que c'est corrigé.</small>"}</span></span>`;
+  function maintenance() {
+    if (enPanne("classement")) {
+      $("#podium").hidden = true; $("#liste-zone").hidden = true; $("#legende").innerHTML = "";
+      const v = $("#liste-vide"); v.hidden = false; v.innerHTML = avisMaintenance("Le classement est en maintenance");
+      const meilleur = $("#en-bref .bref:last-child");
+      if (meilleur) { $(".val", meilleur).textContent = "–"; $(".note", meilleur).textContent = "En maintenance"; }
+      $("#sem-grille").innerHTML = `<p class="vide">${avisMaintenance("Les résultats sont en maintenance")}</p>`;
+    }
+    if (enPanne("parcours")) {
+      if ($("#sem-fiche").innerHTML) $("#sem-fiche").innerHTML = `<p class="vide">${avisMaintenance("Les réglages du parcours sont en maintenance")}</p>`;
+      $$("#historique .puces").forEach((el) => { el.innerHTML = avisMaintenance("Réglages en maintenance", true); });
+    }
+    const cartes = $$("#stats-tuiles .carte");
+    tuiles().forEach((d, i) => {   // les tuiles sont dans l'ordre de tuiles()
+      const c = cartes[i];
+      if (!c || !enPanne(d[0])) return;
+      $$(".val, .orig", c).forEach((el) => el.parentNode.removeChild(el));
+      $(".qui", c).innerHTML = avisMaintenance("En maintenance", true);
+    });
+  }
+
   /* ───────── Apparitions au défilement et chiffres qui montent ───────── */
   const rappels = new WeakMap();
   const ioVue = new IntersectionObserver((entrees) => {
@@ -621,6 +649,7 @@
         if (dy) li.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], { duration: 750, easing: "cubic-bezier(.16,1,.3,1)" });
       } else li.classList.add("arrive");
     });
+    maintenance();
     rafraichir();
   }
 
@@ -687,7 +716,8 @@
     const groupes = tous.filter((g) => courseVisibles[g.idx]);
     $("#course-sous").textContent = `Le cumul des ${meilleursN()} ${brutSeul() ? "résultats bruts" : "meilleurs résultats " + (mode() === "net" ? "nets" : "bruts")} des cinq premiers, ${u.cap} après ${u.cap}.` +
       (tous.length > 1 ? " Coche les catégories à afficher." : "") + (pin ? " Fais défiler pour dérouler la saison." : "");
-    $("#saison").classList.toggle("vide", !tous.length || n < 2); // rien à dérouler : la section n'est pas épinglée
+    $("#saison").classList.toggle("vide", !tous.length || n < 2 || enPanne("classement")); // rien à dérouler : la section n'est pas épinglée
+    if (enPanne("classement")) { zone.innerHTML = `<p class="vide">${avisMaintenance("La course au titre est en maintenance")}</p>`; legende.innerHTML = ""; courseAvancer = null; return; }
     if (!tous.length || n < 2) { zone.innerHTML = `<p class="sous petit">La course démarre après deux ${u.pluriel} ${u.joues[1]}.</p>`; legende.innerHTML = ""; courseAvancer = null; return; }
 
     /* une case à cocher par compétition ; sous chaque case cochée, ses cinq premiers */
@@ -830,6 +860,7 @@
       "Avg driving distance : distance moyenne des drives de la partie (SGT ne donne pas le plus long drive dans son API). ") +
       "Closest to the pin : le coup de départ le plus près du drapeau sur un par 3 (le plus petit gagne). Total putt length : longueur totale des putts rentrés par tour. Distances en mètres, valeur d'origine de SGT en dessous.";
     nombres(boite);
+    maintenance();
     rafraichir();
   }
 
@@ -1010,6 +1041,7 @@
   function statsJoueur(p) {
     const st = p.stats;
     if (!st) return "";
+    if (STATS_ZONES.some(enPanne)) return `<h4>Statistiques</h4><p class="vide">${avisMaintenance("Les statistiques sont en maintenance")}</p>`;
     const u = unite(), r = st.resume || {}, lignes = (st.semaines || []).slice().sort((a, b) => b.semaine - a.semaine), sg = P() === "SG";
     const bd = r.meilleur_drive, bc = r.meilleur_ctp;
     const semDrive = bd && lignes.find((w) => w.semaine === bd.semaine), semCtp = bc && lignes.find((w) => w.semaine === bc.semaine);
@@ -1587,7 +1619,7 @@
     $("#lien-parcours").textContent = "Le parcours " + u.fin;
     if (coupHaut) { coupHaut.changer(recordPour(comps.find((c) => c.id === etat.comp) || comps[0])); majDefilement(); }
     bandeau(sem); parcoursVue(sem); enBref(sem); outils(); dessinerClassement(false); dessinerCourse(false);
-    stats(); chiffres(); semainesVue(); joueursVue(); reglesVue();
+    stats(); chiffres(); semainesVue(); joueursVue(); reglesVue(); maintenance();
     $$(".rv").forEach((el) => { if (!el.dataset.vu) voir(el); });
     rafraichir();
   }
