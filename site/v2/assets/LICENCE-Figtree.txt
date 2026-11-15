@@ -1,0 +1,3 @@
+Figtree (figtree-latin.woff2) : police libre, SIL Open Font License 1.1 (https://openfontlicense.org).
+Source : https://github.com/erikdkennedy/figtree (distribuée aussi par Google Fonts).
+C'est la police du site letsgolf.ch. Elle est hébergée ici pour que les visiteurs ne se connectent pas à Google.

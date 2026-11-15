@@ -78,6 +78,17 @@ conversation. **S'il manque une information, demande-la avant d'écrire quoi que
   semaine suivante : jamais plus loin. Fin affichée d'une semaine = veille du début du tournoi suivant (chez SGT, les tournois
   restent ouverts jusqu'en fin de saison).
 
+## Nouvelle version du site (v2)
+
+- `site/v2/` : la refonte « Trajectoire » (motion design), en ligne sous https://winterchallenge.letsgolf.ch/v2/ **à côté** du site
+  actuel, qui reste en place (décision de Mike, 15.11.2026). Elle lit le même `../donnees/saison.json` et appelle le même
+  `../compteur.php` ; elle a ses propres fichiers (`index.html`, `refonte.css`, `refonte.js`, `assets/`).
+- À chaque modification du style ou du script, augmente le numéro après `v=` dans `site/v2/index.html` (le même pour les deux),
+  sinon un navigateur peut garder l'ancienne version. La page est en `noindex` tant qu'elle ne remplace pas le site actuel.
+- Les mêmes règles s'y appliquent : Short Game en brut seulement, jamais plus loin que le parcours de la semaine suivante.
+  La page télé n'est pas concernée (elle n'utilise pas ces fichiers).
+- Aperçu local : `python3 scripts/serve_site.py --demo`, puis http://127.0.0.1:8765/v2/.
+
 ## Visites du site
 
 - `site/compteur.php` compte les pages vues du site des joueurs (appelé par app.js, seulement sur winterchallenge.letsgolf.ch).
