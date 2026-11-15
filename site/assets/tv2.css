@@ -1,0 +1,248 @@
+/* Winter Challenge Results · page télé, nouvelle version (tvv2.html), dans l'habillage « Trajectoire » du site v2.
+   Nuit d'hiver, bleu Let's Golf, et la trajectoire de balle comme fil conducteur : la balle vole pendant qu'une page est à l'écran.
+   Tout est en vh / vw pour remplir l'écran sans défilement. Écrit pour le lecteur Zebrix (navigateur ancien) :
+   pas de color-mix, pas de backdrop-filter, pas de « inset », pas de aspect-ratio ; seulement des animations d'opacité et de transform. */
+@font-face {
+  font-family: "Figtree";
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: swap;
+  src: url("fonts/figtree-latin.woff2") format("woff2");
+}
+
+:root {
+  --nuit: #00101e;
+  --navy: #001c33;
+  --navy-2: #062a48;
+  --navy-3: #0b3558;
+  --glace: #eaf6fd;
+  --ciel: #35abe2;
+  --ciel-vif: #7fd4ff;
+  --gris: #8fa8bb;
+  --trait: rgba(234, 246, 253, .12);
+  --trait-fort: rgba(234, 246, 253, .24);
+  --or: #ffc83d;
+  --corail: #ff8f80;
+  --vert: #5fd6a6;
+  --e: cubic-bezier(.16, 1, .3, 1);
+  --dur: 10s;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: hidden; cursor: none; }
+body {
+  display: grid; grid-template-columns: 25.5vw minmax(0, 1fr); grid-template-rows: 7.4vh minmax(0, 1fr); gap: 1.6vh 1.3vw;
+  padding: 1.6vh 1.5vw 1.8vh; background: var(--nuit); color: var(--glace);
+  font: 2vh/1.2 "Figtree", Helvetica, Arial, sans-serif; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- Fond : deux halos qui dérivent très lentement ---------- */
+.fond { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; overflow: hidden; background: linear-gradient(160deg, #00101e 0%, #001c33 55%, #04233f 100%); }
+.fond i { position: absolute; width: 90vw; height: 90vw; border-radius: 50%; will-change: transform; }
+.fond i:first-child { left: -30vw; top: -50vw; background: radial-gradient(circle, rgba(53, 171, 226, .22) 0%, rgba(53, 171, 226, 0) 62%); animation: derive-a 46s ease-in-out infinite alternate; }
+.fond i:last-child { right: -34vw; bottom: -56vw; background: radial-gradient(circle, rgba(127, 212, 255, .13) 0%, rgba(127, 212, 255, 0) 60%); animation: derive-b 58s ease-in-out infinite alternate; }
+@keyframes derive-a { to { transform: translate(16vw, 9vw); } }
+@keyframes derive-b { to { transform: translate(-14vw, -8vw); } }
+body > * { position: relative; z-index: 1; }
+body > .fond { position: fixed; z-index: 0; }
+
+/* ---------- Haut : les deux logos ---------- */
+.haut { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; min-width: 0; }
+.haut img { display: block; width: auto; filter: brightness(0) invert(1); }
+.haut .lg { height: 5.4vh; }
+.haut .wc { height: 7.4vh; }
+.droite { display: flex; align-items: center; gap: 2vw; }
+.credit { font-size: 1.5vh; color: var(--gris); letter-spacing: .04em; white-space: nowrap; }
+.demo { background: var(--or); color: #2b1d00; font-weight: 700; font-size: 1.8vh; padding: .6vh 1.6vh; border-radius: 99vh; }
+
+/* ---------- Panneau de gauche : la semaine, le parcours, les leaders ---------- */
+.panneau {
+  display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; padding: 2.2vh 1.5vw 2vh;
+  background: rgba(6, 42, 72, .5); border: 1px solid var(--trait); border-radius: 2.2vh;
+  transition: opacity .45s ease, transform .6s var(--e);
+}
+.panneau.out { opacity: 0; transform: translateX(-1.5vw); }
+.panneau > * { animation: monte .8s var(--e) both; animation-delay: calc(var(--i, 0) * 90ms); }
+@keyframes monte { from { opacity: 0; transform: translateY(2.2vh); } to { opacity: 1; transform: none; } }
+
+.p-comp { display: flex; align-items: center; justify-content: space-between; gap: 1vw; min-height: 2.8vh; font-size: 1.55vh; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--ciel-vif); white-space: nowrap; }
+.p-num { display: flex; align-items: flex-end; gap: .9vw; margin-top: .4vh; line-height: .86; white-space: nowrap; }
+.p-num .n { font-size: 13.4vh; font-weight: 900; letter-spacing: -.04em; }
+.p-num .n i { font-style: normal; color: var(--ciel); }
+@supports (-webkit-text-stroke: 1px #000) {
+  .p-num .n i { color: transparent; -webkit-text-stroke: .28vh var(--ciel); }
+}
+.live { display: inline-flex; align-items: center; gap: .8vh; padding: .5vh 1.2vh; border-radius: 99vh; background: rgba(95, 214, 166, .14); color: var(--vert); font-size: 1.5vh; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.live::before { content: ""; width: 1vh; height: 1vh; border-radius: 50%; background: var(--vert); animation: pouls 1.8s ease-in-out infinite; }
+@keyframes pouls { 50% { opacity: .25; transform: scale(.7); } }
+.p-dates { margin-top: 1.1vh; font-size: 1.9vh; color: var(--gris); font-weight: 500; white-space: nowrap; }
+
+.p-bloc { margin-top: 1.6vh; padding-top: 1.5vh; border-top: 1px solid var(--trait); min-width: 0; }
+.lab { font-size: 1.35vh; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--gris); white-space: nowrap; }
+.val { margin-top: .5vh; font-size: 3vh; font-weight: 800; line-height: 1.1; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.val.un { display: block; white-space: nowrap; text-overflow: ellipsis; }
+.note { margin-top: .5vh; font-size: 1.7vh; color: var(--gris); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.note b { color: var(--ciel-vif); font-weight: 700; }
+
+.p-regl { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .9vh .6vw; margin-top: 1.5vh; }
+.rg { min-width: 0; padding: .9vh .7vw 1vh; border-radius: 1.2vh; background: rgba(234, 246, 253, .055); }
+.rg .lab { font-size: 1.15vh; }
+.rg b { display: block; margin-top: .3vh; font-size: 1.85vh; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tee { display: inline-block; width: 1.3vh; height: 1.3vh; margin-right: .6vh; border-radius: 50%; background: var(--c, #8fa8bb); box-shadow: 0 0 0 .2vh rgba(234, 246, 253, .25); }
+
+.sc { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .6vw; margin-top: .9vh; }
+.sc b { display: block; font-size: 4.4vh; font-weight: 900; line-height: 1; color: var(--ciel-vif); }
+.sc span { display: block; margin-top: .4vh; font-size: 1.5vh; color: var(--gris); font-weight: 600; }
+.p-suite .val { font-size: 2.3vh; color: var(--glace); }
+.p-leaders { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1vw; margin-top: auto; }
+.p-leaders.seul { grid-template-columns: 1fr; }
+.p-leaders .p-bloc { margin-top: 1.6vh; }
+.p-leaders .val { font-size: 2.4vh; }
+.p-leaders .note b { font-size: 2vh; }
+.p-pied { margin-top: 1.6vh; padding-top: 1.4vh; border-top: 1px solid var(--trait); font-size: 1.6vh; color: var(--gris); white-space: nowrap; }
+.p-pied b { color: var(--glace); font-weight: 700; }
+
+/* ---------- Carte principale : titre, classement, vol de la balle ---------- */
+.carte { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; background: rgba(0, 28, 51, .62); border: 1px solid var(--trait); border-radius: 2.2vh; }
+.titre { flex: none; height: 10.6vh; display: flex; align-items: flex-end; justify-content: space-between; gap: 2vw; padding: 1.9vh 1.6vw 1.5vh; border-bottom: 1px solid var(--trait); }
+.titre-g { min-width: 0; }
+.sur { font-size: 1.5vh; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--ciel-vif); white-space: nowrap; }
+.titre h1 { margin: .3vh 0 0; font-size: 4.3vh; line-height: 1.05; font-weight: 800; letter-spacing: -.015em; white-space: nowrap; }
+.titre h1 em { font-style: normal; font-weight: 300; color: var(--gris); }
+.titre-d { display: flex; align-items: center; gap: 1.6vw; padding-bottom: .5vh; font-size: 1.6vh; color: var(--gris); font-weight: 600; white-space: nowrap; }
+.legende i { display: inline-block; width: 1.5vh; height: 1.5vh; border-radius: .4vh; vertical-align: -.2vh; margin: 0 .6vh 0 0; }
+.legende .lr i { margin-left: 1.1vw; }
+.legende i.c { background: rgba(53, 171, 226, .55); }
+.legende i.r { background: rgba(255, 143, 128, .6); }
+.carte.stats .legende { visibility: hidden; }
+.carte.sans-remplacer .legende .lr { display: none; }
+#tv-page { color: var(--glace); font-weight: 800; }
+/* un point par page du tour complet, la page affichée en bleu */
+.points { display: flex; align-items: center; justify-content: center; gap: .55vh; flex: 1; min-width: 0; }
+.points i { flex: none; width: .9vh; height: .9vh; border-radius: 50%; background: var(--trait-fort); transition: all .5s var(--e); }
+.points i.ici { width: 2.8vh; border-radius: 99vh; background: var(--ciel); }
+.points i.sep { width: 1px; height: 1.6vh; border-radius: 0; background: var(--trait-fort); margin: 0 .4vh; }
+
+.fondu { transition: opacity .38s ease, transform .5s var(--e); }
+.fondu.out { opacity: 0; transform: translateY(-1.2vh); }
+.zone { flex: 1; min-height: 0; overflow: hidden; padding: 0 1.1vw; }
+.vide { height: 100%; display: flex; align-items: center; justify-content: center; font-size: 3.2vh; color: var(--gris); }
+
+/* Classement : la hauteur d'une ligne (--h) et les colonnes (--cols) sont calculées par le script pour remplir la carte */
+.tete, .lg-j { display: grid; grid-template-columns: var(--cols); align-items: center; }
+.tete { height: var(--ht); font-size: 1.4vh; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--gris); text-align: center; }
+.tete .nom { text-align: left; padding-left: .5vw; }
+.tete .sem { letter-spacing: .02em; }
+.lg-j { height: var(--h); padding: calc(var(--h) * .07) 0; text-align: center; font-size: calc(var(--h) * .34); animation: ligne .75s var(--e) both; animation-delay: calc(var(--i, 0) * 65ms); }
+@keyframes ligne { from { opacity: 0; transform: translateX(3vw); } to { opacity: 1; transform: none; } }
+.lg-j > * { height: 100%; display: flex; align-items: center; justify-content: center; min-width: 0; white-space: nowrap; background: rgba(234, 246, 253, .045); }
+.lg-j > :first-child { border-radius: 1.3vh 0 0 1.3vh; }
+.lg-j > :last-child { border-radius: 0 1.3vh 1.3vh 0; }
+.lg-j.top > * { background: rgba(53, 171, 226, .15); }
+.lg-j.top.un > * { background: rgba(53, 171, 226, .25); }
+.rg-n b { display: flex; align-items: center; justify-content: center; width: calc(var(--h) * .56); height: calc(var(--h) * .56); border-radius: 50%; font-weight: 900; font-size: calc(var(--h) * .34); }
+.top .rg-n b { box-shadow: inset 0 0 0 .28vh var(--ciel); color: var(--ciel-vif); }
+.top.un .rg-n b { box-shadow: none; background: var(--or); color: #2b1d00; }
+.lg-j .nom { justify-content: flex-start; padding-left: .5vw; font-weight: 800; font-size: calc(var(--h) * .36); }
+.lg-j .nom span { overflow: hidden; text-overflow: ellipsis; }
+.lg-j .hdc { color: var(--gris); font-weight: 600; }
+.lg-j .tot { font-weight: 900; font-size: calc(var(--h) * .42); color: var(--ciel-vif); }
+.top.un .tot { color: #fff; }
+.evo { font-weight: 800; font-size: calc(var(--h) * .28); }
+.evo.plus { color: var(--vert); }
+.evo.moins { color: var(--corail); }
+.evo.egal { color: var(--gris); }
+.evo.neuf { font-size: calc(var(--h) * .19); letter-spacing: .08em; text-transform: uppercase; color: var(--or); }
+.lg-j .pt { font-weight: 600; color: var(--gris); font-size: calc(var(--h) * .32); }
+.lg-j .pt b { display: flex; align-items: center; justify-content: center; min-width: calc(var(--h) * .78); height: calc(var(--h) * .52); padding: 0 .3vw; border-radius: 1vh; font-weight: 700; }
+.lg-j .pt.compte b { background: rgba(53, 171, 226, .3); color: #d8f1ff; }
+.lg-j .pt.remplace b { background: rgba(255, 143, 128, .26); color: #ffd0c9; }
+
+/* ---------- Statistiques : une tuile par record, avec son petit dessin animé ---------- */
+.tuiles { height: 100%; display: grid; grid-template-columns: repeat(5, 1fr); gap: 1vw; padding: 2vh 0 1.2vh; }
+.tuiles.n3 { grid-template-columns: repeat(3, 1fr); padding-left: 6vw; padding-right: 6vw; }
+.tuile { display: flex; flex-direction: column; align-items: center; min-width: 0; padding: 2.4vh .8vw 2vh; text-align: center; border-radius: 1.8vh; background: rgba(234, 246, 253, .05); border: 1px solid var(--trait); animation: monte .9s var(--e) both; animation-delay: calc(var(--i, 0) * 110ms); }
+.tuile .tt { display: flex; align-items: center; min-height: 5.2vh; font-size: 2.1vh; line-height: 1.2; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--ciel-vif); }
+.tuile .th { margin-top: .6vh; min-height: 3.6vh; font-size: 1.5vh; line-height: 1.2; color: var(--gris); }
+.tuile svg { flex: 1; min-height: 0; width: 100%; max-height: 24vh; margin: 1.2vh 0; overflow: visible; }
+.tuile .tb { font-size: 5.6vh; font-weight: 900; line-height: 1; letter-spacing: -.02em; white-space: nowrap; }
+.tuile .tb small { font-size: .45em; font-weight: 700; color: var(--gris); margin-left: .25em; letter-spacing: 0; }
+.tuile .to { margin-top: .5vh; min-height: 2.1vh; font-size: 1.6vh; color: var(--gris); }
+.tuile .tn { margin-top: 1.6vh; padding-top: 1.4vh; width: 100%; border-top: 1px solid var(--trait); min-height: 9.6vh; font-size: 2.2vh; font-weight: 700; line-height: 1.3; overflow: hidden; }
+.tuile .tn div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dz { fill: none; stroke: var(--trait-fort); stroke-width: 2; }
+.dz.f { stroke-width: 9; stroke: rgba(234, 246, 253, .1); }
+.dt { fill: none; stroke: var(--ciel); stroke-width: 9; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: var(--off, 0); animation: trace 1.6s .35s var(--e) both; }
+.dt.fin { stroke-width: 2.5; stroke-dasharray: 100; }
+@keyframes trace { from { stroke-dashoffset: 100; } }
+.db { fill: #fff; animation: pop .6s 1.5s var(--e) both; transform-origin: center; transform-box: fill-box; }
+@keyframes pop { from { opacity: 0; transform: scale(0); } }
+.dd { fill: var(--ciel); }
+.dm { stroke: var(--glace); stroke-width: 2; fill: none; }
+.roule { animation: roule 1.7s .35s var(--e) both; }
+@keyframes roule { from { transform: translateX(-88px); } }
+
+/* ---------- Le vol : la balle part du tee quand la page arrive et tombe dans le trou quand elle s'en va ---------- */
+.vol { flex: none; position: relative; height: 6.6vh; margin: 0 1.6vw .6vh; }
+.vol svg { position: absolute; top: 0; left: 0; height: 100%; }
+.vol-sol { width: 100%; }
+.vol-sol path { fill: none; stroke: var(--trait); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.vol-trace { position: absolute; top: 0; left: 0; height: 100%; width: 0; overflow: hidden; }
+.vol-trace svg { width: var(--vol-w, 100vw); }
+.vol-trace path { fill: none; stroke: var(--ciel); stroke-width: 2; stroke-dasharray: 2 7; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.vol-x { position: absolute; top: 0; left: 1.2%; width: 96.4%; height: 100%; }
+.vol-x i { position: absolute; left: -.7vh; top: calc(86.67% - .7vh); width: 1.4vh; height: 1.4vh; border-radius: 50%; background: #fff; box-shadow: 0 0 1.4vh rgba(127, 212, 255, .9); }
+.vol-tee { position: absolute; left: 1.2%; top: 86.67%; width: .3vh; height: .9vh; margin-left: -.15vh; background: var(--gris); }
+.vol-trou { position: absolute; left: 97.6%; top: 86.67%; width: 2.2vh; height: .6vh; margin: -.3vh 0 0 -1.1vh; border-radius: 50%; background: #000a14; box-shadow: 0 0 0 1px var(--trait-fort); }
+.vol-trou::before { content: ""; position: absolute; left: 50%; bottom: 50%; width: .25vh; height: 4.4vh; background: var(--glace); }
+.vol-trou::after { content: ""; position: absolute; left: calc(50% + .25vh); bottom: calc(50% + 2.9vh); border: .75vh solid transparent; border-left: 1.7vh solid var(--corail); border-right: 0; }
+.vol-trou b { position: absolute; left: 50%; top: 50%; width: 5vh; height: 1.6vh; margin: -.8vh 0 0 -2.5vh; border-radius: 50%; border: .25vh solid var(--ciel-vif); opacity: 0; }
+.vol.joue .vol-trace { animation: vol-l var(--dur) linear both; }
+.vol.joue .vol-x { animation: vol-x var(--dur) linear both; }
+.vol.joue .vol-x i { animation: vol-y var(--dur) linear both; }
+.vol.joue .vol-trou b { animation: onde .9s ease-out both; animation-delay: calc(var(--dur) - .25s); }
+@keyframes vol-l { from { width: 1.2%; } to { width: 97.6%; } }
+@keyframes vol-x { from { transform: translateX(0); } to { transform: translateX(100%); } }
+/* parabole exacte : montée en quad-out, descente en quad-in (même courbe que le tracé en pointillé) */
+@keyframes vol-y {
+  0% { transform: translateY(0); animation-timing-function: cubic-bezier(.333, .667, .667, 1); }
+  50% { transform: translateY(-5.28vh); animation-timing-function: cubic-bezier(.333, 0, .667, .333); }
+  97% { opacity: 1; }
+  100% { transform: translateY(0); opacity: 0; }
+}
+@keyframes onde { from { opacity: .9; transform: scale(.3); } to { opacity: 0; transform: scale(1.5); } }
+
+/* ---------- Zone plus carrée (par exemple 1229 × 1080) : le panneau passe en bandeau au-dessus du classement ---------- */
+@media (max-aspect-ratio: 3/2) {
+  body { grid-template-columns: minmax(0, 1fr); grid-template-rows: 6.6vh 15.5vh minmax(0, 1fr); gap: 1.3vh; }
+  .credit { display: none; }
+  .haut .lg { height: 4.6vh; }
+  .haut .wc { height: 6.4vh; }
+  .panneau { flex-direction: row; align-items: center; gap: 1.6vw; padding: 1.5vh 1.6vw; }
+  .panneau > .p-tete { flex: none; }
+  .p-num .n { font-size: 8vh; }
+  .p-dates { font-size: 1.6vh; margin-top: .7vh; }
+  .p-bloc { flex: 1; margin-top: 0; padding: 0 0 0 1.6vw; border-top: 0; border-left: 1px solid var(--trait); }
+  .val { font-size: 2.5vh; }
+  .p-regl, .p-suite, .p-scores, .p-pied { display: none; }
+  .p-leaders { flex: 2.3; margin-top: 0; }
+  .p-leaders .p-bloc { margin-top: 0; }
+  .titre { height: 9.6vh; }
+  .titre h1 { font-size: 3.6vh; }
+  .legende { display: none; }
+  /* tuiles à l'horizontale : le dessin à gauche, les chiffres à droite */
+  .tuiles { grid-template-columns: repeat(2, 1fr); grid-auto-rows: minmax(0, 1fr); gap: 1.2vh 1vw; }
+  .tuiles.n3 { grid-template-columns: 1fr; padding-left: 12vw; padding-right: 12vw; }
+  .tuile { display: grid; grid-template-columns: 32% minmax(0, 1fr); grid-template-rows: auto auto auto minmax(0, 1fr); column-gap: 1.4vw; align-items: start; padding: 1.4vh 1.4vw; text-align: left; overflow: hidden; }
+  .tuile > * { grid-column: 2; }
+  .tuile svg { grid-column: 1; grid-row: 1 / 5; align-self: center; height: 100%; max-height: 15vh; margin: 0; }
+  .tuile .tt { grid-row: 1; min-height: 0; font-size: 1.8vh; }
+  .tuile .th { display: none; }
+  .tuile .tb { grid-row: 2; margin-top: .6vh; font-size: 4.4vh; }
+  .tuile .to { grid-row: 3; }
+  .tuile .tn { grid-row: 4; min-height: 0; margin-top: .8vh; padding-top: .8vh; font-size: 2vh; }
+  .tuile .tn div:nth-child(n+3) { display: none; }
+}
+
+#tv-debug { position: fixed; left: 0; right: 0; bottom: 0; z-index: 9; margin: 0; padding: 6px 10px; background: #000; color: #fff; font: 14px/1.3 monospace; white-space: pre-wrap; }
+#tv-debug::after { content: "\A" attr(data-cycle); }   /* durée d'un tour complet, à reporter dans Zebrix */

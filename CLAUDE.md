@@ -89,6 +89,16 @@ conversation. **S'il manque une information, demande-la avant d'écrire quoi que
   La page télé n'est pas concernée (elle n'utilise pas ces fichiers).
 - Aperçu local : `python3 scripts/serve_site.py --demo`, puis http://127.0.0.1:8765/v2/.
 
+## Nouvelle version de la page télé (tvv2)
+
+- `site/tvv2.html` (avec `assets/tv2.css` et `assets/tv2.js`) : la page télé dans l'habillage de la v2, **à côté** de `tv.html` et
+  `tvreduit.html`, qui restent en place tant que Mike ne les remplace pas. Même déroulé et mêmes réglages que `tv.js`
+  (`?duree=`, `?lignes=`, `?debut=stats`, `?debug=1`), 9 joueurs par page en 1920 × 1080 ; en zone plus carrée (1229 × 1080),
+  le panneau de gauche passe en bandeau.
+- Mêmes règles : Short Game en brut seulement, jamais plus loin que le parcours de la semaine suivante, jamais comptée dans les
+  visites, syntaxe prudente pour Zebrix (`tests/test_tv_v2.py`). Augmente le numéro après `v=` dans `tvv2.html` à chaque modification.
+- Aperçu local : `python3 scripts/serve_site.py --demo`, puis http://127.0.0.1:8765/tvv2.html.
+
 ## Visites du site
 
 - `site/compteur.php` compte les pages vues du site des joueurs (appelé par app.js, seulement sur winterchallenge.letsgolf.ch).
