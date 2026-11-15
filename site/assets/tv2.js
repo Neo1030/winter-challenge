@@ -65,6 +65,11 @@
   };
   const period = (e) => (!e.fin || e.fin <= e.debut ? "le " + day(e.debut) : "du " + day(e.debut) + " au " + day(e.fin));
 
+  /* Maintenance : une donnée que l'API SGT donnait et ne donne plus (voir winter_challenge/surveillance.py). La mise à jour pose
+     les zones touchées dans « maintenance » (classement, parcours, une par statistique) ; elles reviennent seules avec les données. */
+  const down = (c, zone) => !!c && Object.prototype.toString.call(c.maintenance) === "[object Array]" && c.maintenance.indexOf(zone) >= 0;
+  const WARN = '<svg class="panne" viewBox="0 0 24 24"><path d="M12 3.2 2.6 19.8h18.8z"/><path d="M12 9.6v4.6M12 16.9v.2"/></svg>';
+
   function leader(c, kind) {
     let best = null;
     for (const cat of c.categories) {
@@ -112,6 +117,7 @@
     const multi = c.categories.length > 1;
     const word = isWC(c) ? "semaine" : "mois";
     const best = (kind, label) => {
+      if (down(c, "classement")) return `<div class="p-bloc"><div class="lab">${label}</div><div class="val un">–</div><div class="note">En maintenance</div></div>`;
       const b = leader(c, kind);
       return `<div class="p-bloc"><div class="lab">${label}</div><div class="val un">${b ? esc(b.name) : "–"}</div>
         <div class="note">${b ? `<b>${num(b.total)}</b> points${multi ? " · " + esc(b.cat) : ""}` : "Pas encore de résultat"}</div></div>`;
@@ -123,7 +129,7 @@
     if (cur) {
       const note = [NINE[cur.neuf] || "", cur.par ? "par " + cur.par : "", cur.lieu || ""].filter((s) => s).map(esc).join(" · ");
       h += `<div class="p-bloc" style="--i:${i++}"><div class="lab">Parcours</div><div class="val">${esc(cur.nom)}</div>${note ? `<div class="note">${note}</div>` : ""}</div>`;
-      const st = settings(c, cur);
+      const st = down(c, "parcours") ? [["Réglages", "En maintenance"]] : settings(c, cur);
       if (st.length) h += `<div class="p-regl" style="--i:${i++}">${st.map((s) => `<div class="rg"><div class="lab">${s[0]}</div><b>${s[1]}</b></div>`).join("")}</div>`;
     }
     if (next) {
@@ -196,13 +202,15 @@
     $("#tv-page").textContent = "";
     const defs = tilesOf(comp);
     area.innerHTML = `<div class="tuiles${defs.length === 3 ? " n3" : ""}">${defs.map((def, i) => {
-      const t = s.tiles ? s.tiles[def[0]] : null;
+      const off = down(comp, def[0]);
+      const t = s.tiles && !off ? s.tiles[def[0]] : null;
+      if (off) return `<div class="tuile panne" style="--i:${i}"><div class="tt">${def[1]}</div><div class="th">${def[2]}</div>${WARN}<div class="tb">En maintenance</div><div class="to">Données SGT indisponibles</div><div class="tn"></div></div>`;
       const names = t && t.joueurs ? t.joueurs.slice(0, 3).map((n) => `<div>${esc(n)}</div>`).join("") + (t.joueurs.length > 3 ? `<div>+${t.joueurs.length - 3}</div>` : "") : "";
       return `<div class="tuile" style="--i:${i}"><div class="tt">${def[1]}</div><div class="th">${def[2]}</div>${t ? def[6](t) : '<svg viewBox="0 0 120 100"></svg>'}
         <div class="tb" data-i="${i}">${t ? "" : "–"}</div><div class="to">${t ? def[5](t) || "&nbsp;" : "Pas de donnée"}</div><div class="tn">${names}</div></div>`;
     }).join("")}</div>`;
     defs.forEach((def, i) => {
-      const t = s.tiles ? s.tiles[def[0]] : null;
+      const t = s.tiles && !down(comp, def[0]) ? s.tiles[def[0]] : null;
       if (t) countUp(area.querySelector('.tb[data-i="' + i + '"]'), Number(t.valeur), (v) => dec(v, def[3]) + "<small>" + def[4] + "</small>", 1500);
     });
   }
@@ -211,7 +219,8 @@
     const cap = rowsFit();
     const out = [];
     comps.forEach((comp, ci) => {
-      for (const c of comp.categories) {
+      if (down(comp, "classement")) out.push({ ci, comp: comp.nom, cat: "", kind: "maintenance", page: 1, pages: 1 });
+      for (const c of (down(comp, "classement") ? [] : comp.categories)) {
         for (const kind of ["net", "brut"]) {
           const rows = (c.classement[kind] || []).filter((r) => r.rang);   // pas de classement net au Short Game
           if (!rows.length) continue;
@@ -250,6 +259,13 @@
     const dots = document.querySelectorAll("#tv-points i[data-p]");
     for (let i = 0; i < dots.length; i++) dots[i].className = Number(dots[i].getAttribute("data-p")) === index ? "ici" : "";
     if (s.kind === "stats") { drawStats(s, comp); return; }
+    if (s.kind === "maintenance") {
+      $("#tv-sur").textContent = comps.length > 1 ? comp.nom : "";
+      $("#tv-title").innerHTML = "Classement <em>en maintenance</em>";
+      $("#tv-page").textContent = "";
+      area.innerHTML = `<div class="vide maint">${WARN}<div><b>Classement en maintenance</b><span>Simulator Golf Tour a changé la façon de donner ses données. Les résultats reviennent dès que c'est corrigé.</span></div></div>`;
+      return;
+    }
     /* peu de joueurs sur la page : les lignes grandissent un peu (au plus 35 %) pour mieux occuper la carte */
     const h = Math.min(rowHeight() * 1.35, (area.clientHeight - headH()) / s.rows.length);
     const all = comp.semaines.map((w) => w.numero).sort((a, b) => a - b);

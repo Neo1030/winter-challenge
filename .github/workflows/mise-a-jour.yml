@@ -18,6 +18,10 @@ on:
         description: "Envoyer le fichier même si les résultats n'ont pas changé (pour tester l'envoi)"
         type: boolean
         default: false
+      accepter_disparitions:
+        description: "Les données SGT disparues devaient disparaître (joueur retiré, tournoi supprimé) : lever la maintenance"
+        type: boolean
+        default: false
   push:
     branches: [main]
     paths: [config/prochain_parcours.json, config/joueurs.csv]   # nouveau parcours ou nouveaux joueurs : on met le site à jour tout de suite
@@ -27,10 +31,12 @@ concurrency:
   group: mise-a-jour-resultats
   cancel-in-progress: false
 
-# Droits minimaux : lire le code, et (pour l'entretien ci-dessous) gérer les tâches du dépôt
+# Droits minimaux : lire le code, (pour l'entretien ci-dessous) gérer les tâches du dépôt,
+# et ouvrir une issue qui avertit Mike quand des données SGT disparaissent
 permissions:
   contents: read
   actions: write
+  issues: write
 
 jobs:
   mise-a-jour:
@@ -47,6 +53,7 @@ jobs:
       SITE_URL: https://winterchallenge.letsgolf.ch
       FORCER: ${{ github.event_name != 'schedule' }}
       FORCER_ENVOI: ${{ inputs.forcer_envoi == true }}
+      ACCEPTER: ${{ inputs.accepter_disparitions == true }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
 
@@ -64,6 +71,7 @@ jobs:
         run: pip install openpyxl==3.1.5
 
       - name: Calculer les classements depuis SGT
+        id: calcul
         if: steps.creneau.outputs.lancer == 'oui'
         run: |
           set -eu
@@ -72,6 +80,9 @@ jobs:
           [ ${#args[@]} -gt 0 ] || { echo "SGT_TOURS est vide (variable de dépôt)"; exit 1; }
           # handicaps réels des joueurs (50 % = handicap de départ) : fichier tenu à jour par scripts/inscrire_joueurs.py
           [ ! -f config/joueurs.csv ] || args+=(--joueurs config/joueurs.csv)
+          # données SGT disparues : zones du site en maintenance, texte de l'alerte pour l'étape « Avertir Mike »
+          args+=(--rapport "$RUNNER_TEMP/alerte_sgt.md")
+          [ "$ACCEPTER" != "true" ] || args+=(--accepter-disparitions)
           python3 scripts/export_site_data.py "${args[@]}"
 
       - name: Envoyer chez Infomaniak (seulement si les résultats ont changé)
@@ -79,6 +90,29 @@ jobs:
         run: |
           if [ "$FORCER_ENVOI" = "true" ]; then python3 scripts/deploy_ftps.py --donnees-seules
           else python3 scripts/deploy_ftps.py --donnees-seules --si-change; fi
+
+      # Des données que l'API SGT donnait ont disparu (ou sont revenues) : une issue « Données SGT disparues » avertit Mike
+      # (GitHub l'envoie par e-mail et sur l'application mobile). Une seule issue ouverte à la fois : les nouvelles disparitions
+      # s'y ajoutent en commentaire, et elle se ferme seule quand tout est revenu. L'alerte n'est envoyée qu'une fois par donnée.
+      - name: Avertir Mike (données SGT disparues ou revenues)
+        if: steps.creneau.outputs.lancer == 'oui' && steps.calcul.outputs.alerte != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          ALERTE: ${{ steps.calcul.outputs.alerte }}
+          RAPPORT: ${{ runner.temp }}/alerte_sgt.md
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -eu
+          printf '\n[Détail de la mise à jour](%s)\n' "$RUN_URL" >> "$RAPPORT"
+          gh label create surveillance-sgt --color d93f0b --description "Données de l'API SGT disparues" --force >/dev/null
+          n=$(gh issue list --label surveillance-sgt --state open --json number --jq '.[0].number // empty')
+          if [ "$ALERTE" = "nouvelle" ]; then
+            if [ -n "$n" ]; then gh issue comment "$n" --body-file "$RAPPORT"
+            else gh issue create --title "Données SGT disparues : site en maintenance" --label surveillance-sgt --assignee "${{ github.repository_owner }}" --body-file "$RAPPORT"; fi
+          elif [ "$ALERTE" = "resolue" ] && [ -n "$n" ]; then
+            gh issue close "$n" --comment "$(cat "$RAPPORT")"
+          fi
 
       # GitHub désactive une tâche planifiée après 60 jours sans activité dans le dépôt.
       # Une fois par nuit, on la « réactive » : elle l'est déjà, mais cela remet le compteur à zéro.
