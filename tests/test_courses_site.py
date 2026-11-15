@@ -82,6 +82,16 @@ class LongDriveTest(unittest.TestCase):
         return {"tournamentId": 82414, "scorecards": cards,
                 "stats": {"drivingDistance": [{"user_name": "Ana", "numrounds": 1, "longest_drive": "282.38"}]}}
 
+    def test_pas_de_drive_pour_une_carte_pas_finie(self):
+        """Règle de Mike (15.11.2026) : un joueur qui n'a pas fini sa carte n'a pas de drive, même dans la liste gardée."""
+        t = self.tournoi()
+        t["scorecards"][1]["hole18_gross"] = 0                       # Bob s'arrête après 8 trous
+        drives = long_drives(t, None, lambda tid, holes: {"Ana": 300.0, "Bob": 320.0})
+        self.assertEqual(drives["yd"], {"Ana": 300.0})
+        t["scorecards"][1]["hole18_gross"] = 3                       # il finit son tour (un par 3, sans drive) : on relit
+        again = long_drives(t, drives, lambda tid, holes: {"Ana": 300.0, "Bob": 320.0})
+        self.assertEqual(again["yd"], {"Ana": 300.0, "Bob": 320.0})
+
     def test_drives_d_un_trou_fairway_seulement(self):
         self.assertEqual(parse_drives(HOLE_11), {"Ana": 316.4, "Bob": 254.96})
         self.assertEqual(parse_drives("<div>ROUND 1 HOLE 1 POS PLAYER DISTANCE (yds)</div>"), {})
@@ -106,7 +116,7 @@ class LongDriveTest(unittest.TestCase):
         t = self.tournoi()
         drives = long_drives(t, None, fetch)
         self.assertEqual(drives["yd"], {"Ana": 316.4, "Bob": 319.36})   # le meilleur de chaque joueur, tous trous confondus
-        self.assertEqual(drives["cle"], drives_key(t["stats"], drive_holes(t["scorecards"])))
+        self.assertEqual(drives["cle"], drives_key(t["stats"], drive_holes(t["scorecards"]), ["Ana", "Bob"]))
         self.assertEqual(len(asked), 1)
         # rien n'a changé chez SGT : on reprend ce qui est publié, sans relire le site
         self.assertIs(long_drives(t, drives, fetch), drives)

@@ -118,11 +118,18 @@ def drive_holes(scorecards: list) -> list:
     return sorted(holes)
 
 
-def drives_key(stats: dict | None, holes: list) -> str:
+def _finished(scorecards) -> list:
+    """Les joueurs qui ont fini une carte (9 ou 18 trous) : les seuls dont on garde un drive (règle de Mike, 15.11.2026)."""
+    from .stats import complete_players
+    return sorted(complete_players(scorecards))
+
+
+def drives_key(stats: dict | None, holes: list, finished: list | None = None) -> str:
     """Empreinte de ce que l'API dit des drives d'un tournoi : tant qu'elle ne change pas, personne n'a rejoué et les
     plus longs drives déjà lus restent valables (on ne relit pas le site SGT toutes les cinq minutes)."""
     rows = (stats or {}).get("drivingDistance") if isinstance(stats, dict) else None
-    text = json.dumps([rows or [], holes], sort_keys=True, ensure_ascii=False)
+    # les joueurs qui ont fini leur carte font partie de l'empreinte : un joueur qui termine son tour fait relire les drives
+    text = json.dumps([rows or [], holes] + ([finished] if finished is not None else []), sort_keys=True, ensure_ascii=False)
     return hashlib.sha1(text.encode("utf-8")).hexdigest()[:12]
 
 
@@ -151,13 +158,15 @@ def long_drives(tournament: dict, known: dict | None = None, fetch=fetch_long_dr
     holes = drive_holes(tournament.get("scorecards"))
     if not holes or not isinstance(stats, dict) or not stats.get("drivingDistance"):
         return known if not isinstance(stats, dict) else None  # pas de statistiques lues : on garde ; pas de drive : rien
-    key = drives_key(stats, holes)
+    finished = _finished(tournament.get("scorecards"))
+    key = drives_key(stats, holes, finished)
     if known and known.get("cle") == key:
         return known
     yards = fetch(tournament["tournamentId"], holes)
     if not yards:
         return known
-    return {"cle": key, "yd": yards}
+    # un joueur qui n'a pas fini sa carte n'a pas de drive, même dans cette liste gardée d'une mise à jour à l'autre
+    return {"cle": key, "yd": {name: value for name, value in yards.items() if name in finished}}
 
 
 # ---------- Coup par coup (onglet « Shot data » d'une carte de score) ----------
