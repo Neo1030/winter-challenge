@@ -44,9 +44,9 @@ def _week_summaries(season: Season) -> list:
         first = groups[number][0]
         categories = []
         for w in groups[number]:
-            attempts = [a for a in season.attempts if a.week == number and a.category == w.category]
             retained = [a for (cat, _, wk), a in season.best.items() if wk == number and cat == w.category]
-            entry = {"categorie": w.category, "joueurs": len({a.player for a in attempts})}
+            # joueurs de la semaine : ceux qui ont fini leur carte (un tour arrêté en route ne compte nulle part, règle de Mike du 15.11.2026)
+            entry = {"categorie": w.category, "joueurs": len({a.player for a in retained})}
             for kind, field in ((("brut", "stableford_gross"),) if season.gross_only else (("brut", "stableford_gross"), ("net", "stableford_net"))):
                 best = max((getattr(a.result, field) for a in retained), default=None)
                 who = sorted(a.player for a in retained if getattr(a.result, field) == best) if retained else []
