@@ -164,6 +164,7 @@ def long_drives(tournament: dict, known: dict | None = None, fetch=fetch_long_dr
 
 SHOTS_URL = "https://simulatorgolftour.com/sgt-api/scorecard/{tournament}/{player}/indv/shots"
 YARD, FOOT = 0.9144, 0.3048
+SHOTS_VERSION = 2    # à augmenter quand la lecture change : toutes les cartes déjà publiées sont alors relues une fois
 
 _TAGS = re.compile(r"<[^>]+>")
 _HOLE = re.compile(r"data-hole=['\"](\d+)['\"]")
@@ -199,9 +200,10 @@ def _shot(lie: str, main: str, detail: str) -> list:
         return ["p", _metres(main), lie, left]
     if low.startswith("made") and "putt" in low:
         return ["p", _metres(main), "holecup", 0]
+    if low.startswith("holed out"):          # « Holed out » + « from 16 yds » (deux morceaux chez SGT) : rentré de l'extérieur du green
+        distance = _metres(main + " " + detail)
+        return ["c", distance, "holecup", 0] if distance is not None else ["?", (main + " " + detail).strip(), "holecup", 0]
     distance = _metres(main)
-    if low.startswith("holed out") and distance is not None:     # « Holed out from 16 yds » : rentré depuis l'extérieur du green
-        return ["c", distance, "holecup", 0]
     if distance is None:
         return ["?", (main + " " + detail).strip(), lie, left]
     return ["c", distance, lie, 0 if lie == "holecup" else left]
@@ -242,7 +244,7 @@ def shots_key(cards: list) -> str:
     """Empreinte des cartes de score d'un joueur dans un tournoi : tant qu'elle ne change pas, il n'a pas rejoué et ses
     coups déjà lus restent valables."""
     rows = sorted((int(c.get("round") or 1), [c.get(f"hole{i}_gross") or 0 for i in range(1, 19)]) for c in cards)
-    return hashlib.sha1(json.dumps(rows).encode("utf-8")).hexdigest()[:10]
+    return hashlib.sha1(json.dumps([SHOTS_VERSION, rows]).encode("utf-8")).hexdigest()[:10]
 
 
 def shots_of(tournament: dict, known: dict | None = None, budget: list | None = None, fetch=fetch_shots) -> dict:

@@ -32,7 +32,7 @@ PAGE = "<h2>ROUND 1</h2>" + "".join([
                      _row(4, "fairway", "250 yds", "to fairway &middot; 30 yds left"), _row(5, "green", "28 yds", "to green &middot; 3 ft left"),
                      _row(6, "holecup", "Tap-in", "gimme")], 553),                        # le coup 3 manque : pénalité
     _hole(13, 4, 3, [_row(1, "fairway", "250 yds", "to fairway &middot; 60 yds left"), _row(2, "sand", "45 yds", "to sand &middot; 16 yds left"),
-                     _row(3, "holecup", "Holed out from 16 yds")], 310),
+                     _row(3, "holecup", "Holed out", "from 16 yds")], 310),          # en deux morceaux, comme sur le site SGT
 ]) + "<h2>ROUND 2</h2>" + _hole(1, 4, 4, [_row(1, "fairway", "200 yds", "to fairway &middot; 100 yds left")], 300)
 
 
