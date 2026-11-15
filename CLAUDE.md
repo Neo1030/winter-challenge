@@ -2,7 +2,7 @@
 
 Championnat hebdomadaire de golf sur simulateur (GSPro), joué sur Simulator Golf Tour (SGT), de fin octobre 2026 à avril 2027.
 Les données viennent de l'API SGT du club `LetsGolf` (clubId 644). Python calcule les points, les handicaps et les classements,
-puis publie le site https://winterchallenge.letsgolf.ch et la page télé (`tv.html`, `tvreduit.html` en 1229 × 1080).
+puis publie le site https://winterchallenge.letsgolf.ch et la page télé (`tv.html`, qui s'adapte aussi à une zone de 1229 × 1080).
 
 **Deux personnes utilisent cet outil pendant la saison : Mike (développement) et le capitaine.** Tout doit rester fiable :
 vérifie avant d'écrire chez SGT, ne modifie jamais l'existant sans demande explicite, dis clairement ce qui a été fait.
@@ -21,7 +21,7 @@ Réponds en français, en tutoyant, ton concret. Francs suisses (CHF), dates JJ.
 - Le Short Game est un tour mixte (`Mixte`, tour 3909) : pas de découpage Hommes / Femmes / Seniors, le fichier des handicaps
   réels ne s'y applique pas.
 - Dans le code : `build_season(..., gross_only=True)` (winter_challenge/season.py), constante `BRUT_SEUL` dans
-  scripts/export_site_data.py, indicateur `brut_seul` dans saison.json, lu par site/assets/app.js et tv.js.
+  scripts/export_site_data.py, indicateur `brut_seul` dans saison.json, lu par site/assets/refonte.js et tv2.js.
 - À confirmer avec le capitaine : les points du Short Game (aujourd'hui, mêmes points Stableford brut que le Winter Challenge).
 
 ### Winter Challenge : handicaps
@@ -55,7 +55,8 @@ conversation. **S'il manque une information, demande-la avant d'écrire quoi que
 - Après une inscription : commite et pousse `config/joueurs.csv` (la mise à jour des résultats le lit). Nom, prénom et e-mail
   restent dans `data/joueurs_inscrits.csv` (non versionné, sur cet ordinateur), pour créer plus tard les joueurs dans GSPro.
 - **Après chaque inscription, donne toujours la durée d'un tour complet de la page télé** (`python3 scripts/duree_tv.py`,
-  9 joueurs par page) : Mike la reporte dans Zebrix. La page télé l'affiche aussi d'après les résultats réels avec `tv.html?debug=1`.
+  9 joueurs par page, 4 s par page de classement et 8 s par page de statistiques) : Mike la reporte dans Zebrix. La page télé
+  l'affiche aussi d'après les résultats réels avec `tv.html?debug=1`.
 - Quand le capitaine crée un nouveau tournoi chez SGT : `python3 scripts/inscrire_joueurs.py --completer` inscrit les membres
   qui manquent (handicap réel, ou 0 au Short Game).
 
@@ -78,30 +79,31 @@ conversation. **S'il manque une information, demande-la avant d'écrire quoi que
   semaine suivante : jamais plus loin. Fin affichée d'une semaine = veille du début du tournoi suivant (chez SGT, les tournois
   restent ouverts jusqu'en fin de saison).
 
-## Nouvelle version du site (v2)
+## Organisation du site (depuis le 15.11.2026)
 
-- `site/v2/` : la refonte « Trajectoire » (motion design), en ligne sous https://winterchallenge.letsgolf.ch/v2/ **à côté** du site
-  actuel, qui reste en place (décision de Mike, 15.11.2026). Elle lit le même `../donnees/saison.json` et appelle le même
-  `../compteur.php` ; elle a ses propres fichiers (`index.html`, `refonte.css`, `refonte.js`, `assets/`).
-- À chaque modification du style ou du script, augmente le numéro après `v=` dans `site/v2/index.html` (le même pour les deux),
-  sinon un navigateur peut garder l'ancienne version. La page est en `noindex` tant qu'elle ne remplace pas le site actuel.
-- Les mêmes règles s'y appliquent : Short Game en brut seulement, jamais plus loin que le parcours de la semaine suivante.
-  La page télé n'est pas concernée (elle n'utilise pas ces fichiers).
-- Aperçu local : `python3 scripts/serve_site.py --demo`, puis http://127.0.0.1:8765/v2/.
-
-## Nouvelle version de la page télé (tvv2)
-
-- `site/tvv2.html` (avec `assets/tv2.css` et `assets/tv2.js`) : la page télé dans l'habillage de la v2, **à côté** de `tv.html` et
-  `tvreduit.html`, qui restent en place tant que Mike ne les remplace pas. Même déroulé et mêmes réglages que `tv.js`
-  (`?duree=`, `?lignes=`, `?debut=stats`, `?debug=1`), 9 joueurs par page en 1920 × 1080 ; en zone plus carrée (1229 × 1080),
-  le panneau de gauche passe en bandeau.
-- Mêmes règles : Short Game en brut seulement, jamais plus loin que le parcours de la semaine suivante, jamais comptée dans les
-  visites, syntaxe prudente pour Zebrix (`tests/test_tv_v2.py`). Augmente le numéro après `v=` dans `tvv2.html` à chaque modification.
-- Aperçu local : `python3 scripts/serve_site.py --demo`, puis http://127.0.0.1:8765/tvv2.html.
+- **Le site des joueurs** est la refonte « Trajectoire » (motion design) : `site/index.html`, `site/assets/refonte.css`,
+  `site/assets/refonte.js`. À chaque modification du style ou du script, augmente le numéro après `v=` dans `site/index.html`
+  (le même pour les deux), sinon un navigateur peut garder l'ancienne version.
+- **La page télé** est `site/tv.html` (avec `assets/tv2.css` et `assets/tv2.js`, même habillage). Elle s'adapte seule à la zone
+  1229 × 1080 (le panneau de gauche passe en bandeau) : `tvreduit.html` ne fait que renvoyer vers `tv.html`.
+  Réglages : `?duree=` (pages de classement, 4 s par défaut), `?stats=` (pages de statistiques, 8 s par défaut, ou le double de
+  `?duree=`), `?lignes=`, `?debut=stats`, `?debug=1`. 9 joueurs par page en 1920 × 1080. Durée d'un tour : `python3 scripts/duree_tv.py`.
+  Augmente le numéro après `v=` dans `tv.html` à chaque modification. Syntaxe prudente pour Zebrix (`tests/test_tv.py`).
+- Le QR code du panneau de la télé (`assets/qr-site.svg`) mène à https://winterchallenge.letsgolf.ch : image fixe, à régénérer si
+  l'adresse change (version 3, correction M, sans marge ; la marge blanche vient du style).
+- **L'ancien site et l'ancienne page télé sont gardés sous `site/v1/`** (décision de Mike) : https://winterchallenge.letsgolf.ch/v1/,
+  `/v1/tv.html`, `/v1/tvreduit.html`, et leurs pages de démonstration. Ils lisent les mêmes données (`../donnees/saison.json`).
+  N'y touche pas sans demande. L'ancienne adresse `/v2/` renvoie vers le site.
+- Les mêmes règles partout : Short Game en brut seulement, jamais plus loin que le parcours de la semaine suivante, la télé
+  n'est jamais comptée dans les visites.
+- Le déploiement n'efface rien en ligne : les anciens fichiers de la racine (`assets/app.js`, `assets/tv.js`, `/v2/refonte.*`…)
+  y restent, sans être utilisés.
+- Aperçu local : `python3 scripts/serve_site.py --demo`, puis http://127.0.0.1:8765/ , `/tv.html` , `/v1/`.
 
 ## Visites du site
 
-- `site/compteur.php` compte les pages vues du site des joueurs (appelé par app.js, seulement sur winterchallenge.letsgolf.ch).
+- `site/compteur.php` compte les pages vues du site des joueurs (appelé par refonte.js, et par l'ancien site sous /v1, seulement sur
+  winterchallenge.letsgolf.ch).
   La télé n'est jamais comptée. Pas de cookie, pas d'adresse IP gardée : un code brouillé qui change chaque jour.
   Les données restent en ligne dans `visites/` (fermé au public, jamais versionné ni envoyé par le déploiement).
 - `https://winterchallenge.letsgolf.ch/stats.php` : statistiques avec mot de passe. Mot de passe : `python3 scripts/mot_de_passe_stats.py`
@@ -112,4 +114,4 @@ conversation. **S'il manque une information, demande-la avant d'écrire quoi que
 
 `python3 -m unittest discover tests` avant tout commit. Aperçu local : `python3 scripts/serve_site.py` (`--demo` pour les données fictives).
 Le site et la page télé sont du JavaScript sans dépendance, écrits pour d'anciens navigateurs (lecteur Zebrix) : pas de `?.` ni
-de `??` dans `tv.js`.
+de `??` dans `tv2.js`.

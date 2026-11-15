@@ -5,11 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Winter Challenge Results · Let's Golf</title>
   <meta name="robots" content="noindex">
-  <meta name="color-scheme" content="light">
+  <meta name="color-scheme" content="dark">
   <link rel="icon" href="assets/icone-winter-challenge.svg" type="image/svg+xml">
   <link rel="preload" href="assets/fonts/figtree-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="assets/style.css">
-  <link rel="stylesheet" href="assets/tv.css?v=13">
+  <link rel="stylesheet" href="assets/tv2.css?v=6">
 </head>
 <body>
   <script>
@@ -22,25 +21,33 @@
       window.onerror = function (msg, src, line) { box.appendChild(document.createTextNode("\nERREUR : " + msg + " (" + String(src).split("/").pop() + ":" + line + ")")); };
     })();
   </script>
-  <header class="tv-top">
-    <img src="assets/logo-letsgolf.svg" width="246" height="44" alt="Let's Golf">
-    <span class="tv-right"><span class="tv-credit">Résultats : Simulator Golf Tour</span><span id="tv-demo" class="tv-demo" hidden>Données de démonstration</span><img class="tv-wc" src="assets/logo-winter-challenge.svg" width="420" height="130" alt="Winter Challenge"></span>
+  <div class="fond" aria-hidden="true"><i></i><i></i></div>
+
+  <header class="haut">
+    <img class="lg" src="assets/logo-letsgolf.svg" width="246" height="44" alt="Let's Golf">
+    <span id="tv-points" class="points"></span>
+    <span class="droite"><span class="credit">Résultats : Simulator Golf Tour</span><span id="tv-demo" class="demo" hidden>Données de démonstration</span><img class="wc" src="assets/logo-winter-challenge.svg" width="420" height="130" alt="Winter Challenge"></span>
   </header>
 
-  <section id="tv-stats" class="tv-stats" aria-label="En bref"></section>
+  <aside id="tv-panneau" class="panneau" aria-label="En bref"></aside>
 
-  <section class="tv-card" aria-live="off">
-    <div class="tv-title">
-      <h1 id="tv-title" class="fadeable">Classement</h1>
-      <div class="meta">
-        <span class="tv-legend"><i class="c"></i>Résultat compté <span class="lr"><i class="r"></i>Premier remplacé</span></span>
-        <span id="tv-page" class="fadeable"></span>
+  <main class="carte">
+    <div class="titre">
+      <div class="titre-g fondu"><div id="tv-sur" class="sur"></div><h1 id="tv-title">Classement</h1></div>
+      <div class="titre-d">
+        <span class="legende fondu" id="tv-legende"><i class="c"></i>Compte au classement<span class="lr"><i class="r"></i>À remplacer</span></span>
+        <span id="tv-page" class="fondu"></span>
       </div>
     </div>
-    <div id="tv-area" class="tv-area fadeable"></div>
-    <div class="tv-progress"><i id="tv-bar"></i></div>
-  </section>
+    <div id="tv-area" class="zone fondu"></div>
+    <div class="vol" aria-hidden="true">
+      <svg class="vol-sol" viewBox="0 0 1000 60" preserveAspectRatio="none"><path d="M0 52H1000" /></svg>
+      <div id="tv-trace" class="vol-trace"><svg viewBox="0 0 1000 60" preserveAspectRatio="none"><path d="M12 52Q494 -44 976 52" /></svg></div>
+      <div id="tv-balle" class="vol-x"><i></i></div>
+      <span class="vol-tee"></span><span class="vol-trou"><b></b></span>
+    </div>
+  </main>
 
-  <script src="assets/tv.js?v=14"></script>
+  <script src="assets/tv2.js?v=6"></script>
 </body>
 </html>

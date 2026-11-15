@@ -1,5 +1,11 @@
 # Site du Winter Challenge
 
+> **Organisation depuis le 15.11.2026.** Le site des joueurs est la refonte « Trajectoire » : `index.html`, `assets/refonte.css`,
+> `assets/refonte.js`. La page télé est `tv.html` (`assets/tv2.css`, `assets/tv2.js`) ; elle s'adapte seule à la zone 1229 × 1080
+> (`tvreduit.html` y renvoie) et dure 4 s par page de classement, 8 s par page de statistiques. L'ancien site et l'ancienne page
+> télé, décrits dans la suite de ce document (`app.js`, `style.css`, `tv.js`, `tv.css`, pages de démonstration), sont gardés tels
+> quels sous `v1/` : là où ce document écrit `assets/app.js` ou `tvdemo.html`, lire `v1/assets/app.js` ou `v1/tvdemo.html`.
+
 Site statique (HTML, CSS, JavaScript) pour winterchallenge.letsgolf.ch : classements net et brut, parcours de la semaine,
 résultats par semaine et fiches joueurs. Aucun outil de compilation, aucune base de données, aucun cookie ni traceur publicitaire.
 Un petit compteur de visites anonyme (compteur.php, sans cookie ni adresse IP gardée) alimente la page stats.php, réservée.

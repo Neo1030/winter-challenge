@@ -1,4 +1,4 @@
-/* Winter Challenge Results · page télé, nouvelle version (tvv2.html), dans l'habillage « Trajectoire » du site v2.
+/* Winter Challenge Results · page télé, nouvelle version (tv.html), dans l'habillage « Trajectoire » du site v2.
    Nuit d'hiver, bleu Let's Golf, et la trajectoire de balle comme fil conducteur : la balle vole pendant qu'une page est à l'écran.
    Tout est en vh / vw pour remplir l'écran sans défilement. Écrit pour le lecteur Zebrix (navigateur ancien) :
    pas de color-mix, pas de backdrop-filter, pas de « inset », pas de aspect-ratio ; seulement des animations d'opacité et de transform. */
@@ -25,7 +25,7 @@
   --corail: #ff8f80;
   --vert: #5fd6a6;
   --e: cubic-bezier(.16, 1, .3, 1);
-  --dur: 10s;
+  --dur: 4s;
 }
 
 * { box-sizing: border-box; }
@@ -67,7 +67,7 @@ body > .fond { position: fixed; z-index: 0; }
 
 .p-comp { display: flex; align-items: center; justify-content: space-between; gap: 1vw; min-height: 2.8vh; font-size: 1.55vh; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--ciel-vif); white-space: nowrap; }
 .p-num { display: flex; align-items: flex-end; gap: .9vw; margin-top: .4vh; line-height: .86; white-space: nowrap; }
-.p-num .n { font-size: 13.4vh; font-weight: 900; letter-spacing: -.04em; }
+.p-num .n { font-size: 12.4vh; font-weight: 900; letter-spacing: -.04em; }
 .p-num .n i { font-style: normal; color: var(--ciel); }
 @supports (-webkit-text-stroke: 1px #000) {
   .p-num .n i { color: transparent; -webkit-text-stroke: .28vh var(--ciel); }
@@ -77,7 +77,7 @@ body > .fond { position: fixed; z-index: 0; }
 @keyframes pouls { 50% { opacity: .25; transform: scale(.7); } }
 .p-dates { margin-top: 1.1vh; font-size: 1.9vh; color: var(--gris); font-weight: 500; white-space: nowrap; }
 
-.p-bloc { margin-top: 1.6vh; padding-top: 1.5vh; border-top: 1px solid var(--trait); min-width: 0; }
+.p-bloc { margin-top: 1.3vh; padding-top: 1.2vh; border-top: 1px solid var(--trait); min-width: 0; }
 .lab { font-size: 1.35vh; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--gris); white-space: nowrap; }
 .val { margin-top: .5vh; font-size: 3vh; font-weight: 800; line-height: 1.1; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .val.un { display: block; white-space: nowrap; text-overflow: ellipsis; }
@@ -90,17 +90,20 @@ body > .fond { position: fixed; z-index: 0; }
 .rg b { display: block; margin-top: .3vh; font-size: 1.85vh; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tee { display: inline-block; width: 1.3vh; height: 1.3vh; margin-right: .6vh; border-radius: 50%; background: var(--c, #8fa8bb); box-shadow: 0 0 0 .2vh rgba(234, 246, 253, .25); }
 
-.sc { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .6vw; margin-top: .9vh; }
-.sc b { display: block; font-size: 4.4vh; font-weight: 900; line-height: 1; color: var(--ciel-vif); }
-.sc span { display: block; margin-top: .4vh; font-size: 1.5vh; color: var(--gris); font-weight: 600; }
 .p-suite .val { font-size: 2.3vh; color: var(--glace); }
 .p-leaders { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1vw; margin-top: auto; }
 .p-leaders.seul { grid-template-columns: 1fr; }
-.p-leaders .p-bloc { margin-top: 1.6vh; }
+.p-leaders .p-bloc { margin-top: 1.3vh; }
 .p-leaders .val { font-size: 2.4vh; }
 .p-leaders .note b { font-size: 2vh; }
-.p-pied { margin-top: 1.6vh; padding-top: 1.4vh; border-top: 1px solid var(--trait); font-size: 1.6vh; color: var(--gris); white-space: nowrap; }
-.p-pied b { color: var(--glace); font-weight: 700; }
+.p-qr { display: flex; align-items: center; gap: 1vw; margin-top: 1.3vh; padding-top: 1.3vh; border-top: 1px solid var(--trait); min-width: 0; }
+.qr { flex: none; width: 14.8vh; height: 14.8vh; padding: 1.1vh; border-radius: 1.3vh; background: #fff; }
+.p-qr.petit .qr { width: 12.5vh; height: 12.5vh; }
+.p-qr .lab { white-space: normal; line-height: 1.35; }
+.qr img { display: block; width: 100%; height: 100%; }
+.qt { min-width: 0; }
+.adr { margin-top: .7vh; font-size: 1.5vh; font-weight: 800; color: var(--ciel-vif); white-space: nowrap; }
+.p-qr .note b { color: var(--glace); }
 
 /* ---------- Carte principale : titre, classement, vol de la balle ---------- */
 .carte { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; background: rgba(0, 28, 51, .62); border: 1px solid var(--trait); border-radius: 2.2vh; }
@@ -133,7 +136,7 @@ body > .fond { position: fixed; z-index: 0; }
 .tete { height: var(--ht); font-size: 1.4vh; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--gris); text-align: center; }
 .tete .nom { text-align: left; padding-left: .5vw; }
 .tete .sem { letter-spacing: .02em; }
-.lg-j { height: var(--h); padding: calc(var(--h) * .07) 0; text-align: center; font-size: calc(var(--h) * .34); animation: ligne .75s var(--e) both; animation-delay: calc(var(--i, 0) * 65ms); }
+.lg-j { height: var(--h); padding: calc(var(--h) * .07) 0; text-align: center; font-size: calc(var(--h) * .34); animation: ligne .6s var(--e) both; animation-delay: calc(var(--i, 0) * 45ms); }
 @keyframes ligne { from { opacity: 0; transform: translateX(3vw); } to { opacity: 1; transform: none; } }
 .lg-j > * { height: 100%; display: flex; align-items: center; justify-content: center; min-width: 0; white-space: nowrap; background: rgba(234, 246, 253, .045); }
 .lg-j > :first-child { border-radius: 1.3vh 0 0 1.3vh; }
@@ -224,7 +227,10 @@ body > .fond { position: fixed; z-index: 0; }
   .p-dates { font-size: 1.6vh; margin-top: .7vh; }
   .p-bloc { flex: 1; margin-top: 0; padding: 0 0 0 1.6vw; border-top: 0; border-left: 1px solid var(--trait); }
   .val { font-size: 2.5vh; }
-  .p-regl, .p-suite, .p-scores, .p-pied { display: none; }
+  .p-regl, .p-suite, .qt { display: none; }
+  .p-qr { flex: none; margin-top: 0; padding-top: 0; border-top: 0; }
+  .qr, .p-qr.petit .qr { width: 12vh; height: 12vh; padding: .9vh; }
+  .panneau { padding-top: 1.2vh; padding-bottom: 1.2vh; }
   .p-leaders { flex: 2.3; margin-top: 0; }
   .p-leaders .p-bloc { margin-top: 0; }
   .titre { height: 9.6vh; }

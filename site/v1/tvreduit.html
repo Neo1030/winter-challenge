@@ -3,17 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Winter Challenge Results (démonstration) · Let's Golf</title>
+  <title>Winter Challenge Results (réduit) · Let's Golf</title>
   <meta name="robots" content="noindex">
   <meta name="color-scheme" content="light">
   <link rel="icon" href="assets/icone-winter-challenge.svg" type="image/svg+xml">
   <link rel="preload" href="assets/fonts/figtree-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="assets/style.css">
   <link rel="stylesheet" href="assets/tv.css?v=13">
+  <link rel="stylesheet" href="assets/tv-reduit.css?v=13">
 </head>
-<body>
+<body class="reduit">
   <script>
-    /* Diagnostic pour les lecteurs anciens (écrit sans syntaxe récente) : tvdemo.html?debug=1 */
+    /* Diagnostic pour les lecteurs anciens (écrit sans syntaxe récente) : tvreduit.html?debug=1 */
     (function () {
       if (location.search.indexOf("debug") < 0) return;
       var box = document.createElement("pre"); box.id = "tv-debug";
@@ -41,7 +42,6 @@
     <div class="tv-progress"><i id="tv-bar"></i></div>
   </section>
 
-  <script>window.TV_DONNEES = "demo/saison_demo.json";   /* données fictives : 18 semaines, 60 joueurs */</script>
   <script src="assets/tv.js?v=14"></script>
 </body>
 </html>

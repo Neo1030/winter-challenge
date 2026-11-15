@@ -1,5 +1,5 @@
-/* Winter Challenge · nouvelle version du site (« Trajectoire »), en ligne sous /v2 à côté de la version actuelle.
-   JavaScript sans dépendance. Lit ../donnees/saison.json, le même fichier que le site actuel et la page télé.
+/* Winter Challenge · le site (« Trajectoire ») ; l'ancienne version est sous /v1.
+   JavaScript sans dépendance. Lit donnees/saison.json, le même fichier que la page télé.
    Écrit pour les navigateurs récents des joueurs : la page télé (lecteur Zebrix) n'utilise pas ce fichier. */
 (function () {
   "use strict";
@@ -205,7 +205,7 @@
 
   /* ───────── Le coup d'ouverture : la meilleure moyenne au drive de la saison, tracée comme sur le simulateur ───────── */
   function initCoup(recInitial, ciel) {
-    const hero = $(".hero"), svg = $("#coup"), bloc = $("#record"), num = $("#record-m"), bouton = $("#rejouer");
+    const hero = $(".hero"), svg = $("#coup"), bloc = $("#record"), num = $("#record-m");
     /* part : part de la trajectoire parcourue (0 = au départ, à gauche ; 1 = à l'arrivée, à droite). C'est le défilement qui la fait avancer. */
     let rec = recInitial, geo = null, part = CALME ? 1 : 0, arrivee = false, annoncee = CALME, raf = 0;
 
@@ -294,8 +294,6 @@
       construire();
     }
 
-    bouton.hidden = CALME;
-    bouton.addEventListener("click", () => aller("parcours"));
     etiquette();
     construire();
     return { construire: () => { cancelAnimationFrame(raf); construire(); }, avancer, annoncer, changer, estArrivee: () => arrivee, depart: () => ({ x: geo.xb, y: geo.y }), partir(v) { svg.classList.toggle("parti", v); } };
@@ -1543,7 +1541,7 @@
   function visite(route) {
     if (pasCompter) return;
     const tactileMac = navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent) ? "&t=1" : "";
-    new Image().src = `../compteur.php?p=${encodeURIComponent(route || "classement")}&c=${encodeURIComponent(etat.comp)}${tactileMac}&r=${Date.now()}`;
+    new Image().src = `compteur.php?p=${encodeURIComponent(route || "classement")}&c=${encodeURIComponent(etat.comp)}${tactileMac}&r=${Date.now()}`;
   }
 
   /* ───────── Mise en route ───────── */
@@ -1574,7 +1572,7 @@
     $("#demo").hidden = !brutes.demo;
     if (!wc.semaines.length) {
       document.body.classList.add("pret");
-      $("#coup").style.display = "none"; $("#record").hidden = true; $("#rejouer").hidden = true;
+      $("#coup").style.display = "none"; $("#record").hidden = true;
       $("main").innerHTML = '<p class="wrap vide grand">La saison n\'a pas encore commencé.</p>';
       initCiel();
       return;
@@ -1697,7 +1695,7 @@
   }
 
   /* les mêmes données que le site actuel et la page télé : donnees/saison.json, tenu à jour toutes les 5 minutes environ */
-  fetch("../donnees/saison.json?v=" + Date.now())
+  fetch("donnees/saison.json?v=" + Date.now())
     .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then((json) => {
       brutes = json;

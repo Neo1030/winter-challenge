@@ -14,7 +14,7 @@ date_default_timezone_set('Europe/Zurich');
 header('Cache-Control: no-store');
 header('X-Robots-Tag: noindex');
 
-const PAGES = ['classement', 'parcours', 'semaines', 'joueurs', 'regles'];
+const PAGES = ['classement', 'parcours', 'saison', 'stats', 'semaines', 'joueurs', 'regles'];   // les sections du site
 const COMPETITIONS = ['wc', 'sg'];
 const ROBOTS = '/bot|crawl|spider|slurp|preview|headless|lighthouse|curl|wget|python|monitor|scan/i';
 

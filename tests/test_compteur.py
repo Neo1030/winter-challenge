@@ -19,14 +19,16 @@ def _module(name, path):
 
 class TestCompteur(unittest.TestCase):
     def test_tv_pages_never_count(self):
-        for page in ("tv.html", "tvreduit.html", "tvdemo.html", "tvreduitdemo.html"):
+        for page in ("tv.html", "tvreduit.html", "v1/tv.html", "v1/tvreduit.html", "v1/tvdemo.html", "v1/tvreduitdemo.html"):
             html = (SITE / page).read_text(encoding="utf-8")
             self.assertNotIn("app.js", html, page)
+            self.assertNotIn("refonte.js", html, page)
             self.assertNotIn("compteur.php", html, page)
-        self.assertNotIn("compteur.php", (SITE / "assets" / "tv.js").read_text(encoding="utf-8"))
+        for script in ("assets/tv2.js", "v1/assets/tv.js"):
+            self.assertNotIn("compteur.php", (SITE / script).read_text(encoding="utf-8"), script)
 
     def test_counts_only_on_the_real_site(self):
-        js = (SITE / "assets" / "app.js").read_text(encoding="utf-8")
+        js = (SITE / "v1" / "assets" / "app.js").read_text(encoding="utf-8")   # l'ancien site, gardé sous /v1
         self.assertIn('const COUNT_HOST = "winterchallenge.letsgolf.ch"', js)
         self.assertIn("location.hostname !== COUNT_HOST", js)
 

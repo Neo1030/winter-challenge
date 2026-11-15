@@ -1,10 +1,11 @@
-/* Winter Challenge Results · page télé, nouvelle version (tvv2.html), dans l'habillage « Trajectoire » du site v2.
+/* Winter Challenge Results · page télé (tv.html), dans l'habillage « Trajectoire » du site ; l'ancienne page est sous v1/tv.html.
    Même déroulé que tv.js : pour chaque compétition, les classements de chaque catégorie (net puis brut), puis les statistiques
    de la semaine en cours ; le Short Game est en brut seulement (ni net ni handicap). Lit donnees/saison.json, relu chaque minute.
    À gauche, le panneau de la semaine : numéro, dates, parcours et réglages, parcours suivant (jamais plus loin), meilleurs totaux.
    Écrit pour les anciens navigateurs des lecteurs d'affichage (Zebrix…) : pas de « ?. » ni de « ?? », pas de .at(), .flat(), replaceAll.
-   Réglages dans l'adresse :  tvv2.html?duree=15  (secondes par page, 10 par défaut)   tvv2.html?lignes=5  (lignes par page au maximum)
-   tvv2.html?debut=stats  (commence par les statistiques)   tvv2.html?debug=1  (navigateur, taille, erreurs, durée d'un tour complet) */
+   Réglages dans l'adresse :  tv.html?duree=6  (secondes par page de classement, 4 par défaut)
+   tv.html?stats=12  (secondes par page de statistiques, 8 par défaut, ou le double de ?duree=)   tv.html?lignes=5  (lignes par page au maximum)
+   tv.html?debut=stats  (commence par les statistiques)   tv.html?debug=1  (navigateur, taille, erreurs, durée d'un tour complet) */
 (() => {
   "use strict";
 
@@ -16,7 +17,9 @@
   const key = (s) => String(s == null ? "" : s).toLowerCase().replace(/[^a-z0-9]/g, "");
 
   const params = new URLSearchParams(location.search);
-  const DURATION = Math.max(2, Number(params.get("duree")) || 10) * 1000;
+  const DURATION = Math.max(2, Number(params.get("duree")) || 4) * 1000;                                    // une page de classement
+  const DURATION_STATS = Math.max(2, Number(params.get("stats")) || (params.get("duree") ? DURATION / 500 : 8)) * 1000;   // une page de statistiques
+  const durationOf = (s) => (s && s.kind === "stats" ? DURATION_STATS : DURATION);
   const MAX_ROWS = Number(params.get("lignes")) || 0;
   const START_STATS = params.get("debut") === "stats";
   const REFRESH = 60 * 1000;
@@ -50,6 +53,7 @@
   }
 
   /* ---------- Panneau de gauche (celui de la compétition affichée) ---------- */
+  const SITE = "winterchallenge.letsgolf.ch";                    // adresse écrite à côté du QR code
   const isWC = (c) => c.prefixe === "WC";
   const NINE = { Front: "trous 1 à 9", Back: "trous 10 à 18", All: "les 18 trous" };
   const TEES = { par3: ["Par 3", "#35abe2"], white: ["Blanc", "#f4f7fa"], yellow: ["Jaune", "#ffd23f"], blue: ["Bleu", "#3b8eea"], black: ["Noir", "#1c232b"], red: ["Rouge", "#e5484d"],
@@ -126,21 +130,18 @@
       h += `<div class="p-bloc p-suite" style="--i:${i++}"><div class="lab">${isWC(c) ? "Semaine prochaine" : "Mois prochain"} · ${esc(c.prefixe)}${next.semaine}</div>
         <div class="val un">${esc(next.nom)}</div><div class="note">${[next.debut ? "dès le " + day(next.debut) : "", NINE[next.neuf] || ""].filter((s) => s).join(" · ")}</div></div>`;
     }
-    /* Les scores posés sur les cartes pendant la semaine affichée, toutes catégories confondues */
-    const res = cur ? weeks.find((w) => w.numero === cur.semaine) : null;
-    if (res) {
-      const sum = (k) => res.categories.reduce((a, x) => a + ((x.stats && x.stats[k]) || 0), 0);
-      const tally = [["Eagles", sum("eagles") + sum("albatros")], ["Birdies", sum("birdies")], ["Pars", sum("pars")]];
-      if (tally.some((t) => t[1])) h += `<div class="p-bloc p-scores" style="--i:${i++}"><div class="lab">${isWC(c) ? "Cette semaine" : "Ce mois"}, sur les cartes</div>
-        <div class="sc">${tally.map((t) => `<div><b data-n="${t[1]}"></b><span>${t[0]}</span></div>`).join("")}</div></div>`;
-    }
     /* Short Game : brut seulement, pas de « Meilleur net » */
     h += `<div class="p-leaders${c.brut_seul ? " seul" : ""}" style="--i:${i++}">${c.brut_seul ? "" : best("net", "Meilleur net")}${best("brut", "Meilleur brut")}</div>`;
     const played = weeks.length + " " + (weeks.length > 1 && word === "semaine" ? "semaines" : word) + " " + (isWC(c) ? ["jouée", "jouées"] : ["joué", "joués"])[weeks.length > 1 ? 1 : 0];
-    h += `<div class="p-pied" style="--i:${i++}"><b>${c.joueurs.length}</b> joueurs · <b>${weeks.length}</b>${played.replace(/^\d+/, "")}</div>`;
-    $("#tv-panneau").innerHTML = h;
-    const counts = document.querySelectorAll("#tv-panneau .sc b");
-    for (let k = 0; k < counts.length; k++) countUp(counts[k], Number(counts[k].getAttribute("data-n")), (v) => num(Math.round(v)), 1400);
+    /* Le QR code mène au site des joueurs (assets/qr-site.svg, à régénérer si l'adresse change) */
+    h += `<div class="p-qr" style="--i:${i++}"><span class="qr"><img src="assets/qr-site.svg" alt="QR code vers ${SITE}"></span>
+      <div class="qt"><div class="lab">Le site sur ton téléphone</div><div class="adr">${SITE}</div>
+      <div class="note"><b>${c.joueurs.length}</b> joueurs · <b>${weeks.length}</b>${played.replace(/^\d+/, "")}</div></div></div>`;
+    const panel = $("#tv-panneau");
+    panel.innerHTML = h;
+    /* si le panneau déborde (noms de parcours sur deux lignes…), le QR code rétrécit un peu plutôt que d'être coupé */
+    const qr = panel.querySelector(".p-qr");                     // mesuré à la position des blocs : l'animation d'arrivée fausse scrollHeight
+    if (qr.offsetTop + qr.offsetHeight > panel.clientHeight - parseFloat(getComputedStyle(panel).paddingBottom) + 1) qr.className += " petit";
     $("#tv-demo").hidden = !data.demo;
   }
 
@@ -228,9 +229,10 @@
     /* un point par page ; un trait sépare les compétitions */
     $("#tv-points").innerHTML = out.length > 1 && out.length <= 30 ? out.map((s, i) => (i && s.ci !== out[i - 1].ci ? '<i class="sep"></i>' : "") + '<i data-p="' + i + '"></i>').join("") : "";
     /* Durée d'un tour complet (toutes les pages), à reporter dans Zebrix : visible avec ?debug=1 et dans window.TV_CYCLE */
-    window.TV_CYCLE = { pages: out.length, secondes: Math.round(out.length * DURATION / 1000), lignes_par_page: cap };
+    const nStats = out.filter((s) => s.kind === "stats").length;
+    window.TV_CYCLE = { pages: out.length, secondes: Math.round(((out.length - nStats) * DURATION + nStats * DURATION_STATS) / 1000), lignes_par_page: cap };
     const box = document.getElementById("tv-debug");
-    if (box) box.setAttribute("data-cycle", out.length + " pages × " + DURATION / 1000 + " s = " + window.TV_CYCLE.secondes + " s pour un tour complet (" + cap + " joueurs par page)");
+    if (box) box.setAttribute("data-cycle", (out.length - nStats) + " pages de classement × " + DURATION / 1000 + " s + " + nStats + " de statistiques × " + DURATION_STATS / 1000 + " s = " + window.TV_CYCLE.secondes + " s pour un tour complet (" + cap + " joueurs par page)");
   }
 
   const evo = (e) => {
@@ -267,14 +269,14 @@
           return `<span class="pt ${w === r.a_remplacer ? "remplace" : r.comptees.indexOf(w) >= 0 ? "compte" : ""}"><b>${p}</b></span>`;
         }).join("")}<span class="tot" data-t="${r.total}"></span></div>`).join("")}</div>`;
     const totals = area.querySelectorAll(".tot");
-    for (let i = 0; i < totals.length; i++) countUp(totals[i], Number(totals[i].getAttribute("data-t")), (v) => num(Math.round(v)), 900 + i * 65);
+    for (let i = 0; i < totals.length; i++) countUp(totals[i], Number(totals[i].getAttribute("data-t")), (v) => num(Math.round(v)), 700 + i * 50);
   }
 
   /* La balle part du tee quand la page arrive et tombe dans le trou quand elle s'en va */
   function restartFlight() {
     vol.classList.remove("joue");
     void vol.offsetWidth;                                        // relance les animations
-    document.documentElement.style.setProperty("--dur", DURATION + "ms");
+    document.documentElement.style.setProperty("--dur", durationOf(slides[index]) + "ms");
     vol.style.setProperty("--vol-w", vol.clientWidth + "px");
     vol.classList.add("joue");
   }
@@ -296,7 +298,7 @@
 
   function loop() {
     clearTimeout(timer);
-    timer = setTimeout(() => { show(index + 1, true); loop(); }, DURATION);
+    timer = setTimeout(() => { show(index + 1, true); loop(); }, durationOf(slides[index]));
   }
 
   /* ---------- Données : relues chaque minute ---------- */
@@ -336,7 +338,7 @@
   });
 
   /* la police maison change un peu les hauteurs une fois chargée : on recalcule les pages */
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (data && slides.length) { buildSlides(); index = Math.min(index, slides.length - 1); drawSlide(slides[index]); } });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (data && slides.length) { shown = null; buildSlides(); index = Math.min(index, slides.length - 1); drawSlide(slides[index]); } });
 
   keepAwake();
   load(true);

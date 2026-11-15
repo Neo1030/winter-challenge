@@ -229,7 +229,7 @@
   /* ---------- Données : relues chaque minute ---------- */
   async function load(first) {
     try {
-      const r = await fetch((window.TV_DONNEES || "donnees/saison.json") + "?v=" + Date.now(), { cache: "no-store" });   // les pages de démonstration imposent leur fichier
+      const r = await fetch((window.TV_DONNEES || "../donnees/saison.json") + "?v=" + Date.now(), { cache: "no-store" });   // les pages de démonstration imposent leur fichier
       if (!r.ok) throw new Error(r.status);
       const json = await r.json();
       if (!first && data && json.genere_le === data.genere_le) return;   // rien de nouveau

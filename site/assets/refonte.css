@@ -1,4 +1,4 @@
-/* Winter Challenge · nouvelle version du site (« Trajectoire »), en ligne sous /v2
+/* Winter Challenge · le site (« Trajectoire ») ; l'ancienne version est sous /v1
    Nuit d'hiver, bleu Let's Golf, et un seul fil conducteur : la trajectoire de balle du simulateur.
    Aucune dépendance. Les couleurs se règlent dans les variables ci-dessous. */
 @font-face {
@@ -6,7 +6,7 @@
   font-style: normal;
   font-weight: 300 900;
   font-display: swap;
-  src: url("assets/figtree-latin.woff2") format("woff2");
+  src: url("fonts/figtree-latin.woff2") format("woff2");
 }
 
 :root {
@@ -120,14 +120,6 @@ body.pret .ligne:nth-child(2) > span { animation-delay: .38s; }
 .record-l { margin-top: 6px; font-size: 13px; color: var(--gris); opacity: 0; transform: translateY(8px); transition: opacity .8s ease, transform .8s var(--e); }
 .record-l b { color: var(--glace); font-weight: 700; }
 .record.pose .record-l { opacity: 1; transform: none; }
-.rejouer {
-  position: absolute; z-index: 2; left: max(20px, 5vw); bottom: 24px; display: inline-flex; align-items: center; gap: 8px;
-  padding: 8px 14px; border-radius: 999px; border: 1px solid var(--trait); background: rgba(0, 16, 30, .4); color: var(--gris);
-  font-size: 13px; font-weight: 600; cursor: pointer; transition: color .3s, border-color .3s;
-}
-.rejouer:hover { color: var(--glace); border-color: var(--ciel); }
-.rejouer:hover svg { transform: translateY(3px); }
-.rejouer svg { transition: transform .7s var(--e); }
 
 /* ───────── Bandeau défilant ───────── */
 .bandeau { overflow: hidden; border-block: 1px solid var(--trait); background: var(--navy); }
@@ -866,8 +858,6 @@ main { position: relative; }
   .haut.colle { background: linear-gradient(rgba(0, 16, 30, .92), rgba(0, 16, 30, 0)); -webkit-backdrop-filter: none; backdrop-filter: none; border-color: transparent; }
   .hero-txt { padding-bottom: 290px; }
   .record { bottom: 70px; max-width: 210px; }
-  .rejouer { bottom: 74px; padding: 10px; }
-  .rejouer span { display: none; }
   .contour { -webkit-text-stroke-width: 1px; }
   .liste-zone { --fmin: 226px; }
   .fixe { grid-template-columns: 24px minmax(0, 1fr) auto; gap: 8px; padding: 10px 10px 10px 8px; }

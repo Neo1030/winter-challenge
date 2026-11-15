@@ -1,8 +1,8 @@
-"""Durée d'un tour complet de la page télé (tv.html et tvreduit.html), d'après les joueurs inscrits : à reporter dans Zebrix.
+"""Durée d'un tour complet de la page télé (tv.html), d'après les joueurs inscrits : à reporter dans Zebrix.
 
 Usage :
-  python3 scripts/duree_tv.py              # durée par page de 10 s (défaut de la page)
-  python3 scripts/duree_tv.py --duree 12
+  python3 scripts/duree_tv.py              # 4 s par page de classement, 8 s par page de statistiques (défauts de tv.html)
+  python3 scripts/duree_tv.py --duree 10   # ancienne page (v1/tv.html) ou réglage ?duree= sans ?stats= … : même durée pour toutes les pages
 
 Hypothèse : tous les inscrits ont joué (c'est le maximum ; avant leurs premiers résultats, la télé affiche moins de pages).
 Pages : pour chaque catégorie du Winter Challenge, le classement net puis le brut, 9 joueurs par page (mesuré sur un écran de
@@ -20,6 +20,15 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from winter_challenge.inscription import read_players_csv  # noqa: E402
 
 ROWS_PER_PAGE = 9
+
+
+V2_PAGE, V2_STATS = 4, 8                                  # secondes, défauts de tv.html (site/assets/tv2.js)
+
+
+def stats_pages(players: dict) -> int:
+    """Nombre de pages de statistiques : une par catégorie du Winter Challenge qui a des joueurs, une pour le Short Game."""
+    cats = {row["categorie"] for row in players.values()}
+    return sum(1 for c in ("Hommes", "Femmes", "Seniors") if c in cats) + (1 if players else 0)
 
 
 def pages(players: dict) -> tuple[int, list]:
@@ -43,10 +52,15 @@ def pages(players: dict) -> tuple[int, list]:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--duree", type=float, nargs="*", default=[10], help="secondes par page (défaut : 10, comme la page télé)")
+    parser.add_argument("--duree", type=float, nargs="*", default=None, help="même durée pour toutes les pages, en secondes (ancienne page : 10)")
     args = parser.parse_args()
-    total, lines = pages(read_players_csv())
+    players = read_players_csv()
+    total, lines = pages(players)
     print("\n".join(lines))
+    if not args.duree:
+        n = stats_pages(players)
+        print(f"{total - n} pages de classement × {V2_PAGE} s + {n} de statistiques × {V2_STATS} s = {(total - n) * V2_PAGE + n * V2_STATS} s pour un tour complet")
+        return
     for d in args.duree:
         print(f"{total} pages × {d:g} s = {round(total * d)} s pour un tour complet")
 

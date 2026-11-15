@@ -646,12 +646,12 @@
   function count() {
     if (noCount) return;
     const touchMac = navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent) ? "&t=1" : "";
-    new Image().src = `compteur.php?p=${encodeURIComponent(parseHash().route)}&c=${encodeURIComponent(state.comp)}${touchMac}&r=${Date.now()}`;
+    new Image().src = `../compteur.php?p=${encodeURIComponent(parseHash().route)}&c=${encodeURIComponent(state.comp)}${touchMac}&r=${Date.now()}`;
   }
 
   window.addEventListener("hashchange", () => { render(); window.scrollTo(0, 0); count(); });
 
-  fetch("donnees/saison.json?v=" + Date.now())
+  fetch("../donnees/saison.json?v=" + Date.now())
     .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then((json) => {
       raw = json;

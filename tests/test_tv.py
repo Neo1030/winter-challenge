@@ -1,4 +1,4 @@
-"""Page télé, nouvelle version (site/tvv2.html) : les mêmes garde-fous que pour la page télé actuelle."""
+"""Page télé (site/tv.html, avec assets/tv2.css et assets/tv2.js) : garde-fous pour le lecteur Zebrix et les règles du Short Game."""
 
 import re
 import unittest
@@ -7,9 +7,9 @@ from pathlib import Path
 SITE = Path(__file__).resolve().parent.parent / "site"
 
 
-class TestTvV2(unittest.TestCase):
+class TestTv(unittest.TestCase):
     def setUp(self):
-        self.html = (SITE / "tvv2.html").read_text(encoding="utf-8")
+        self.html = (SITE / "tv.html").read_text(encoding="utf-8")
         self.js = (SITE / "assets" / "tv2.js").read_text(encoding="utf-8")
         self.css = (SITE / "assets" / "tv2.css").read_text(encoding="utf-8")
 
@@ -43,6 +43,11 @@ class TestTvV2(unittest.TestCase):
     def test_short_game_has_no_net_and_no_handicap(self):
         self.assertIn('c.brut_seul ? "" : best("net", "Meilleur net")', self.js)
         self.assertIn('comp.brut_seul ? "" : "<span>Hdc</span>"', self.js)
+
+    def test_qr_code_points_to_the_players_site(self):
+        self.assertIn('const SITE = "winterchallenge.letsgolf.ch"', self.js)
+        self.assertIn('src="assets/qr-site.svg"', self.js)
+        self.assertTrue((SITE / "assets" / "qr-site.svg").read_text(encoding="utf-8").startswith("<svg"))
 
     def test_style_and_script_share_one_version_number(self):
         css = re.search(r'href="assets/tv2\.css\?v=(\d+)"', self.html)
