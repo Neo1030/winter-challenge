@@ -440,6 +440,8 @@ button.rangee:hover .fixe::before { transform: scaleY(1); }
 .chiffres { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: clamp(40px, 6vw, 80px); border-top: 1px solid var(--trait); }
 .chiffres div { padding: 26px 16px 0 0; }
 .chiffres div + div { padding-left: 22px; border-left: 1px solid var(--trait); }
+.chiffres div:nth-child(4n+1) { padding-left: 0; border-left: 0; }   /* deux rangées de quatre : la seconde sous un trait */
+.chiffres div:nth-child(n+5) { margin-top: 26px; border-top: 1px solid var(--trait); }
 .chiffres b { display: block; font-size: clamp(40px, 6.6vw, 96px); font-weight: 900; line-height: 1; letter-spacing: -.03em; }
 .chiffres span { display: block; margin-top: 8px; font-size: 12.5px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--gris); }
 
@@ -1068,7 +1070,7 @@ main { position: relative; }
   .cl-col.actif ol { display: flex; }
   .cl-col li button { padding: 2px 6px; }
   .chiffres { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .chiffres div:nth-child(3) { padding-left: 0; border-left: 0; }
+  .chiffres div:nth-child(odd) { padding-left: 0; border-left: 0; }
   .chiffres div:nth-child(n+3) { margin-top: 26px; border-top: 1px solid var(--trait); }
   .jauges { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .fiche { border-left: 0; }

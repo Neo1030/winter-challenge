@@ -864,16 +864,20 @@
     rafraichir();
   }
 
-  /* les grands chiffres de la saison : ils montent avec le défilement (voir initDefilement) */
+  /* les grands chiffres de la saison : ils montent avec le défilement (voir initDefilement).
+     Les trous joués sont ceux des cartes finies : la somme de tous les scores comptés (albatros … triples et plus). */
+  const SCORES = ["albatros", "eagles", "birdies", "pars", "bogeys", "doubles", "triples", "plus"];
   function chiffres() {
-    const tot = { cartes: 0, birdies: 0, eagles: 0 };
+    const tot = { cartes: 0 };
+    SCORES.forEach((k) => { tot[k] = 0; });
     data.semaines.forEach((s) => s.categories.forEach((c) => {
       tot.cartes += c.joueurs || 0;
-      tot.birdies += (c.stats && c.stats.birdies) || 0;
-      tot.eagles += (c.stats && c.stats.eagles) || 0;
+      SCORES.forEach((k) => { tot[k] += (c.stats && c.stats[k]) || 0; });
     }));
-    $("#chiffres").innerHTML = [[data.semaines.length, unite().caps], [tot.cartes, "Tours joués"], [tot.birdies, "Birdies"], [tot.eagles, "Eagles"]]
-      .map((c, i) => `<div class="rv" style="--i:${i}"><b data-n="${c[0]}">${CALME ? nb(c[0]) : "0"}</b><span>${c[1]}</span></div>`).join("");
+    const trous = SCORES.reduce((n, k) => n + tot[k], 0), lourds = tot.doubles + tot.triples + tot.plus;
+    $("#chiffres").innerHTML = [[data.semaines.length, unite().caps], [tot.cartes, "Tours joués"], [trous, "Trous joués"], [tot.eagles, "Eagles"],
+      [tot.birdies, "Birdies"], [tot.pars, "Pars"], [tot.bogeys, "Bogeys"], [lourds, "Doubles bogeys ou plus"]]
+      .map((c, i) => `<div class="rv" style="--i:${i % 4}"><b data-n="${c[0]}">${CALME ? nb(c[0]) : "0"}</b><span>${c[1]}</span></div>`).join("");
   }
 
   /* ───────── 05 · Semaines (ou mois) : les meilleurs scores de chacune ───────── */
