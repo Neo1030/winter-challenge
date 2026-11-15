@@ -38,6 +38,34 @@ class TestSite(unittest.TestCase):
             self.assertTrue((SITE / "assets" / ref).is_file(), ref)
 
 
+class TestLightAndDarkThemes(unittest.TestCase):
+    """Sombre par défaut, clair au choix : mêmes règles de style, seules les variables changent."""
+
+    def setUp(self):
+        self.js = (SITE / "assets" / "refonte.js").read_text(encoding="utf-8")
+        self.css = (SITE / "assets" / "refonte.css").read_text(encoding="utf-8")
+        self.html = (SITE / "index.html").read_text(encoding="utf-8")
+
+    def test_the_switch_is_in_the_header_and_the_choice_is_applied_before_the_style(self):
+        self.assertIn('<button class="theme" id="theme"', self.html)
+        script = self.html.index('localStorage.getItem("wc_theme") === "clair"')
+        self.assertLess(script, self.html.index('href="assets/refonte.css'))
+        self.assertIn('localStorage.setItem("wc_theme"', self.js)
+
+    def test_every_light_variable_also_exists_in_the_dark_theme(self):
+        dark = self.css[self.css.index(":root {"):self.css.index(':root[data-theme="clair"] {')]
+        light = self.css[self.css.index(':root[data-theme="clair"] {'):]
+        light = light[:light.index("\n}")]
+        names = set(re.findall(r"(--[\w-]+)\s*:", light))
+        self.assertGreater(len(names), 25)
+        self.assertEqual(set(), names - set(re.findall(r"(--[\w-]+)\s*:", dark)))
+
+    def test_no_dark_only_colour_is_left_outside_the_variables(self):
+        rules = self.css[self.css.index(":root.bascule"):]
+        for fixed in ("rgba(234, 246, 253", "rgba(127, 212, 255", "rgba(0, 16, 30", "rgba(0, 28, 51", "rgba(6, 42, 72", "#c5d9e8"):
+            self.assertNotIn(fixed, rules, fixed)
+
+
 class TestOldSiteKeptUnderV1(unittest.TestCase):
     """L'ancien site et l'ancienne page télé restent consultables sous /v1 (décision de Mike, 15.11.2026)."""
 

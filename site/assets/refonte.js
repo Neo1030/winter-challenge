@@ -10,6 +10,31 @@
   const borne = (v, a, b) => Math.min(b, Math.max(a, v));
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
+  /* ───────── Thème : sombre par défaut, clair au choix (bouton en haut de page, choix gardé dans le navigateur) ─────────
+     Les couleurs sont dans refonte.css (:root et :root[data-theme="clair"]) ; ici, seulement ce que le script dessine lui-même. */
+  const racine = document.documentElement;
+  const TH = { clair: false, vif: "127,212,255", neige: "#fff" };
+  let apresTheme = () => {};                                    // ce qu'il faut redessiner quand le thème change
+  function lireTheme() {
+    const css = getComputedStyle(racine);
+    TH.clair = racine.dataset.theme === "clair";
+    TH.vif = css.getPropertyValue("--vif").trim() || "127,212,255";
+    TH.neige = css.getPropertyValue("--neige").trim() || "#fff";
+    const meta = $('meta[name="theme-color"]');
+    if (meta) meta.content = css.getPropertyValue("--nuit").trim() || "#00101e";
+    const b = $("#theme");
+    if (b) { b.setAttribute("aria-pressed", TH.clair); b.setAttribute("aria-label", TH.clair ? "Passer en mode sombre" : "Passer en mode clair"); b.title = b.getAttribute("aria-label"); }
+  }
+  lireTheme();
+  if ($("#theme")) $("#theme").addEventListener("click", () => {
+    racine.classList.add("bascule");                            // les couleurs fondent d'un thème à l'autre, le temps de la bascule
+    if (TH.clair) delete racine.dataset.theme; else racine.dataset.theme = "clair";
+    try { localStorage.setItem("wc_theme", TH.clair ? "sombre" : "clair"); } catch (e) { /* navigation privée : le choix vaut pour cette visite */ }
+    lireTheme();
+    apresTheme();
+    setTimeout(() => racine.classList.remove("bascule"), 600);
+  });
+
   /* 1'500 et 264,9 : apostrophe pour les milliers, virgule pour les décimales */
   function nb(n, d) {
     const p = Math.abs(n).toFixed(d || 0).split(".");
@@ -153,7 +178,7 @@
             }
           }
         }
-        xr.strokeStyle = k % 3 === 0 ? "rgba(127,212,255,.26)" : "rgba(127,212,255,.12)";
+        xr.strokeStyle = "rgba(" + TH.vif + (k % 3 === 0 ? (TH.clair ? ",.34)" : ",.26)") : (TH.clair ? ",.17)" : ",.12)"));
         xr.stroke();
       });
     }
@@ -166,13 +191,13 @@
         f.x += (Math.sin(t * 0.6 + f.ph) * 10 + 6) * dt * (0.4 + f.z);
         if (f.y > H + 8 || f.x > W + 8) Object.assign(f, flocon(false), f.x > W + 8 ? { x: -6, y: Math.random() * H } : {});
         xn.globalAlpha = 0.18 + f.z * 0.6;
-        xn.beginPath(); xn.arc(f.x, f.y, f.r, 0, 6.2832); xn.fillStyle = "#fff"; xn.fill();
+        xn.beginPath(); xn.arc(f.x, f.y, f.r, 0, 6.2832); xn.fillStyle = TH.neige; xn.fill();
       }
       poudre = poudre.filter((p) => p.vie > 0);
       for (const p of poudre) {
         p.vy += 420 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vie -= dt * 1.5;
         xn.globalAlpha = Math.max(0, p.vie);
-        xn.beginPath(); xn.arc(p.x, p.y, p.r, 0, 6.2832); xn.fillStyle = "#eaf6fd"; xn.fill();
+        xn.beginPath(); xn.arc(p.x, p.y, p.r, 0, 6.2832); xn.fillStyle = TH.neige; xn.fill();
       }
       xn.globalAlpha = 1;
     }
@@ -229,7 +254,7 @@
       const xf = approche ? x1 : x1 + 13;
       svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
       svg.innerHTML =
-        `<defs><linearGradient id="g-sol" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eaf6fd" stop-opacity=".1"/><stop offset="1" stop-color="#eaf6fd" stop-opacity="0"/></linearGradient>` +
+        `<defs><linearGradient id="g-sol" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:rgb(var(--encre))" stop-opacity=".1"/><stop offset="1" style="stop-color:rgb(var(--encre))" stop-opacity="0"/></linearGradient>` +
         `<clipPath id="coup-clip"><rect x="0" y="0" width="${annoncee ? W : 0}" height="${H}"/></clipPath></defs>` +
         `<rect class="sol" x="0" y="${sol}" width="${W}" height="${H - sol}"/><line class="horizon" x1="0" y1="${sol}" x2="${W}" y2="${sol}"/>${tics}` +
         `<path class="pointille" clip-path="url(#coup-clip)" d="${d}"/><path class="halo" d="${d}"/><path class="trace" d="${d}"/><path class="tete" d="${d}"/>` +
@@ -611,7 +636,9 @@
   /* Une teinte par compétition (bleu, vert, rouge, or : contrôlées pour rester distinctes, y compris pour les daltoniens),
      et cinq nuances du clair au foncé pour les cinq premiers. Les Seniors sont en tirets, le Short Game en marches :
      la couleur n'est jamais le seul repère. */
-  const TEINTES = ["#4aa8ff", "#35d6a0", "#ff7a59", "#ffd24a"];
+  const TEINTES_NUIT = ["#4aa8ff", "#35d6a0", "#ff7a59", "#ffd24a"];
+  const TEINTES_JOUR = ["#1b76d1", "#0b9a6d", "#dc4f2b", "#b08000"];   // les mêmes teintes, plus denses pour rester lisibles sur fond clair
+  const teintes = () => (TH.clair ? TEINTES_JOUR : TEINTES_NUIT);
   function nuance(hex, i) {
     const c = [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16)), blanc = [0.38, 0.16, 0, 0, 0][i], fonce = [1, 1, 1, 0.8, 0.64][i];
     return "#" + c.map((v) => Math.round((v + (255 - v) * blanc) * fonce).toString(16).padStart(2, "0")).join("");
@@ -631,7 +658,7 @@
   function groupesCourse() {
     const n = nbSemaines();
     return data.categories.map((c, i) => ({
-      idx: i, nom: c.nom, note: mode(), teinte: brutSeul() ? TEINTES[3] : TEINTES[i % 3], tirets: !brutSeul() && i % 3 === 2 ? "7 5" : "",
+      idx: i, nom: c.nom, note: mode(), teinte: brutSeul() ? teintes()[3] : teintes()[i % 3], tirets: !brutSeul() && i % 3 === 2 ? "7 5" : "",
       series: (c.classement[mode()] || []).filter((e) => e.rang != null).slice(0, 5).map((e) => ({ nom: e.joueur, v: cumuls(e.points, n, meilleursN()) })),
     })).filter((g) => g.series.length);
   }
@@ -906,7 +933,7 @@
     stats: '<div class="scene sc-stats vue" aria-hidden="true">' + [62, 88, 46, 74, 96].map((v, i) => `<i style="--h:${v};--k:${i}"></i>`).join("") + "</div>",
     zero: '<div class="scene sc-zero vue" data-scene="zero" aria-hidden="true"><b class="z">0</b><p>de handicap pour tout le monde<small>seul compte le score brut</small></p></div>',
   });
-  const sceneCategories = (noms) => '<div class="scene sc-cat vue" aria-hidden="true">' + noms.map((n, i) => `<span style="--k:${i};--c:${TEINTES[i % 3]}"><i></i>${esc(n)}</span>`).join("") + "</div>";
+  const sceneCategories = (noms) => '<div class="scene sc-cat vue" aria-hidden="true">' + noms.map((n, i) => `<span style="--k:${i};--c:${teintes()[i % 3]}"><i></i>${esc(n)}</span>`).join("") + "</div>";
   const sceneMois = (c) => '<div class="scene sc-sem vue" aria-hidden="true"><div class="piste"><span></span></div><ol>' + Array.from({ length: c.meilleurs || 5 }, (_, i) => `<li style="--k:${i}">${esc(c.prefixe)}${i + 1}</li>`).join("") + "</ol></div>";
 
   function reglesVue() {
@@ -1159,10 +1186,10 @@
     const zoom = boite.clientWidth / vw, R = borne(9.5 / zoom, 9.5, 17), corps = R / 9.5 * 10;
 
     let h = `<defs>
-      <pattern id="trou-ray" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(38)"><rect width="5" height="10" fill="rgba(127,212,255,.11)"/></pattern>
-      <pattern id="trou-croix" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0H5M0 0V5" stroke="rgba(234,246,253,.38)" stroke-width=".8"/></pattern>
-      <pattern id="trou-grain" width="4" height="4" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".65" fill="rgba(0,28,51,.5)"/></pattern>
-      <pattern id="trou-herbe" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(20)"><circle cx="2" cy="2" r=".7" fill="rgba(127,212,255,.2)"/></pattern>
+      <pattern id="trou-ray" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(38)"><rect width="5" height="10" style="fill:rgba(var(--vif),.11)"/></pattern>
+      <pattern id="trou-croix" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0H5M0 0V5" style="stroke:rgba(var(--encre),.38)" stroke-width=".8"/></pattern>
+      <pattern id="trou-grain" width="4" height="4" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".65" style="fill:rgba(var(--fond-1),.5)"/></pattern>
+      <pattern id="trou-herbe" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(20)"><circle cx="2" cy="2" r=".7" style="fill:rgba(var(--vif),.2)"/></pattern>
       <linearGradient id="trou-eau" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2f97d8"/><stop offset="1" stop-color="#145887"/></linearGradient></defs>`;
     h += `<path class="t-rough" d="${lisse(rough, true)}"/><path fill="url(#trou-herbe)" d="${lisse(rough, true)}"/>`;
 
@@ -1582,6 +1609,7 @@
     appliquer(adresse.params);
 
     const ciel = initCiel();
+    apresTheme = () => { ciel.taille(); dessinerCourse(false); reglesVue(); };
     const coup = initCoup(recordPour(comps.find((c) => c.id === etat.comp) || wc), ciel);
     coupHaut = coup;
 

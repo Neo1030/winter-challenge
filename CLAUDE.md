@@ -84,6 +84,9 @@ conversation. **S'il manque une information, demande-la avant d'écrire quoi que
 - **Le site des joueurs** est la refonte « Trajectoire » (motion design) : `site/index.html`, `site/assets/refonte.css`,
   `site/assets/refonte.js`. À chaque modification du style ou du script, augmente le numéro après `v=` dans `site/index.html`
   (le même pour les deux), sinon un navigateur peut garder l'ancienne version.
+- **Mode clair** : bouton clair / sombre en haut du site (sombre par défaut, choix gardé dans le navigateur, `wc_theme`). Les
+  couleurs sont des variables au début de `refonte.css` (`:root` pour la nuit, `:root[data-theme="clair"]` pour le jour) : n'écris
+  jamais une couleur de fond ou de texte en dur dans une règle, sinon elle casse l'un des deux modes. La télé reste sombre.
 - **La page télé** est `site/tv.html` (avec `assets/tv2.css` et `assets/tv2.js`, même habillage). Elle s'adapte seule à la zone
   1229 × 1080 (le panneau de gauche passe en bandeau) : `tvreduit.html` ne fait que renvoyer vers `tv.html`.
   Réglages : `?duree=` (pages de classement, 4 s par défaut), `?stats=` (pages de statistiques, 8 s par défaut, ou le double de
