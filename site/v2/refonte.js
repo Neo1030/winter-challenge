@@ -462,7 +462,7 @@
       $("#sem-note").textContent = `Joue ton tour sur Simulator Golf Tour avant la fin ${u.fin} (jusqu'au ${dateCH(p.fin || p.debut)}) : tu n'as droit qu'à un seul tour.`;
 
       const joueurs = sem && sem.numero === p.semaine ? sem.categories.reduce((s, c) => s + c.joueurs, 0) : null;
-      $("#sem-fiche").innerHTML = ficheParcours(p, joueurs == null ? [] : [["Ont déjà joué", `<span data-n="${joueurs}"></span>`, "joueur" + (joueurs > 1 ? "s" : "") + " " + u.ce.toLowerCase()]]);
+      $("#sem-fiche").innerHTML = ficheParcours(p, joueurs == null ? [] : [["Ont déjà joué", `<span data-n="${joueurs}"></span>`, "joueur" + (joueurs > 1 ? "s" : "") + " " + u.ce.toLowerCase()]], true); // sans la carte de score (demande de Mike, 15.11.2026)
       nombres($("#sem-fiche"));
     }
 
@@ -547,7 +547,8 @@
   }
 
   function dessinerClassement(flip) {
-    const tous = classement(), q = etat.q.trim().toLowerCase(), liste = q ? tous.filter((r) => r.joueur.toLowerCase().includes(q)) : tous;
+    /* seulement les joueurs qui ont déjà joué : les inscrits sans résultat restent dans la section Joueurs (demande de Mike, 15.11.2026) */
+    const tous = classement().filter((r) => r.nb_semaines > 0), q = etat.q.trim().toLowerCase(), liste = q ? tous.filter((r) => r.joueur.toLowerCase().includes(q)) : tous;
     const podium = $("#podium"), ol = $("#liste"), zone = $("#liste-zone"), vide = $("#liste-vide"), semaines = semainesDesc();
     const avant = new Map($$("li[data-j]", ol).map((li) => [li.dataset.j, li.getBoundingClientRect().top]));
     $("#classement-repere").textContent = "Classement " + (mode() === "net" ? "net Stableford" : "brut");
@@ -571,7 +572,7 @@
 
     vide.hidden = liste.length > 0;
     zone.hidden = !liste.length;
-    vide.textContent = liste.length ? "" : q ? `Aucun joueur ne correspond à « ${etat.q} ».` : `Pas encore de joueur dans le ${data.nom}.`;
+    vide.textContent = liste.length ? "" : q ? `Aucun joueur ne correspond à « ${etat.q} ».` : `Personne n'a encore joué au ${data.nom}.`;
 
     /* tous les joueurs, avec une colonne par semaine (WC18, WC17… WC1) */
     zone.style.setProperty("--n", semaines.length);
