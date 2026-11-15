@@ -1037,37 +1037,74 @@
       : `${tete} · net ${w.coups_net} (${signe(w.coups_net - w.par)})<br>Stableford : ${w.stableford_net} net · ${w.stableford_brut} brut · Points : <b>${w.points_net} net</b> · ${w.points_brut} brut`) + `<br><i>${SORTES[sorte(w, ligne)]}</i>`;
   }
 
-  /* les statistiques du joueur : elles couvrent tous les tours de la semaine, pas seulement le tour retenu pour le classement */
+  /* les statistiques du joueur : elles couvrent tous les tours de la semaine, pas seulement le tour retenu pour le classement.
+     En haut, un choix « Saison » (les moyennes) ou une semaine : les tuiles et les jauges montrent alors cette semaine-là. */
+  const jauge = (v, lib) => (v == null ? "" : `<div class="jauge"><svg viewBox="0 0 64 64" aria-hidden="true"><circle class="fond" cx="32" cy="32" r="26"/><circle class="val" cx="32" cy="32" r="26" pathLength="100" stroke-dasharray="${v} 100"/></svg><b>${pct(v)}</b><span>${lib}</span></div>`);
+  const ctpMeilleur = (w) => { const l = w.ctp || []; return l.length ? l.reduce((a, b) => (b.m < a.m ? b : a)) : null; };
+
+  function tuilesStats(p, semaine) {
+    const st = p.stats, r = st.resume || {}, lignes = st.semaines || [], sg = P() === "SG";
+    if (!semaine) {
+      const bd = r.meilleur_drive, bc = r.meilleur_ctp;
+      const semDrive = bd && lignes.find((w) => w.semaine === bd.semaine), semCtp = bc && lignes.find((w) => w.semaine === bc.semaine);
+      const trouCtp = semCtp && (semCtp.ctp || []).find((h) => h.trou === bc.trou);
+      const moy = (k) => (r[k] == null ? "–" : k === "putts" ? dec(r[k]) : pct(r[k]));
+      return `<dl class="trio">
+        ${sg ? "" : fait("Longest drive", bd ? dec(bd.m, 1) + " m" : "–", bd ? `meilleur drive · ${P()}${bd.semaine}${semDrive && semDrive.drive_rang ? " · " + place(semDrive.drive_rang, semDrive.drive_sur) : ""}` : "pas encore")}
+        ${fait("Closest to the pin", bc ? dec(bc.m, 2) + " m" : "–", bc ? `${P()}${bc.semaine} · trou ${bc.trou}${trouCtp ? " · " + place(trouCtp.rang, trouCtp.sur) : ""}` : "pas encore")}
+        ${fait("Putts par tour", moy("putts"), "en moyenne")}
+      </dl>
+      <div class="jauges deux">${sg ? "" : jauge(r.fairways, "FIR · fairways touchés, en moyenne")}${jauge(r.greens, "GIR · greens en régulation, en moyenne")}</div>`;
+    }
+    const w = lignes.find((x) => x.semaine === semaine);
+    if (!w) return "";
+    const m = ctpMeilleur(w), plusieurs = w.tours > 1, ici = `${P()}${semaine}${plusieurs ? `, moyenne de ${w.tours} tours` : ""}`;
+    return `<dl class="trio">
+      ${sg ? "" : fait("Longest drive", w.drive_m == null ? "–" : dec(w.drive_m, 1) + " m", w.drive_m == null ? "aucun drive sur le fairway" : `${P()}${semaine}${w.drive_rang ? " · " + place(w.drive_rang, w.drive_sur) : ""}`)}
+      ${fait("Closest to the pin", m ? dec(m.m, 2) + " m" : "–", m ? `${P()}${semaine} · trou ${m.trou}${m.rang ? " · " + place(m.rang, m.sur) : ""}` : "aucun green touché au départ d'un par 3")}
+      ${fait(plusieurs ? "Putts par tour" : "Putts", dec(w.putts), ici)}
+    </dl>
+    <div class="jauges deux">${sg ? "" : jauge(w.fairways, "FIR · fairways touchés, " + ici)}${jauge(w.greens, "GIR · greens en régulation, " + ici)}</div>`;
+  }
+
   function statsJoueur(p) {
     const st = p.stats;
     if (!st) return "";
     if (STATS_ZONES.some(enPanne)) return `<h4>Statistiques</h4><p class="vide">${avisMaintenance("Les statistiques sont en maintenance")}</p>`;
     const u = unite(), r = st.resume || {}, lignes = (st.semaines || []).slice().sort((a, b) => b.semaine - a.semaine), sg = P() === "SG";
-    const bd = r.meilleur_drive, bc = r.meilleur_ctp;
-    const semDrive = bd && lignes.find((w) => w.semaine === bd.semaine), semCtp = bc && lignes.find((w) => w.semaine === bc.semaine);
-    const trouCtp = semCtp && (semCtp.ctp || []).find((h) => h.trou === bc.trou);
     const ctp = (w) => {
-      const l = w.ctp || [];
-      if (!l.length) return "–";
-      const m = l.reduce((a, b) => (b.m < a.m ? b : a));
+      const l = w.ctp || [], m = ctpMeilleur(w);
+      if (!m) return "–";
       return `${dec(m.m, 2)} m <small>trou ${m.trou}${l.length > 1 ? " · +" + (l.length - 1) : ""}</small>`;
     };
     const moy = (k) => (r[k] == null ? "–" : k === "putts" ? dec(r[k]) : pct(r[k]));
-    const jauge = (v, lib) => (v == null ? "" : `<div class="jauge"><svg viewBox="0 0 64 64" aria-hidden="true"><circle class="fond" cx="32" cy="32" r="26"/><circle class="val" cx="32" cy="32" r="26" pathLength="100" stroke-dasharray="${v} 100"/></svg><b>${pct(v)}</b><span>${lib}</span></div>`);
     return `<h4>Statistiques</h4>
-      <dl class="trio">
-        ${sg ? "" : fait("Longest drive", bd ? dec(bd.m, 1) + " m" : "–", bd ? `meilleur drive · ${P()}${bd.semaine}${semDrive && semDrive.drive_rang ? " · " + place(semDrive.drive_rang, semDrive.drive_sur) : ""}` : "pas encore")}
-        ${fait("Closest to the pin", bc ? dec(bc.m, 2) + " m" : "–", bc ? `${P()}${bc.semaine} · trou ${bc.trou}${trouCtp ? " · " + place(trouCtp.rang, trouCtp.sur) : ""}` : "pas encore")}
-        ${fait("Putts par tour", moy("putts"), "en moyenne")}
-      </dl>
-      <div class="jauges deux">${sg ? "" : jauge(r.fairways, "FIR · fairways touchés, en moyenne")}${jauge(r.greens, "GIR · greens en régulation, en moyenne")}</div>
-      <div class="table-zone"><table><caption class="sr">Statistiques par ${u.cap}</caption>
+      ${lignes.length ? `<div class="puces-filtre cp-sem" id="fs-sem" role="group" aria-label="Statistiques à afficher"><button type="button" data-s="0" aria-pressed="true">Saison</button>${lignes.map((w) => `<button type="button" data-s="${w.semaine}" aria-pressed="false">${P()}${w.semaine}</button>`).join("")}</div>` : ""}
+      <div id="fs-tuiles">${tuilesStats(p, 0)}</div>
+      <div class="table-zone"><table id="fs-table"><caption class="sr">Statistiques par ${u.cap}</caption>
         <thead><tr><th scope="col">${u.court}</th>${sg ? "" : '<th scope="col">Longest drive</th>'}<th scope="col">Closest to the pin</th>${sg ? "" : '<th scope="col">FIR</th>'}<th scope="col">GIR</th><th scope="col">Putts</th></tr></thead>
-        <tbody>${lignes.map((w) => `<tr><td>${P()}${w.semaine}</td>
+        <tbody>${lignes.map((w) => `<tr data-s="${w.semaine}"><td>${P()}${w.semaine}</td>
           ${sg ? "" : `<td>${w.drive_m == null ? "–" : `<b>${dec(w.drive_m, 1)} m</b>${w.drive_rang ? ` <small>${place(w.drive_rang, w.drive_sur)}</small>` : ""}`}</td>`}
           <td>${ctp(w)}</td>${sg ? "" : `<td>${pct(w.fairways)}</td>`}<td>${pct(w.greens)}</td><td>${dec(w.putts)}</td></tr>`).join("")}</tbody>
         <tfoot><tr><th scope="row" colspan="${sg ? 2 : 3}">Moyenne par tour</th>${sg ? "" : `<td>${moy("fairways")}</td>`}<td>${moy("greens")}</td><td>${moy("putts")}</td></tr></tfoot></table></div>
       <p class="expl">Distances en mètres.${sg ? "" : ` Longest drive : ton plus long drive ${u.fin} arrêté sur le fairway, sur un par 4 ou 5 (le meilleur en haut).`} Closest to the pin : ton coup de départ le plus près du drapeau sur un par 3, green atteint (le trou est indiqué, « +2 » = deux autres par 3 réussis).${sg ? "" : " FIR : fairways touchés."} GIR : greens en régulation. Statistiques de ta partie ${u.fin}.</p>`;
+  }
+
+  /* le choix d'une semaine dans la fiche : les statistiques et le coup par coup suivent le même choix */
+  let coupsVoir = null;   // montre une semaine du coup par coup de la fiche ouverte (null tant que les coups ne sont pas lus)
+  function statsVoir(p, semaine) {
+    const zone = $("#fs-tuiles");
+    if (!zone || !p.stats || !$(`#fs-sem button[data-s="${semaine}"]`)) return;
+    zone.innerHTML = tuilesStats(p, semaine);
+    $$("#fs-sem button").forEach((b) => b.setAttribute("aria-pressed", Number(b.dataset.s) === semaine));
+    $$("#fs-table tbody tr").forEach((tr) => tr.classList.toggle("choisie", Number(tr.dataset.s) === semaine));
+  }
+  function brancherStats(p) {
+    $$("#fs-sem button").forEach((b) => b.addEventListener("click", () => {
+      const s = Number(b.dataset.s);
+      statsVoir(p, s);
+      if (s && coupsVoir) coupsVoir(s);
+    }));
   }
 
   function ouvrirFiche(pseudo) {
@@ -1118,6 +1155,8 @@
     fiche.showModal();
     fiche.scrollTop = 0;
     if (parties.length && ligne) { trouParties(p, ligne); if (!brutSeul()) handicap(p); }
+    coupsVoir = null;
+    brancherStats(p);
     if (parties.length) coupsJoueur(p, parties);
   }
 
@@ -1203,19 +1242,25 @@
         const putts = tous.filter((c) => c[1] === "p" || c[1] === "g").length;
         const long = Math.max.apply(null, [0].concat(tous.filter((c) => c[1] === "c" && typeof c[2] === "number").map((c) => c[2])));
         const score = trous.reduce((a, t) => a + t.s, 0), par = trous.reduce((a, t) => a + t.p, 0);
+        const sem = data.semaines.find((x) => x.numero === semaine), cour = semaineCourante();
+        const pasEncore = cour && semaine !== cour.numero && semaine === dispo[0].semaine && cour.numero > semaine
+          ? ` · ton dernier tour, rien encore en ${P()}${cour.numero}` : "";
+        $("#coups-quand").innerHTML = `<b>${P()}${semaine}</b> · ${esc(w ? w.parcours : sem ? sem.parcours : "")}${sem ? " · " + periode(sem) : ""}${sem && sem.statut === "en_cours" ? ' <span class="direct">en cours</span>' : ""}${pasEncore}`;
         $("#coups-corps").innerHTML = `<dl class="trio cp-resume">
-            ${fait("Score", score, signe(score - par) + (w ? " · " + esc(w.parcours) : ""))}${fait("Putts", putts, "putts donnés compris")}${long ? fait("Plus long coup", nb(Math.round(long)) + " m", "") : ""}</dl>
+            ${fait("Score", score, signe(score - par) + " · par " + par)}${fait("Putts", putts, "putts donnés compris")}${long ? fait("Plus long coup", nb(Math.round(long)) + " m", "") : ""}</dl>
           <div class="cp-grille">${trous.map(carteTrou).join("")}</div>`;
         $$("#coups-sem button").forEach((b) => b.setAttribute("aria-pressed", Number(b.dataset.s) === semaine));
       };
       zone.innerHTML = `<h4>Le tour, coup par coup</h4>
         <p class="expl">Chaque arc est un coup, du départ au drapeau : sa couleur dit où la balle s'est arrêtée. Distances en mètres, relevées par Simulator Golf Tour.</p>
-        ${dispo.length > 1 ? `<div class="puces-filtre cp-sem" id="coups-sem" role="group" aria-label="${u.cap} à afficher">${dispo.map((w) => `<button type="button" data-s="${w.semaine}" aria-pressed="false">${P()}${w.semaine}</button>`).join("")}</div>` : ""}
+        <div class="puces-filtre cp-sem" id="coups-sem" role="group" aria-label="${u.cap} à afficher">${dispo.map((w) => `<button type="button" data-s="${w.semaine}" aria-pressed="false">${P()}${w.semaine}</button>`).join("")}</div>
+        <p class="cp-quand" id="coups-quand" aria-live="polite"></p>
         <ul class="cles cp-cles">${["fairway", "semirough", "rough", "deeprough", "sand", "green"].map((l) => `<li><i class="lie-${l}"></i>${lieNom(l)}</li>`).join("")}</ul>
         <div id="coups-corps"></div>`;
       zone.hidden = false;
-      $$("#coups-sem button").forEach((b) => b.addEventListener("click", () => montrer(Number(b.dataset.s))));
-      montrer(dispo[0].semaine);
+      $$("#coups-sem button").forEach((b) => b.addEventListener("click", () => { const x = Number(b.dataset.s); montrer(x); statsVoir(p, x); }));
+      coupsVoir = (x) => { if (dispo.some((w) => w.semaine === x)) montrer(x); };
+      montrer(dispo[0].semaine);   // la semaine en cours si le joueur l'a jouée, sinon son dernier tour
     });
   }
 
