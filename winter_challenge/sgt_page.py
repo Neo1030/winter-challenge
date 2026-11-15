@@ -248,7 +248,7 @@ def shots_key(cards: list) -> str:
 
 
 def shots_of(tournament: dict, known: dict | None = None, budget: list | None = None, fetch=fetch_shots) -> dict:
-    """Coup par coup de chaque joueur d'un tournoi : {pseudo: {"cle": empreinte, "trous": [...]}}.
+    """Coup par coup de chaque joueur d'un tournoi qui a fini une carte (9 ou 18 trous) : {pseudo: {"cle", "trous"}}.
 
     known : ce qui a déjà été publié pour ce tournoi ; un joueur dont la carte n'a pas changé n'est pas relu, et on garde
     ce qu'on a si le site SGT ne répond pas ou si sa page n'est plus lisible. budget : [nombre de pages qu'on peut encore
@@ -258,7 +258,8 @@ def shots_of(tournament: dict, known: dict | None = None, budget: list | None = 
     out = {}
     per_player: dict = {}
     for card in tournament.get("scorecards") or []:
-        if any((card.get(f"hole{i}_gross") or 0) > 0 for i in range(1, 19)):
+        played = sum(1 for i in range(1, 19) if (card.get(f"hole{i}_gross") or 0) > 0)
+        if played in (9, 18):              # carte pas finie : pas de coup par coup (règle de Mike, 15.11.2026)
             per_player.setdefault(card["player_name"], []).append(card)
     for name, cards in per_player.items():
         key = shots_key(cards)

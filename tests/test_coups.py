@@ -79,19 +79,20 @@ class TestShotsOf(unittest.TestCase):
             calls.append((tournament_id, player_id))
             return [{"t": 1, "p": 4, "s": 4, "m": 300, "c": []}]
 
-        tournament = {"tournamentId": 5, "scorecards": [_card("Ana", [4, 5], 11), _card("Bob", [3], 12), _card("Zoe", [], 13)]}
+        tournament = {"tournamentId": 5, "scorecards": [_card("Ana", [4] * 9, 11), _card("Bob", [3] * 9, 12), _card("Zoe", [], 13),
+                                                         _card("Max", [5] * 8, 14)]}
         first = shots_of(tournament, None, [10], fetch)
-        self.assertEqual({"Ana", "Bob"}, set(first))                           # Zoe n'a pas joué : rien à lire
+        self.assertEqual({"Ana", "Bob"}, set(first))     # Zoe n'a pas joué, Max s'est arrêté après 8 trous : rien à lire
         self.assertEqual([(5, 11), (5, 12)], calls)
         again = shots_of(tournament, first, [10], fetch)
         self.assertEqual(2, len(calls))                                        # rien n'a changé : aucune lecture
         self.assertEqual(first, again)
-        tournament["scorecards"][1] = _card("Bob", [3, 4], 12)                 # Bob a joué un trou de plus
+        tournament["scorecards"][1] = _card("Bob", [3] * 18, 12)               # Bob a joué les 18 trous
         shots_of(tournament, first, [10], fetch)
         self.assertEqual([(5, 11), (5, 12), (5, 12)], calls)
 
     def test_the_budget_limits_the_reads_and_a_failed_read_keeps_what_was_published(self):
-        tournament = {"tournamentId": 5, "scorecards": [_card("Ana", [4], 11), _card("Bob", [3], 12)]}
+        tournament = {"tournamentId": 5, "scorecards": [_card("Ana", [4] * 9, 11), _card("Bob", [3] * 9, 12)]}
         budget = [1]
         out = shots_of(tournament, None, budget, lambda t, p: [{"t": 1}])
         self.assertEqual(1, len(out))
@@ -104,6 +105,36 @@ class TestShotsOf(unittest.TestCase):
     def test_the_key_follows_the_hole_scores(self):
         self.assertEqual(shots_key([_card("Ana", [4, 5])]), shots_key([_card("Ana", [4, 5])]))
         self.assertNotEqual(shots_key([_card("Ana", [4, 5])]), shots_key([_card("Ana", [4, 6])]))
+
+
+class TestIncompleteCardsHaveNoStats(unittest.TestCase):
+    """Règle de Mike (15.11.2026) : un joueur qui n'a pas fini sa carte (ni 9 ni 18 trous) n'a pas de statistiques."""
+
+    def test_players_without_a_complete_card_are_left_out_of_the_stats(self):
+        from winter_challenge.stats import complete_players, parse_tournament_stats
+        cards = [_card("Ana", [4] * 9), _card("Max", [5] * 8), _card("Max", []), _card("Lea", [4] * 18)]
+        self.assertEqual({"Ana", "Lea"}, complete_players(cards))
+        raw = {"drivingAccuracy": [{"user_name": "Ana", "fir_percent": 50}, {"user_name": "Max", "fir_percent": 33}],
+               "closestToPin": {"1": {"3": {"ctps": [{"user_name": "Max", "distanceToPin": 2}, {"user_name": "Ana", "distanceToPin": 9}]},
+                                      "5": {"ctps": [{"user_name": "Max", "distanceToPin": 4}]}}}}
+        out = parse_tournament_stats(raw, {"yd": {"Max": 250, "Ana": 230}}, complete_players(cards))
+        self.assertEqual({"Ana"}, set(out["joueurs"]))
+        self.assertEqual([3], list(out["ctp"]))
+        self.assertEqual(["Ana"], [n for n, _ in out["ctp"][3]])
+
+    def test_the_watch_forgets_the_stats_of_a_player_without_a_result(self):
+        from winter_challenge import surveillance
+        def data(stats):
+            return {"prefixe": "WC", "parcours": [{"semaine": 1, "debut": "2026-11-08", "statut": "en_cours"}],
+                    "joueurs": [{"joueur": "Max", "semaines": [], "stats": {"semaines": [dict(stats, semaine=1)]}}]}
+        published = data({"drive_m": 200.0, "fairways": 33.0})
+        published["surveillance"] = {"manquants": {"WC|stat|Max|2026-11-08|drive_m": {"zone": "drive", "depuis": "x", "vu": 2}},
+                                     "signales": ["WC|stat|Max|2026-11-08|drive_m"]}
+        new = data({})
+        result = surveillance.check(new, published)
+        self.assertEqual({}, result["manquants"])
+        self.assertEqual("resolue", result["alerte"])     # l'alerte déjà envoyée se ferme
+        self.assertEqual([], new["maintenance"])
 
 
 class TestShotsFile(unittest.TestCase):

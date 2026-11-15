@@ -24,6 +24,14 @@ Réponds en français, en tutoyant, ton concret. Francs suisses (CHF), dates JJ.
   scripts/export_site_data.py, indicateur `brut_seul` dans saison.json, lu par site/assets/refonte.js et tv2.js.
 - À confirmer avec le capitaine : les points du Short Game (aujourd'hui, mêmes points Stableford brut que le Winter Challenge).
 
+### Carte pas finie : pas de statistiques (décision de Mike, 15.11.2026)
+
+- Un joueur qui n'a **pas fini sa carte** (ni 9 ni 18 trous joués) n'a **aucune statistique** : ni tuile (FIR, GIR, drive,
+  closest to the pin, putts…), ni stats dans sa fiche, ni coup par coup. SGT compte pourtant ses trous joués : on les écarte
+  (`complete_players` dans winter_challenge/stats.py, `shots_of` dans sgt_page.py). Vaut pour toutes les compétitions.
+- La surveillance des données SGT reste en place ; elle ne surveille les statistiques d'un joueur que pour les semaines où il a
+  un résultat (`facts` et `_still_watched` dans winter_challenge/surveillance.py).
+
 ### Winter Challenge : handicaps
 
 - On reçoit le **handicap réel** du joueur. Le calcul utilise **75 %** du réel (handicap de jeu de départ, décision de Mike du 08.11.2026 ;

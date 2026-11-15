@@ -119,7 +119,10 @@ def facts(data: dict) -> dict:
             for s in j.get("semaines") or []:
                 if s.get("coups_brut") is not None:
                     put("classement", "score", name, week(s.get("semaine")))
+            scored = {s.get("semaine") for s in j.get("semaines") or [] if s.get("coups_brut") is not None}
             for s in ((j.get("stats") or {}).get("semaines") or []):
+                if s.get("semaine") not in scored:
+                    continue   # pas de carte complète cette semaine : pas de statistiques à surveiller (règle de Mike, 15.11.2026)
                 for field, zone in PLAYER_STATS.items():
                     if s.get(field) is not None:
                         put(zone, "stat", name, week(s.get("semaine")), field)
@@ -157,6 +160,17 @@ def describe(fact: str) -> str:
     return f"{comp} · {text}"
 
 
+def _still_watched(fact: str, *fact_sets: dict) -> bool:
+    """Une statistique de joueur déjà signalée reste surveillée tant que le joueur a un résultat cette semaine-là (dans le
+    fichier publié ou le nouveau). Sinon elle n'est plus attendue : un joueur qui n'a pas fini sa carte n'a pas de
+    statistiques (règle de Mike, 15.11.2026)."""
+    parts = fact.split(SEP)
+    if len(parts) < 4 or parts[1] != "stat":
+        return True
+    score = SEP.join([parts[0], "score", parts[2], parts[3]])
+    return any(score in facts_ for facts_ in fact_sets)
+
+
 def check(new: dict, published: dict, accept: bool = False, now: datetime | None = None) -> dict:
     """Compare le nouveau fichier au fichier publié et pose dans new :
     - « maintenance » sur chaque compétition : la liste des zones en maintenance (vide si tout va bien) ;
@@ -173,7 +187,7 @@ def check(new: dict, published: dict, accept: bool = False, now: datetime | None
     current = facts(new)
     expected = dict(facts(published))
     for fact, info in before.items():
-        if isinstance(info, dict) and info.get("zone") in ZONES:
+        if isinstance(info, dict) and info.get("zone") in ZONES and _still_watched(fact, expected, current):
             expected.setdefault(fact, info["zone"])
 
     missing = {} if accept else {f: z for f, z in expected.items() if f not in current}

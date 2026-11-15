@@ -27,10 +27,25 @@ def _by_player(rows, field):
     return {r["user_name"]: _num(r.get(field)) for r in rows or [] if r.get("user_name")}
 
 
-def parse_tournament_stats(raw: dict | None, drives: dict | None = None) -> dict:
+def complete_players(scorecards) -> set:
+    """Les joueurs qui ont au moins une carte complète (9 ou 18 trous joués) dans le tournoi.
+
+    Règle de Mike (15.11.2026) : un joueur qui n'a pas fini sa carte n'a pas de statistiques. SGT compte pourtant ses trous
+    joués (fairways, putts, drives…) : on les écarte ici, pour les tuiles, la fiche joueur et le coup par coup.
+    """
+    out = set()
+    for card in scorecards or []:
+        played = sum(1 for i in range(1, 19) if (card.get(f"hole{i}_gross") or 0) > 0)
+        if played in (9, 18) and card.get("player_name"):
+            out.add(card["player_name"])
+    return out
+
+
+def parse_tournament_stats(raw: dict | None, drives: dict | None = None, complete: set | None = None) -> dict:
     """Statistiques d'un tournoi, par joueur : {"joueurs": {pseudo: {...}}, "ctp": {trou: [(pseudo, mètres)]}}.
 
     drives : plus longs drives lus sur le site SGT, {"yd": {pseudo: yards}} (voir sgt_page.long_drives).
+    complete : les joueurs qui ont fini une carte (complete_players) ; les autres sont écartés. None : tout le monde.
     Une réponse absente ou vide (tournoi sans tour joué) donne un résultat vide, jamais une erreur.
     """
     raw = raw if isinstance(raw, dict) else {}
@@ -73,6 +88,9 @@ def parse_tournament_stats(raw: dict | None, drives: dict | None = None) -> dict
         for name, metres in entries:
             best[name] = min(metres, best.get(name, metres))
         ctp[hole] = sorted(best.items(), key=lambda kv: kv[1])
+    if complete is not None:              # carte pas finie : pas de statistiques (ni tuile, ni fiche, ni closest to the pin)
+        players = {name: v for name, v in players.items() if name in complete}
+        ctp = {hole: kept for hole, kept in ((h, [e for e in entries if e[0] in complete]) for h, entries in ctp.items()) if kept}
     return {"joueurs": players, "ctp": ctp}
 
 

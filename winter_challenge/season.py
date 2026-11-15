@@ -15,7 +15,7 @@ from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from .scoring import RoundResult, game_handicap, hole_counts, score_round
-from .stats import parse_tournament_stats
+from .stats import parse_tournament_stats, complete_players
 
 STATUS_RETAINED = "Retenu"
 STATUS_NOT_RETAINED = "Non retenu"
@@ -197,7 +197,7 @@ def build_season(tours: list, overrides: dict | None = None, best_n: int = 8, to
         tour_weeks = []
         tour_weeks_by_tour.append(tour_weeks)
         for number, t in enumerate(sorted_tournaments(tour), start=1):
-            stats[(tour["label"], number)] = parse_tournament_stats(t.get("stats"), t.get("drives"))
+            stats[(tour["label"], number)] = parse_tournament_stats(t.get("stats"), t.get("drives"), complete_players(t["scorecards"]))
             tour_weeks.append(Week(number, tour["tour_id"], tour["label"], t["tournamentId"], t["name"], t["courseName"],
                                    t["start_date"][:10], t["end_date"][:10], t["status"], t.get("courseId"), t.get("reglages")))
             weeks.append(tour_weeks[-1])
