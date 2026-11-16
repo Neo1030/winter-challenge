@@ -33,7 +33,7 @@ USER_AGENT = "WinterChallengeLetsGolf/1.0 (+https://winterchallenge.letsgolf.ch)
 # Libellé affiché par SGT -> clé du site
 LABELS = {"STIMP": "stimp", "FAIRWAYS": "fairways", "GREENS": "greens", "TEES": "depart", "SLOPE": "pente",
           "RATING": "cotation", "PINS": "drapeaux", "WEATHER": "meteo", "WIND": "vent", "GIMMIES": "gimmies",
-          "PUTTING": "putting"}
+          "PUTTING": "putting", "COURSE TYPE": "type_parcours"}  # « Course type » (gazon et fermeté, p. ex. Bentgrass Soft) : ajouté par SGT en 11.2026
 NUMBERS = {"stimp": float, "pente": int, "cotation": float}
 
 # Deux écritures de la même paire libellé / valeur : <dt>STIMP</dt><dd>10</dd> (site SGT depuis le 14.11.2026),

@@ -447,7 +447,7 @@
     const faits = [
       ["On joue", e.neuf ? esc(NEUF[e.neuf] || e.neuf) : null, e.par ? "par " + e.par : null],
       ["Longueur", e.longueur_jaune_m ? nb(e.longueur_jaune_m) + " m" : null, "18 trous, départ jaune"],
-      ["Greens", trad(FERMETE, r.greens)], ["Fairways", trad(FERMETE, r.fairways)],
+      ["Greens", trad(FERMETE, r.greens)], ["Fairways", trad(FERMETE, r.fairways)], ["Type de parcours", r.type_parcours],
       ["Vent", r.vent ? trad(VENTS, r.vent) : e.vent ? trad(VENTS, e.vent) : null, r.vent ? null : e.vent ? "conseillé" : null],
       ["Drapeaux", r.drapeaux ? trad(JOURS, r.drapeaux) : null], ["Putting", trad(PUTTING, r.putting)],
       ["Difficulté", diff ? nb(e.difficulte, Number.isInteger(e.difficulte) ? 0 : 1) + "/10" : null, diff],
@@ -458,6 +458,7 @@
       "On joue": e.neuf ? '<span class="vis trous-v">' + Array.from({ length: 18 }, (_, i) => `<i class="${e.neuf === "All" || (e.neuf === "Front") === (i < 9) ? "on" : ""}" style="--k:${i}"></i>`).join("") + "</span>" : "",
       Greens: r.greens ? `<span class="vis rebond-v f-${cle(r.greens)}"><i></i></span>` : "",
       Fairways: r.fairways ? `<span class="vis rebond-v f-${cle(r.fairways)}"><i></i></span>` : "",
+      "Type de parcours": r.type_parcours ? `<span class="vis rebond-v f-${cle(String(r.type_parcours).split(" ").pop())}"><i></i></span>` : "", // la fermeté est le dernier mot (Bentgrass Soft)
       Vent: vent ? `<span class="vis vent-v v-${cle(vent)}"><i></i><i></i><i></i></span>` : "",
       Drapeaux: r.drapeaux ? '<span class="vis jours-v">' + SEMAINE.map((j, i) => `<i class="${cle(r.drapeaux) === j ? "on" : ""}">${"LMMJVSD"[i]}</i>`).join("") + "</span>" : "",
       "Difficulté": diff ? `<span class="vis diff-v"><i style="--p:${borne(e.difficulte * 10, 0, 100)}%"></i></span>` : "",
@@ -481,7 +482,7 @@
     if (r.stimp != null) t.push(["Stimp", r.stimp]);
     if (r.gimmies) t.push(["Gimmies", metres(r.gimmies)]);
     if (e.neuf) t.push(["On joue", (NEUF[e.neuf] || e.neuf) + (e.par ? ", par " + e.par : "")]);
-    [["Greens", trad(FERMETE, r.greens)], ["Fairways", trad(FERMETE, r.fairways)], ["Vent", trad(VENTS, r.vent)], ["Drapeaux", trad(JOURS, r.drapeaux)], ["Putting", trad(PUTTING, r.putting)]]
+    [["Greens", trad(FERMETE, r.greens)], ["Fairways", trad(FERMETE, r.fairways)], ["Type de parcours", r.type_parcours], ["Vent", trad(VENTS, r.vent)], ["Drapeaux", trad(JOURS, r.drapeaux)], ["Putting", trad(PUTTING, r.putting)]]
       .forEach((f) => { if (f[1] != null) t.push(f); });
     return t.map((f) => `<span><b>${f[0]}</b> ${esc(f[1])}</span>`).join("");
   }

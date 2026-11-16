@@ -62,7 +62,8 @@ class SettingsPageTest(unittest.TestCase):
         s = parse_settings(PAGE_2026_11)
         self.assertEqual(s, {"stimp": 10, "fairways": "Firm", "greens": "Soft", "depart": "Blue", "pente": 131,
                              "cotation": 71.8, "drapeaux": "Friday", "meteo": "Clear", "vent": "Calm",
-                             "gimmies": "10 Feet", "putting": "Normal"})  # tour 2 ignoré, « COURSE TYPE » aussi
+                             "gimmies": "10 Feet", "putting": "Normal",
+                             "type_parcours": "Bentgrass Soft"})  # tour 2 ignoré
 
     def test_page_sans_reglages(self):
         self.assertIsNone(parse_settings("<html>Cloudflare</html>"))
