@@ -22,7 +22,7 @@ Réponds en français, en tutoyant, ton concret. Francs suisses (CHF), dates JJ.
   réels ne s'y applique pas.
 - Dans le code : `build_season(..., gross_only=True)` (winter_challenge/season.py), constante `BRUT_SEUL` dans
   scripts/export_site_data.py, indicateur `brut_seul` dans saison.json, lu par site/assets/refonte.js et tv2.js.
-- À confirmer avec le capitaine : les points du Short Game (aujourd'hui, mêmes points Stableford brut que le Winter Challenge).
+- Points : même calcul qu'au Winter Challenge, sur le Stableford brut (confirmé par le capitaine le 15.11.2026).
 
 ### Carte pas finie : pas de statistiques (décision de Mike, 15.11.2026)
 
