@@ -779,10 +779,11 @@ main { position: relative; }
 .barre:hover .plein, .barre:focus-visible .plein, .barre.vu .plein { fill: var(--trace); }
 @keyframes pousse { from { transform: scaleY(0); } }
 .graphe .ligne { fill: none; stroke: var(--ciel); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: trace 1.4s ease .2s forwards; }
-.graphe .pt { cursor: pointer; outline: none; }
-.graphe .pt .point { fill: var(--navy); stroke: var(--ciel); stroke-width: 2; transition: fill .2s, r .2s; }
-.graphe .pt.dernier .point { fill: var(--ciel-vif); }
-.graphe .pt:hover .point, .graphe .pt:focus-visible .point, .graphe .pt.vu .point { fill: var(--trace); stroke: var(--trace); }
+/* une balle par semaine sur la ligne : elle dit où passer la souris (même balle que celle du fil de la page) */
+.graphe .pt { cursor: pointer; outline: none; transform-box: fill-box; transform-origin: center; animation: pop .5s var(--e) backwards; animation-delay: var(--d, 0s); }
+.graphe .pt .bille { fill: #fff; stroke: var(--balle-bord); stroke-width: 1; filter: drop-shadow(0 0 5px rgba(var(--vif), .85)); transition: r .2s, stroke .2s, stroke-width .2s; }
+.graphe .pt.dernier .bille { r: 6.5px; stroke: var(--ciel-vif); stroke-width: 2.5; }
+.graphe .pt:hover .bille, .graphe .pt:focus-visible .bille, .graphe .pt.vu .bille { r: 7.5px; stroke: var(--ciel-vif); stroke-width: 3; }
 .cles .r i { background: var(--corail); border-color: var(--corail); }
 .table-zone { margin-top: 14px; overflow-x: auto; }
 .fiche table { min-width: 520px; }

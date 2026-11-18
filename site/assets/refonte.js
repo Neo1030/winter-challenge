@@ -1144,7 +1144,7 @@
 
       ${brutSeul() ? "" : `<h4>Évolution du handicap</h4>
       <div class="graphe" id="hdc"></div>
-      <p class="carnet-info" id="hdc-info" aria-live="polite">Un handicap plus bas est meilleur. Survole ou touche un point pour voir le détail.</p>`}
+      <p class="carnet-info" id="hdc-info" aria-live="polite">Un handicap plus bas est meilleur. Survole ou touche une balle pour voir le détail.</p>`}
 
       <h4>Résultats par ${u.cap}</h4>
       <div class="table-zone"><table><caption class="sr">Résultats retenus par ${u.cap}</caption>${brutSeul()
@@ -1568,7 +1568,8 @@
     detailAuSurvol(boite, ".balle-v", $("#trou-info"), (w) => detailPartie(parties.find((x) => x.w.semaine === +w).w, ligne));
   }
 
-  /* l'évolution du handicap de jeu : un point par semaine jouée */
+  /* l'évolution du handicap de jeu : une balle par semaine jouée, posée sur la ligne au moment où le trait y arrive
+     (classe « bille » et non « point » : « .point » est déjà le point du trou de l'ouverture, invisible hors de lui) */
   function handicap(p) {
     const boite = $("#hdc"), info = $("#hdc-info"), hist = p.hdc_historique || [];
     if (hist.length < 2) { boite.innerHTML = `<p class="expl">Handicap de jeu de départ : ${nb(p.hdc_depart)}. Il bouge à la fin de chaque semaine jouée.</p>`; info.hidden = true; return; }
@@ -1584,7 +1585,7 @@
     boite.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="group" aria-label="Évolution du handicap de jeu : ${nb(vs[0])} au départ, ${nb(vs[vs.length - 1])} actuellement">
       <text x="4" y="${T + 4}">${nb(mx)}</text><text x="4" y="${H - B + 4}">${nb(mn)}</text>
       <path class="ligne" pathLength="1" d="${hist.map((h, i) => (i ? "L" : "M") + x(i).toFixed(1) + " " + y(h.hdc).toFixed(1)).join("")}"/>
-      ${hist.map((h, i) => `<g class="pt${i === hist.length - 1 ? " dernier" : ""}" data-w="${h.semaine}" tabindex="0" role="img" aria-label="${esc(texte(detail(h)))}"><circle class="zone" cx="${x(i)}" cy="${y(h.hdc)}" r="15"/><circle class="point" cx="${x(i)}" cy="${y(h.hdc)}" r="4.5"/></g>`).join("")}
+      ${hist.map((h, i) => `<g class="pt${i === hist.length - 1 ? " dernier" : ""}" style="--d:${(0.2 + 1.2 * i / (hist.length - 1)).toFixed(2)}s" data-w="${h.semaine}" tabindex="0" role="img" aria-label="${esc(texte(detail(h)))}"><circle class="zone" cx="${x(i)}" cy="${y(h.hdc)}" r="15"/><circle class="bille" cx="${x(i)}" cy="${y(h.hdc)}" r="5.5"/></g>`).join("")}
       ${hist.map((h, i) => (i === 0 || i === hist.length - 1 || hist.length < 9 ? `<text x="${x(i)}" y="${H - 8}" text-anchor="middle">${h.semaine === 0 ? "départ" : P() + h.semaine}</text>` : "")).join("")}
     </svg>`;
     detailAuSurvol(boite, ".pt", info, (w) => detail(hist.find((h) => h.semaine === +w)));
