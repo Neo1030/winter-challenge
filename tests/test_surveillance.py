@@ -1,6 +1,8 @@
 """Surveillance des données SGT : une donnée qui disparaît met sa zone en maintenance, et l'alerte part une seule fois."""
 
+import contextlib
 import copy
+import io
 import os
 import tempfile
 import unittest
@@ -179,14 +181,18 @@ class TestCheck(unittest.TestCase):
             out, md = os.path.join(tmp, "out"), os.path.join(tmp, "alerte.md")
             old = os.environ.get("GITHUB_OUTPUT")
             os.environ["GITHUB_OUTPUT"] = out
+            # la ligne « ::warning:: » est capturée : écrite par un test, GitHub en ferait un faux avertissement à chaque mise en ligne
+            journal = io.StringIO()
             try:
-                surveillance.signal(result, md)
+                with contextlib.redirect_stdout(journal):
+                    surveillance.signal(result, md)
             finally:
                 if old is None:
                     del os.environ["GITHUB_OUTPUT"]
                 else:
                     os.environ["GITHUB_OUTPUT"] = old
             self.assertEqual(Path(out).read_text(encoding="utf-8"), "alerte=nouvelle\n")
+            self.assertIn("::warning::Données SGT disparues : 3 ; en maintenance : Statistique du drive", journal.getvalue())
             self.assertIn("en maintenance", Path(md).read_text(encoding="utf-8"))
 
 
