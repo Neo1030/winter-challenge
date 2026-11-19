@@ -825,7 +825,7 @@
   const TUILES = [
     ["fir", "FIR", "Fairways touchés", "%", 1, ""],
     ["gir", "GIR", "Greens en régulation", "%", 1, ""],
-    ["drive", "Longest drive", "Plus long drive de la partie arrêté sur le fairway, mesuré par SGT", "m", 1, "yds"],
+    ["drive", "Longest drive", "Plus long drive de la partie arrêté sur le fairway ou le semi-rough, mesuré par SGT", "m", 1, "yds"],
     ["ctp", "Closest to the pin", "Le coup de départ le plus près du drapeau sur un par 3", "m", 2, "ft"],
     ["putts_faits", "Total putt length", "Longueur totale des putts rentrés, par tour", "m", 2, "ft"],
   ];
@@ -858,7 +858,7 @@
       </article>`;
     }).join("");
     $("#stats-aide").textContent = `Le meilleur de chaque statistique parmi les joueurs de la catégorie ${cat.nom}, pour ${P()}${etat.sem}. ` + (P() === "SG" ? "" :
-      "Longest drive : le plus long drive de la partie arrêté sur le fairway, sur un par 4 ou 5 (onglet Long Drive de SGT). ") +
+      "Longest drive : le plus long drive de la partie arrêté sur le fairway ou le semi-rough, sur un par 4 ou 5 (onglet Long Drive de SGT). ") +
       "Closest to the pin : le coup de départ le plus près du drapeau sur un par 3 (le plus petit gagne). Total putt length : longueur totale des putts rentrés par tour. Distances en mètres, valeur d'origine de SGT en dessous.";
     nombres(boite);
     maintenance();
@@ -1065,7 +1065,7 @@
     if (!w) return "";
     const m = ctpMeilleur(w), plusieurs = w.tours > 1, ici = `${P()}${semaine}${plusieurs ? `, moyenne de ${w.tours} tours` : ""}`;
     return `<dl class="trio">
-      ${sg ? "" : fait("Longest drive", w.drive_m == null ? "–" : dec(w.drive_m, 1) + " m", w.drive_m == null ? "aucun drive sur le fairway" : `${P()}${semaine}${w.drive_rang ? " · " + place(w.drive_rang, w.drive_sur) : ""}`)}
+      ${sg ? "" : fait("Longest drive", w.drive_m == null ? "–" : dec(w.drive_m, 1) + " m", w.drive_m == null ? "aucun drive sur le fairway ou le semi-rough" : `${P()}${semaine}${w.drive_rang ? " · " + place(w.drive_rang, w.drive_sur) : ""}`)}
       ${fait("Closest to the pin", m ? dec(m.m, 2) + " m" : "–", m ? `${P()}${semaine} · trou ${m.trou}${m.rang ? " · " + place(m.rang, m.sur) : ""}` : "aucun green touché au départ d'un par 3")}
       ${fait(plusieurs ? "Putts par tour" : "Putts", dec(w.putts), ici)}
     </dl>
@@ -1092,7 +1092,7 @@
           ${sg ? "" : `<td>${w.drive_m == null ? "–" : `<b>${dec(w.drive_m, 1)} m</b>${w.drive_rang ? ` <small>${place(w.drive_rang, w.drive_sur)}</small>` : ""}`}</td>`}
           <td>${ctp(w)}</td>${sg ? "" : `<td>${pct(w.fairways)}</td>`}<td>${pct(w.greens)}</td><td>${dec(w.putts)}</td></tr>`).join("")}</tbody>
         <tfoot><tr><th scope="row" colspan="${sg ? 2 : 3}">Moyenne par tour</th>${sg ? "" : `<td>${moy("fairways")}</td>`}<td>${moy("greens")}</td><td>${moy("putts")}</td></tr></tfoot></table></div>
-      <p class="expl">Distances en mètres.${sg ? "" : ` Longest drive : ton plus long drive ${u.fin} arrêté sur le fairway, sur un par 4 ou 5 (le meilleur en haut).`} Closest to the pin : ton coup de départ le plus près du drapeau sur un par 3, green atteint (le trou est indiqué, « +2 » = deux autres par 3 réussis).${sg ? "" : " FIR : fairways touchés."} GIR : greens en régulation. Statistiques de ta partie ${u.fin}.</p>`;
+      <p class="expl">Distances en mètres.${sg ? "" : ` Longest drive : ton plus long drive ${u.fin} arrêté sur le fairway ou le semi-rough, sur un par 4 ou 5 (le meilleur en haut).`} Closest to the pin : ton coup de départ le plus près du drapeau sur un par 3, green atteint (le trou est indiqué, « +2 » = deux autres par 3 réussis).${sg ? "" : " FIR : fairways touchés."} GIR : greens en régulation. Statistiques de ta partie ${u.fin}.</p>`;
   }
 
   /* le choix d'une semaine dans la fiche : les statistiques et le coup par coup suivent le même choix */
