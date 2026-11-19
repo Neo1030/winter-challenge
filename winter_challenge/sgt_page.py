@@ -6,9 +6,8 @@ tournoi terminé dont les réglages sont déjà connus (voir sgt_api.py).
 
 Plus long drive : tournaments/stats ne donne que la distance MOYENNE des drives (champ « longest_drive », mal nommé). Le vrai
 plus long drive vient de l'onglet Long Drive du site SGT : une vue par trou, /sgt-api/leaderboard/<tournoi>/ld/<manche>-<trou>,
-qui porte tous les drives du trou dans un attribut data-shots (JSON). On ne compte que les par 4 et 5 et les drives arrêtés sur
-le fairway ou le semi-rough (décision de Mike, 19.11.2026 ; SGT ne compte que le fairway). Un drive hors du fairway porte
-« out » avec l'endroit où il s'arrête : « SEMIROUGH » est gardé, « ROUGH », « DEEPROUGH », « SAND »… ne comptent pas.
+qui porte tous les drives du trou dans un attribut data-shots (JSON). Comme SGT, on ne compte que les par 4 et 5 et les drives
+arrêtés sur le fairway (un drive au rough ou au sable porte « out »).
 
 Coup par coup : l'API ne donne que le score de chaque trou. Le détail des coups (distance, où la balle finit, ce qu'il reste,
 putts) vient de l'onglet « Shot data » d'une carte de score du site SGT : /sgt-api/scorecard/<tournoi>/<joueur>/indv/shots.
@@ -86,13 +85,11 @@ def fetch_settings(tournament_id: int, timeout: int = 20) -> dict | None:
 # ---------- Plus long drive ----------
 
 _SHOTS = re.compile(r"""data-shots=(['"])(.*?)\1""", re.S)
-DRIVE_LIES = {"SEMIROUGH"}   # en plus du fairway (sans « out ») : décision de Mike, 19.11.2026
-DRIVES_RULE = "fairway+semirough"   # dans l'empreinte : changer la règle fait relire les drives déjà publiés
 
 
 def parse_drives(page: str) -> dict:
-    """Plus long drive de chaque joueur sur un trou, en yards : {pseudo: yards}. Seuls les drives arrêtés sur le fairway
-    (sans « out ») ou le semi-rough (« out » : « SEMIROUGH ») sont gardés. Une page sans drive donne un résultat vide."""
+    """Plus long drive de chaque joueur sur un trou, en yards : {pseudo: yards}. Seuls les drives qui comptent chez SGT
+    (arrêtés sur le fairway, donc sans « out ») sont gardés. Une page sans drive donne un résultat vide."""
     best: dict = {}
     for _, raw in _SHOTS.findall(page):
         try:
@@ -100,9 +97,7 @@ def parse_drives(page: str) -> dict:
         except ValueError:
             continue
         for point in points if isinstance(points, list) else []:
-            if not isinstance(point, dict) or not point.get("n"):
-                continue
-            if "out" in point and str(point["out"]).upper() not in DRIVE_LIES:
+            if not isinstance(point, dict) or "out" in point or not point.get("n"):
                 continue
             try:
                 yards = float(point["x"])
@@ -134,8 +129,7 @@ def drives_key(stats: dict | None, holes: list, finished: list | None = None) ->
     plus longs drives déjà lus restent valables (on ne relit pas le site SGT toutes les cinq minutes)."""
     rows = (stats or {}).get("drivingDistance") if isinstance(stats, dict) else None
     # les joueurs qui ont fini leur carte font partie de l'empreinte : un joueur qui termine son tour fait relire les drives
-    text = json.dumps([rows or [], holes] + ([finished] if finished is not None else []) + [DRIVES_RULE], sort_keys=True,
-                      ensure_ascii=False)
+    text = json.dumps([rows or [], holes] + ([finished] if finished is not None else []), sort_keys=True, ensure_ascii=False)
     return hashlib.sha1(text.encode("utf-8")).hexdigest()[:12]
 
 

@@ -97,12 +97,6 @@ class LongDriveTest(unittest.TestCase):
         self.assertEqual(parse_drives(HOLE_11), {"Ana": 316.4, "Bob": 254.96})
         self.assertEqual(parse_drives("<div>ROUND 1 HOLE 1 POS PLAYER DISTANCE (yds)</div>"), {})
         self.assertEqual(parse_drives("<div data-shots='pas du json'></div>"), {})
-        # semi-rough compté (décision de Mike, 19.11.2026) ; rough épais, sable, béton : non
-        semi = shots([{"n": "Dan", "p": "-", "v": "301.00 YDS", "x": 301.0, "y": 21.0, "out": "SEMIROUGH"},
-                      {"n": "Eve", "p": "-", "v": "340.00 YDS", "x": 340.0, "y": 50.0, "out": "DEEPROUGH"},
-                      {"n": "Eve", "p": "-", "v": "335.00 YDS", "x": 335.0, "y": 30.0, "out": "SAND"},
-                      {"n": "Eve", "p": "-", "v": "333.00 YDS", "x": 333.0, "y": 60.0, "out": "CONCRETE"}])
-        self.assertEqual(parse_drives(semi), {"Dan": 301.0})
 
     def test_trous_ou_le_drive_compte(self):
         self.assertEqual(drive_holes(self.tournoi()["scorecards"]), [(1, h) for h in (11, 12, 13, 15, 16, 17, 18)])
