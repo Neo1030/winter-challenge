@@ -63,21 +63,17 @@ def parse_tournament_stats(raw: dict | None, drives: dict | None = None, complet
                            shots: dict | None = None) -> dict:
     """Statistiques d'un tournoi, par joueur : {"joueurs": {pseudo: {...}}, "ctp": {trou: [(pseudo, mètres)]}}.
 
-    drives : plus longs drives lus sur le site SGT, {"yd": {pseudo: yards}, "yd_tout": {…}} (voir sgt_page.long_drives).
+    drives : plus longs drives lus sur le site SGT, {"yd": {pseudo: yards}} (sur le fairway) (voir sgt_page.long_drives).
     shots : coup par coup du tournoi, {pseudo: {"trous": […]}} (voir sgt_page.shots_of), pour le plus long putt rentré.
     complete : les joueurs qui ont fini une carte (complete_players) ; les autres sont écartés. None : tout le monde.
     Une réponse absente ou vide (tournoi sans tour joué) donne un résultat vide, jamais une erreur.
     """
     raw = raw if isinstance(raw, dict) else {}
     players: dict = {}
-    for field, key in (("yd", "drive"), ("yd_tout", "drive_tout")):   # sur le fairway ; où que la balle s'arrête
-        for name, yards in ((drives or {}).get(field) or {}).items():
-            value = _num(yards)
-            if value is not None:
-                players.setdefault(name, {}).update({key + "_m": round(value * YARD_M, 1), key + "_yd": round(value, 2)})
-    for name, lie in ((drives or {}).get("lie_tout") or {}).items():   # où s'arrête le plus long drive toutes zones
-        if lie and "drive_tout_m" in players.get(name, {}):
-            players[name]["drive_tout_lie"] = lie
+    for name, yards in ((drives or {}).get("yd") or {}).items():
+        value = _num(yards)
+        if value is not None:
+            players.setdefault(name, {}).update({"drive_m": round(value * YARD_M, 1), "drive_yd": round(value, 2)})
     aces: dict = {}                                  # distance des trous en un, lue dans le coup par coup
     for name, card in (shots or {}).items():
         metres = longest_putt((card or {}).get("trous")) if isinstance(card, dict) else None

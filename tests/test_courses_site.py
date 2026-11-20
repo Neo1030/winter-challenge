@@ -88,24 +88,16 @@ class LongDriveTest(unittest.TestCase):
         t = self.tournoi()
         t["scorecards"][1]["hole18_gross"] = 0                       # Bob s'arrête après 8 trous
         both = {"Ana": 300.0, "Bob": 320.0}
-        drives = long_drives(t, None, lambda tid, holes: {"yd": both, "yd_tout": both})
+        drives = long_drives(t, None, lambda tid, holes: {"yd": both})
         self.assertEqual(drives["yd"], {"Ana": 300.0})
-        self.assertEqual(drives["yd_tout"], {"Ana": 300.0})
         t["scorecards"][1]["hole18_gross"] = 3                       # il finit son tour (un par 3, sans drive) : on relit
-        again = long_drives(t, drives, lambda tid, holes: {"yd": both, "yd_tout": both})
+        again = long_drives(t, drives, lambda tid, holes: {"yd": both})
         self.assertEqual(again["yd"], {"Ana": 300.0, "Bob": 320.0})
 
     def test_drives_d_un_trou_fairway_seulement(self):
         self.assertEqual(parse_drives(HOLE_11), {"Ana": 316.4, "Bob": 254.96})
         self.assertEqual(parse_drives("<div>ROUND 1 HOLE 1 POS PLAYER DISTANCE (yds)</div>"), {})
         self.assertEqual(parse_drives("<div data-shots='pas du json'></div>"), {})
-
-    def test_drives_d_un_trou_ou_que_la_balle_s_arrete(self):
-        """Le Longest drive toutes zones (demande de Mike, 20.11.2026) garde aussi les drives au rough, au sable…"""
-        self.assertEqual(parse_drives(HOLE_11, every=True), {"Ana": 316.4, "Bob": 254.96, "Cyd": 330.0})
-        lies = {}
-        parse_drives(HOLE_11, True, lies)
-        self.assertEqual(lies, {"Ana": "FAIRWAY", "Bob": "FAIRWAY", "Cyd": "ROUGH"})   # où s'arrête le drive gardé
 
     def test_trous_ou_le_drive_compte(self):
         self.assertEqual(drive_holes(self.tournoi()["scorecards"]), [(1, h) for h in (11, 12, 13, 15, 16, 17, 18)])
@@ -117,17 +109,15 @@ class LongDriveTest(unittest.TestCase):
 
         def fetch(tournament_id, holes):
             asked.append((tournament_id, holes))
-            best = {"yd": {}, "yd_tout": {}}
+            best = {}
             for hole in holes:
-                for field, every in (("yd", False), ("yd_tout", True)):
-                    for name, yards in parse_drives(pages.get(hole, ""), every).items():
-                        best[field][name] = max(yards, best[field].get(name, 0))
-            return best
+                for name, yards in parse_drives(pages.get(hole, "")).items():
+                    best[name] = max(yards, best.get(name, 0))
+            return {"yd": best}
 
         t = self.tournoi()
         drives = long_drives(t, None, fetch)
         self.assertEqual(drives["yd"], {"Ana": 316.4, "Bob": 319.36})   # le meilleur de chaque joueur, tous trous confondus
-        self.assertEqual(drives["yd_tout"], {"Ana": 316.4, "Bob": 319.36})   # Cyd (au rough) n'a pas de carte finie
         self.assertEqual(drives["cle"], drives_key(t["stats"], drive_holes(t["scorecards"]), ["Ana", "Bob"]))
         self.assertEqual(len(asked), 1)
         # rien n'a changé chez SGT : on reprend ce qui est publié, sans relire le site
@@ -144,7 +134,7 @@ class LongDriveTest(unittest.TestCase):
         self.assertIs(long_drives(t, known, lambda tid, holes: {}), known)     # la page ne contient plus de drives
         self.assertIsNone(long_drives(t, None, lambda tid, holes: None))
         t["stats"] = None                                                       # l'API n'a pas donné les statistiques
-        self.assertIs(long_drives(t, known, lambda tid, holes: {"yd": {"Ana": 1.0}, "yd_tout": {"Ana": 1.0}}), known)
+        self.assertIs(long_drives(t, known, lambda tid, holes: {"yd": {"Ana": 1.0}}), known)
 
     def test_tournoi_sans_drive(self):
         t = self.tournoi()

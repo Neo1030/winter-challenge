@@ -148,7 +148,6 @@ DETAIL_KEYS = ("lieu", "difficulte", "styles", "description", "vent", "lien_vide
 LEADER_TILES = (
     ("fir", "fairways", None, True),
     ("gir", "greens", None, True),
-    ("drive_tout", "drive_tout_m", "drive_tout_yd", True),   # où que la balle s'arrête (demande de Mike, 20.11.2026)
     ("drive", "drive_m", "drive_yd", True),                  # sur le fairway, comme chez SGT
     ("gir_prox", "gir_prox_m", "gir_prox_ft", False),
     ("putts_faits", "putts_faits_m", "putts_faits_ft", True),
@@ -214,9 +213,6 @@ def _leaders(season: Season, category: str) -> dict:
             who = sorted(n for n, v in values.items() if v == best)
             tiles[key] = {"valeur": best, "joueurs": who,
                           "orig": st["joueurs"][who[0]].get(orig) if orig else None}
-            lie = st["joueurs"][who[0]].get(key + "_lie")       # Longest drive toutes zones : où la balle s'est arrêtée
-            if lie:
-                tiles[key]["lie"] = lie
         # Closest to the pin : le coup de départ le plus près du drapeau sur un par 3, tous joueurs et trous de la semaine
         shots = [(metres, who, hole) for hole, entries in st["ctp"].items() for who, metres in entries]
         if shots:

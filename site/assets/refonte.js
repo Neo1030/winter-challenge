@@ -353,14 +353,14 @@
     return { construire: () => { cancelAnimationFrame(raf); construire(); }, avancer, annoncer, changer, estArrivee: () => arrivee, depart: () => ({ x: geo.xb, y: geo.y }), partir(v) { svg.classList.toggle("parti", v); } };
   }
 
-  /* Le record du haut de page. Winter Challenge : le plus long drive de la saison, où que la balle s'arrête ; s'il est
-     hors fairway, le plus long drive de la saison sur le fairway en dessous (textes de Mike, 20.11.2026, sans « hors fairway »). Short Game
-     (petit jeu, sans drive) : le closest to the pin de la saison ; à défaut, le plus long total de putts rentrés. */
+  /* Le record du haut de page. Winter Challenge : le plus long drive de la saison (sur le fairway, comme SGT ; le drive
+     hors fairway a été retiré, décision de Mike du 20.11.2026). Short Game (petit jeu, sans drive) : le closest to the pin
+     de la saison ; à défaut, le plus long total de putts rentrés. */
   function recordPour(c) {
     let m = null;
     const chercher = (cle, mieux) => c.categories.forEach((cat) => Object.keys(cat.stats || {}).forEach((w) => {
       const s = cat.stats[w][cle];
-      if (s && s.valeur != null && (!m || mieux(s.valeur, m.m))) m = { m: s.valeur, joueurs: s.joueurs || [], semaine: w, cat: cat.nom, trou: s.trou, lie: s.lie };
+      if (s && s.valeur != null && (!m || mieux(s.valeur, m.m))) m = { m: s.valeur, joueurs: s.joueurs || [], semaine: w, cat: cat.nom, trou: s.trou };
     }));
     const noms = () => "<b>" + m.joueurs.map(esc).join(", ") + "</b>";
     if (c.brut_seul) {
@@ -371,18 +371,8 @@
       return { vide: true, m: 40, mode: "drive", dec: 0 };
     }
     chercher("drive", (a, b) => a > b);
-    const fairway = m;
-    m = null;
-    chercher("drive_tout", (a, b) => a > b);
-    if (!m) m = fairway;                                       // pas encore de drive toutes zones lu : le record sur le fairway
     if (!m) return { vide: true, m: 250, mode: "drive", dec: 0 };
-    // hors fairway : SGT le dit (« lie ») ; sans cette indication, un drive plus long que le record sur le fairway
-    const hors = m !== fairway && (m.lie ? m.lie !== "FAIRWAY" : !fairway || m.m > fairway.m);
-    let texte = `${noms()} : plus long drive de la saison · ${esc(c.prefixe)}${m.semaine}, ${esc(m.cat)}`;
-    if (hors && fairway) {
-      texte += `<br><span class="record-f"><b>${fairway.joueurs.map(esc).join(", ")}</b> : plus long drive de la saison sur le fairway · <b>${nb(fairway.m, 1)} m</b> · ${esc(c.prefixe)}${fairway.semaine}, ${esc(fairway.cat)}</span>`;
-    }
-    return Object.assign(m, { mode: "drive", dec: 1, texte });
+    return Object.assign(m, { mode: "drive", dec: 1, texte: `${noms()} : plus long drive de la saison · ${esc(c.prefixe)}${m.semaine}, ${esc(m.cat)}` });
   }
 
   /* ───────── Hole in one en vedette ─────────
@@ -899,8 +889,7 @@
   const TUILES = [
     ["fir", "FIR", "Fairways touchés", "%", 1, ""],
     ["gir", "GIR", "Greens en régulation", "%", 1, ""],
-    ["drive_tout", "Longest drive", "Plus long drive de la partie, où que la balle s'arrête, mesuré par SGT", "m", 1, "yds"],
-    ["drive", "Longest drive fairway", "Plus long drive de la partie arrêté sur le fairway, mesuré par SGT", "m", 1, "yds"],
+    ["drive", "Longest drive", "Plus long drive de la partie arrêté sur le fairway, mesuré par SGT", "m", 1, "yds"],
     ["ctp", "Closest to the pin", "Le coup de départ le plus près du drapeau sur un par 3", "m", 2, "ft"],
     ["putts_faits", "Total putt length", "Longueur totale des putts rentrés, par tour", "m", 2, "ft"],
     ["putt_long", "Longest putt", "Plus long putt rentré de la partie, putts donnés non compris", "m", 1, ""],
@@ -934,7 +923,7 @@
       </article>`;
     }).join("");
     $("#stats-aide").textContent = `Le meilleur de chaque statistique parmi les joueurs de la catégorie ${cat.nom}, pour ${P()}${etat.sem}. ` + (P() === "SG" ? "" :
-      "Longest drive : le plus long drive de la partie sur un par 4 ou 5, où que la balle s'arrête ; Longest drive fairway : le même, arrêté sur le fairway (onglet Long Drive de SGT). ") +
+      "Longest drive : le plus long drive de la partie arrêté sur le fairway, sur un par 4 ou 5 (onglet Long Drive de SGT). ") +
       "Closest to the pin : le coup de départ le plus près du drapeau sur un par 3 (le plus petit gagne). Total putt length : longueur totale des putts rentrés par tour. Longest putt : le plus long putt rentré, putts donnés non compris (coup par coup de SGT). Distances en mètres, valeur d'origine de SGT en dessous.";
     nombres(boite);
     maintenance();

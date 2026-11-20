@@ -6,10 +6,9 @@ tournoi terminé dont les réglages sont déjà connus (voir sgt_api.py).
 
 Plus long drive : tournaments/stats ne donne que la distance MOYENNE des drives (champ « longest_drive », mal nommé). Le vrai
 plus long drive vient de l'onglet Long Drive du site SGT : une vue par trou, /sgt-api/leaderboard/<tournoi>/ld/<manche>-<trou>,
-qui porte tous les drives du trou dans un attribut data-shots (JSON). On ne compte que les par 4 et 5. Deux plus longs drives :
-comme SGT, celui arrêté sur le fairway (« yd » ; un drive au rough ou au sable porte « out ») et, depuis le 20.11.2026
-(demande de Mike), celui où que la balle s'arrête (« yd_tout » : rough, sable, semi-rough… compris), avec l'endroit où il
-s'arrête (« lie_tout » : FAIRWAY, SEMIROUGH, ROUGH, SAND…, comme SGT l'écrit), montré avec le record de la saison.
+qui porte tous les drives du trou dans un attribut data-shots (JSON). Comme SGT, on ne compte que les par 4 et 5 et les drives
+arrêtés sur le fairway (un drive au rough ou au sable porte « out »). Le plus long drive hors fairway a été essayé puis retiré
+(décision de Mike, 20.11.2026).
 
 Coup par coup : l'API ne donne que le score de chaque trou. Le détail des coups (distance, où la balle finit, ce qu'il reste,
 putts) vient de l'onglet « Shot data » d'une carte de score du site SGT : /sgt-api/scorecard/<tournoi>/<joueur>/indv/shots.
@@ -87,14 +86,12 @@ def fetch_settings(tournament_id: int, timeout: int = 20) -> dict | None:
 # ---------- Plus long drive ----------
 
 _SHOTS = re.compile(r"""data-shots=(['"])(.*?)\1""", re.S)
-DRIVES_VERSION = 3   # dans l'empreinte : à augmenter quand la lecture change, les drives déjà publiés sont alors relus
+DRIVES_VERSION = 4   # dans l'empreinte : à augmenter quand la lecture change, les drives déjà publiés sont alors relus
 
 
-def parse_drives(page: str, every: bool = False, lies: dict | None = None) -> dict:
+def parse_drives(page: str) -> dict:
     """Plus long drive de chaque joueur sur un trou, en yards : {pseudo: yards}. Seuls les drives qui comptent chez SGT
-    (arrêtés sur le fairway, donc sans « out ») sont gardés ; avec every, tous les drives, où qu'ils s'arrêtent.
-    lies : rempli avec l'endroit où s'arrête le drive gardé de chaque joueur (« out » de SGT, FAIRWAY sans « out »).
-    Une page sans drive donne un résultat vide."""
+    (arrêtés sur le fairway, donc sans « out ») sont gardés. Une page sans drive donne un résultat vide."""
     best: dict = {}
     for _, raw in _SHOTS.findall(page):
         try:
@@ -102,7 +99,7 @@ def parse_drives(page: str, every: bool = False, lies: dict | None = None) -> di
         except ValueError:
             continue
         for point in points if isinstance(points, list) else []:
-            if not isinstance(point, dict) or (not every and "out" in point) or not point.get("n"):
+            if not isinstance(point, dict) or "out" in point or not point.get("n"):
                 continue
             try:
                 yards = float(point["x"])
@@ -110,8 +107,6 @@ def parse_drives(page: str, every: bool = False, lies: dict | None = None) -> di
                 continue
             if yards > best.get(point["n"], 0):
                 best[point["n"]] = yards
-                if lies is not None:
-                    lies[point["n"]] = str(point.get("out") or "FAIRWAY").upper()
     return best
 
 
@@ -142,30 +137,21 @@ def drives_key(stats: dict | None, holes: list, finished: list | None = None) ->
 
 
 def fetch_long_drives(tournament_id: int, holes: list, timeout: int = 20) -> dict | None:
-    """Plus long drive de chaque joueur dans le tournoi, en yards : {"yd": sur le fairway, "yd_tout": où qu'il s'arrête,
-    "lie_tout": où s'arrête ce drive-là}.
+    """Plus long drive de chaque joueur dans le tournoi (sur le fairway), en yards : {"yd": {pseudo: yards}}.
     None dès qu'une page ne répond pas : mieux vaut pas de plus long drive qu'un chiffre calculé sur une partie des trous."""
-    best: dict = {"yd": {}, "yd_tout": {}}
-    where: dict = {}
+    best: dict = {}
     for round_number, hole in holes:
         page = _read(DRIVES_URL.format(id=tournament_id, round=round_number, hole=hole), timeout)
         if page is None:
             return None
-        lies: dict = {}
-        for field, every in (("yd", False), ("yd_tout", True)):
-            for name, yards in parse_drives(page, every, lies if every else None).items():
-                if yards > best[field].get(name, 0):
-                    best[field][name] = yards
-                    if every:
-                        where[name] = lies[name]
-    out = {field: {name: round(yards, 2) for name, yards in values.items()} for field, values in best.items()}
-    out["lie_tout"] = where
-    return out
+        for name, yards in parse_drives(page).items():
+            if yards > best.get(name, 0):
+                best[name] = yards
+    return {"yd": {name: round(yards, 2) for name, yards in best.items()}}
 
 
 def long_drives(tournament: dict, known: dict | None = None, fetch=fetch_long_drives) -> dict | None:
-    """Plus longs drives d'un tournoi : {"cle": empreinte, "yd": {pseudo: yards}, "yd_tout": {pseudo: yards}}, ou None
-    s'il n'y en a pas (« yd » : sur le fairway ; « yd_tout » : où que la balle s'arrête).
+    """Plus longs drives d'un tournoi (sur le fairway) : {"cle": empreinte, "yd": {pseudo: yards}}, ou None s'il n'y en a pas.
 
     tournament : le tournoi avec ses « scorecards » et ses « stats ». known : ce qui a déjà été publié pour ce tournoi ;
     on le reprend tel quel si l'empreinte n'a pas changé, et on le garde aussi si le site SGT ne répond pas ou ne donne
@@ -180,11 +166,10 @@ def long_drives(tournament: dict, known: dict | None = None, fetch=fetch_long_dr
     if known and known.get("cle") == key:
         return known
     found = fetch(tournament["tournamentId"], holes)
-    if not found or not found.get("yd_tout"):
+    if not found or not found.get("yd"):
         return known
     # un joueur qui n'a pas fini sa carte n'a pas de drive, même dans cette liste gardée d'une mise à jour à l'autre
-    return {"cle": key, **{field: {name: value for name, value in (found.get(field) or {}).items() if name in finished}
-                           for field in ("yd", "yd_tout", "lie_tout")}}
+    return {"cle": key, "yd": {name: value for name, value in found["yd"].items() if name in finished}}
 
 
 # ---------- Coup par coup (onglet « Shot data » d'une carte de score) ----------

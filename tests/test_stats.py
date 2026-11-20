@@ -36,19 +36,17 @@ class ParseTest(unittest.TestCase):
         self.assertEqual((st["joueurs"]["Ana"]["drive_m"], st["joueurs"]["Ana"]["drive_yd"]), (289.3, 316.4))  # 316.40 yards
         self.assertEqual(st["joueurs"]["Bob"]["drive_m"], 229.7)
 
-    def test_drive_toutes_zones_et_plus_long_putt(self):
-        """Longest drive où que la balle s'arrête et plus long putt rentré (demande de Mike, 20.11.2026)."""
+    def test_plus_long_putt(self):
+        """Plus long putt rentré (demande de Mike, 20.11.2026)."""
         trous = [{"t": 1, "c": [[1, "c", 200.0, "fairway", 10.0], [2, "p", 10.7, "holecup", 0]]},
                  {"t": 2, "c": [[1, "c", 210.0, "rough", 30.0], [2, "c", 30.0, "holecup", 0]]},      # rentré hors du green : pas un putt
                  {"t": 3, "c": [[1, "c", 150.0, "green", 4.0], [2, "p", 12.0, "green", 0.5], [3, "g", None, "holecup", 0]]}]
-        st = parse_tournament_stats(RAW, {"yd": {"Ana": 316.4}, "yd_tout": {"Ana": 330.0, "Bob": 260.0}, "lie_tout": {"Ana": "SEMIROUGH"}},
+        st = parse_tournament_stats(RAW, {"yd": {"Ana": 316.4}},
                                     shots={"Ana": {"cle": "x", "trous": trous}, "Bob": {"cle": "y", "trous": trous[2:]}})
-        self.assertEqual((st["joueurs"]["Ana"]["drive_tout_m"], st["joueurs"]["Ana"]["drive_tout_yd"]), (301.8, 330.0))
         self.assertEqual(st["joueurs"]["Ana"]["drive_m"], 289.3)
-        self.assertEqual(st["joueurs"]["Ana"]["drive_tout_lie"], "SEMIROUGH")
-        self.assertNotIn("drive_m", st["joueurs"]["Bob"])
+        self.assertNotIn("drive_tout_m", st["joueurs"]["Ana"])   # le drive hors fairway est retiré (décision de Mike, 20.11.2026)
         self.assertEqual(st["joueurs"]["Ana"]["putt_long_m"], 10.7)
-        self.assertNotIn("putt_long_m", st["joueurs"]["Bob"])    # un putt manqué et un putt donné : aucun putt rentré
+        self.assertNotIn("putt_long_m", st["joueurs"].get("Bob", {}))    # un putt manqué et un putt donné : aucun putt rentré
 
     def test_sans_plus_long_drive_pas_de_drive_du_tout(self):
         """La moyenne de l'API (250 yards pour Ana) ne remplace jamais le plus long drive."""

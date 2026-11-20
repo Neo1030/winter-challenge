@@ -166,15 +166,14 @@
     return Math.max(0, Math.floor((innerW() - fixed) / (W.week * h)));
   };
 
-  /* ---------- Statistiques de la semaine : les tuiles du site (FIR, GIR, drives, closest to the pin, putts rentrés, plus long putt) ---------- */
+  /* ---------- Statistiques de la semaine : les tuiles du site (FIR, GIR, drive, closest to the pin, putts rentrés, plus long putt) ---------- */
   const ring = (t) => `<svg viewBox="0 0 120 100"><circle class="dz f" cx="60" cy="50" r="40"/><circle class="dt" pathLength="100" style="--off:${(100 - Math.max(0, Math.min(100, t.valeur))).toFixed(1)}" cx="60" cy="50" r="40" transform="rotate(-90 60 50)"/></svg>`;
   const yds = (t) => (t.orig == null ? "" : dec(t.orig, 2) + " yds");
   const DRIVE_SVG = () => '<svg viewBox="0 0 120 100"><path class="dz" d="M4 88H116"/><path class="dm" d="M12 88V80"/><path class="dt fin" pathLength="100" d="M12 80Q62 -30 108 86"/><circle class="db" cx="108" cy="84" r="4.5"/></svg>';
   const TILES = [
     ["fir", "FIR", "Fairways touchés", 1, "%", () => "", ring],
     ["gir", "GIR", "Greens en régulation", 1, "%", () => "", ring],
-    ["drive_tout", "Longest drive", "Plus long drive, où que la balle s'arrête", 1, "m", yds, DRIVE_SVG],
-    ["drive", "Longest drive fairway", "Plus long drive sur le fairway", 1, "m", yds, DRIVE_SVG],
+    ["drive", "Longest drive", "Plus long drive sur le fairway", 1, "m", yds, DRIVE_SVG],
     ["ctp", "Closest to the pin", "Coup de départ le plus près du drapeau, par 3", 2, "m", (t) => (t.orig == null ? "" : dec(t.orig, 2) + " ft") + (t.trou ? " · trou " + t.trou : ""),
       (t) => {                                                   // la cible : l'anneau extérieur vaut 10 m, la balle est posée à sa distance du drapeau
         const d = 6 + Math.min(1, Math.max(0, t.valeur) / 10) * 34;
