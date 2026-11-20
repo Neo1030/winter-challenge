@@ -97,7 +97,8 @@ conversation. **S'il manque une information, demande-la avant d'écrire quoi que
   `exploits` de saison.json (`hole_in_ones` dans site_export.py, `exploits` dans scripts/export_site_data.py), avec la distance
   du coup si le coup par coup la donne. SGT ne date pas les cartes : `vu_le` est le jour où la mise à jour l'a vu, gardé ensuite.
 - Pendant **14 jours** après `vu_le` (`EXPLOIT_VEDETTE_JOURS`) : en haut du site, le coup d'ouverture devient le hole in one
-  (en or) et un bandeau doré ouvre la fiche du joueur sur le trou ; la télé montre une page « Hole in one » en tête du tour
+  (en or) **seulement dans sa compétition** (au Winter Challenge, le plus long drive reste, sauf hole in one au Winter Challenge)
+  et un bandeau doré, sur les deux compétitions, ouvre la fiche du joueur sur le trou ; la télé montre une page « Hole in one » en tête du tour
   (8 s, comme une page de statistiques : **le tour complet dure 8 s de plus par hole in one en vedette**, au plus 3). Ensuite, ils
   restent dans les chiffres de la saison (Statistiques) et sous les tuiles de la télé.
 

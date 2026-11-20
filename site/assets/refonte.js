@@ -399,11 +399,13 @@
     });
   }
   const exploitCourt = (e) => `${esc(e.competition)} ${esc(e.prefixe)}${e.semaine}, trou ${e.trou} (par ${e.par})${e.m != null ? " · " + nb(Math.round(e.m)) + " m" : ""}`;
-  /* le coup d'ouverture : le hole in one en vedette (s'il a une distance), sinon le record de la compétition affichée */
+  /* le coup d'ouverture : le hole in one en vedette de la compétition affichée (s'il a une distance), sinon son record.
+     Winter Challenge : le plus long drive reste, sauf hole in one au Winter Challenge ; Short Game : le hole in one du
+     Short Game en or (décision de Mike, 20.11.2026). Le bandeau doré, lui, cite les hole in one des deux compétitions. */
   function recordHaut(c) {
-    const e = exploitsVedette().filter((x) => x.m != null)[0], normal = recordPour(c);
+    const e = exploitsVedette().filter((x) => x.m != null && String(x.prefixe) === String(c.prefixe))[0], normal = recordPour(c);
     if (!e) return normal;
-    const rappel = normal.vide ? "" : `<br><span class="record-f">Record ${esc(c.nom)} : <b>${nb(normal.m, normal.dec)} m</b> · ${normal.texte.split("<br>")[0]}</span>`;
+    const rappel = normal.vide || !normal.m ? "" : `<br><span class="record-f">Record ${esc(c.nom)} : <b>${nb(normal.m, normal.dec)} m</b> · ${normal.texte.split("<br>")[0]}</span>`;
     return { m: e.m, mode: "drive", dec: 0, hio: true, texte: `<span class="hio-mot">Hole in one</span> <b>${esc(e.joueur)}</b> · ${exploitCourt(e)}${rappel}` };
   }
   /* le bandeau doré du haut de page : un clic ouvre la fiche du joueur sur le trou */
