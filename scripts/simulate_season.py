@@ -106,7 +106,10 @@ def simulate_drives(tour_id, week, cards):
     """Plus longs drives fictifs, au format lu sur le site SGT (sgt_page.long_drives). Générateur à part, comme les statistiques."""
     r = random.Random(f"drives-{tour_id}-{week}")
     names = sorted({c["player_name"] for c in cards if any(c[f"hole{i}_gross"] for i in range(1, 19))})
-    return {"cle": "demo", "yd": {n: round(r.uniform(200, 320), 2) for n in names}} if names else None
+    if not names:
+        return None
+    fairway = {n: round(r.uniform(200, 320), 2) for n in names}
+    return {"cle": "demo", "yd": fairway, "yd_tout": {n: round(v + max(0, r.uniform(-20, 30)), 2) for n, v in fairway.items()}}
 
 
 def simulate_tour(rng, courses, players, tour_id, label, weeks, card_start):

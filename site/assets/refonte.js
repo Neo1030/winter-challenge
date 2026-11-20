@@ -825,12 +825,14 @@
   const TUILES = [
     ["fir", "FIR", "Fairways touchés", "%", 1, ""],
     ["gir", "GIR", "Greens en régulation", "%", 1, ""],
-    ["drive", "Longest drive", "Plus long drive de la partie arrêté sur le fairway, mesuré par SGT", "m", 1, "yds"],
+    ["drive_tout", "Longest drive", "Plus long drive de la partie, où que la balle s'arrête, mesuré par SGT", "m", 1, "yds"],
+    ["drive", "Longest drive fairway", "Plus long drive de la partie arrêté sur le fairway, mesuré par SGT", "m", 1, "yds"],
     ["ctp", "Closest to the pin", "Le coup de départ le plus près du drapeau sur un par 3", "m", 2, "ft"],
     ["putts_faits", "Total putt length", "Longueur totale des putts rentrés, par tour", "m", 2, "ft"],
+    ["putt_long", "Longest putt", "Plus long putt rentré de la partie, putts donnés non compris", "m", 1, ""],
   ];
   /* Short Game (petit jeu, sans drive) : ni fairways touchés ni distance au drive */
-  const tuiles = () => (P() === "SG" ? TUILES.filter((t) => ["gir", "ctp", "putts_faits"].indexOf(t[0]) >= 0) : TUILES);
+  const tuiles = () => (P() === "SG" ? TUILES.filter((t) => ["gir", "ctp", "putts_faits", "putt_long"].indexOf(t[0]) >= 0) : TUILES);
 
   function stats() {
     const u = unite(), cat = categorie(), st = (cat && cat.stats) || {}, semaines = Object.keys(st).map(Number).sort((a, b) => b - a), boite = $("#stats-tuiles");
@@ -858,8 +860,8 @@
       </article>`;
     }).join("");
     $("#stats-aide").textContent = `Le meilleur de chaque statistique parmi les joueurs de la catégorie ${cat.nom}, pour ${P()}${etat.sem}. ` + (P() === "SG" ? "" :
-      "Longest drive : le plus long drive de la partie arrêté sur le fairway, sur un par 4 ou 5 (onglet Long Drive de SGT). ") +
-      "Closest to the pin : le coup de départ le plus près du drapeau sur un par 3 (le plus petit gagne). Total putt length : longueur totale des putts rentrés par tour. Distances en mètres, valeur d'origine de SGT en dessous.";
+      "Longest drive : le plus long drive de la partie sur un par 4 ou 5, où que la balle s'arrête ; Longest drive fairway : le même, arrêté sur le fairway (onglet Long Drive de SGT). ") +
+      "Closest to the pin : le coup de départ le plus près du drapeau sur un par 3 (le plus petit gagne). Total putt length : longueur totale des putts rentrés par tour. Longest putt : le plus long putt rentré, putts donnés non compris (coup par coup de SGT). Distances en mètres, valeur d'origine de SGT en dessous.";
     nombres(boite);
     maintenance();
     rafraichir();

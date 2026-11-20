@@ -41,19 +41,34 @@ def complete_players(scorecards) -> set:
     return out
 
 
-def parse_tournament_stats(raw: dict | None, drives: dict | None = None, complete: set | None = None) -> dict:
+def longest_putt(holes) -> float | None:
+    """Plus long putt rentré d'une carte (coup par coup, voir sgt_page.parse_shots), en mètres. Les putts donnés (gimmies)
+    et les coups rentrés de l'extérieur du green ne comptent pas. None s'il n'y en a aucun."""
+    made = [shot[2] for hole in holes or [] for shot in hole.get("c") or []
+            if len(shot) >= 4 and shot[1] == "p" and shot[3] == "holecup" and isinstance(shot[2], (int, float))]
+    return max(made) if made else None
+
+
+def parse_tournament_stats(raw: dict | None, drives: dict | None = None, complete: set | None = None,
+                           shots: dict | None = None) -> dict:
     """Statistiques d'un tournoi, par joueur : {"joueurs": {pseudo: {...}}, "ctp": {trou: [(pseudo, mètres)]}}.
 
-    drives : plus longs drives lus sur le site SGT, {"yd": {pseudo: yards}} (voir sgt_page.long_drives).
+    drives : plus longs drives lus sur le site SGT, {"yd": {pseudo: yards}, "yd_tout": {…}} (voir sgt_page.long_drives).
+    shots : coup par coup du tournoi, {pseudo: {"trous": […]}} (voir sgt_page.shots_of), pour le plus long putt rentré.
     complete : les joueurs qui ont fini une carte (complete_players) ; les autres sont écartés. None : tout le monde.
     Une réponse absente ou vide (tournoi sans tour joué) donne un résultat vide, jamais une erreur.
     """
     raw = raw if isinstance(raw, dict) else {}
     players: dict = {}
-    for name, yards in ((drives or {}).get("yd") or {}).items():
-        value = _num(yards)
-        if value is not None:
-            players.setdefault(name, {}).update({"drive_m": round(value * YARD_M, 1), "drive_yd": round(value, 2)})
+    for field, key in (("yd", "drive"), ("yd_tout", "drive_tout")):   # sur le fairway ; où que la balle s'arrête
+        for name, yards in ((drives or {}).get(field) or {}).items():
+            value = _num(yards)
+            if value is not None:
+                players.setdefault(name, {}).update({key + "_m": round(value * YARD_M, 1), key + "_yd": round(value, 2)})
+    for name, card in (shots or {}).items():
+        metres = longest_putt((card or {}).get("trous")) if isinstance(card, dict) else None
+        if metres is not None:
+            players.setdefault(name, {})["putt_long_m"] = metres
 
     def put(rows, field, key, factor=1.0, digits=1):
         for name, value in _by_player(rows, field).items():

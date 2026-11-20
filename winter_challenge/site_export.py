@@ -137,9 +137,11 @@ DETAIL_KEYS = ("lieu", "difficulte", "styles", "description", "vent", "lien_vide
 LEADER_TILES = (
     ("fir", "fairways", None, True),
     ("gir", "greens", None, True),
-    ("drive", "drive_m", "drive_yd", True),
+    ("drive_tout", "drive_tout_m", "drive_tout_yd", True),   # où que la balle s'arrête (demande de Mike, 20.11.2026)
+    ("drive", "drive_m", "drive_yd", True),                  # sur le fairway, comme chez SGT
     ("gir_prox", "gir_prox_m", "gir_prox_ft", False),
     ("putts_faits", "putts_faits_m", "putts_faits_ft", True),
+    ("putt_long", "putt_long_m", None, True),                # plus long putt rentré, lu dans le coup par coup
 )
 
 
