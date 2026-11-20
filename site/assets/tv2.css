@@ -162,6 +162,14 @@ body > .fond { position: fixed; z-index: 0; }
 .lg-j .pt.remplace b { background: rgba(255, 143, 128, .26); color: #ffd0c9; }
 
 /* ---------- Statistiques : une tuile par record, avec son petit dessin animé ---------- */
+.stats-zone { height: 100%; display: flex; flex-direction: column; }
+.stats-zone .tuiles { flex: 1; min-height: 0; height: auto; }
+/* bandeau des hole in one de la saison, sous les tuiles */
+.aces { flex: none; display: flex; align-items: center; gap: 1.2vw; margin-bottom: 1vh; padding: 1.1vh 1.4vw; border-radius: 1.4vh; background: rgba(234, 246, 253, .05); border: 1px solid var(--trait); animation: monte .9s var(--e) both; animation-delay: .8s; }
+.aces-n { font-size: 4.2vh; font-weight: 900; line-height: 1; }
+.aces-l { font-size: 1.7vh; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--ciel-vif); white-space: nowrap; }
+.aces-d { min-width: 0; font-size: 2vh; color: var(--gris); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.aces-d b { color: #fff; font-weight: 700; }
 .tuiles { height: 100%; display: grid; grid-template-columns: repeat(5, 1fr); gap: 1vw; padding: 2vh 0 1.2vh; }
 .tuiles.n3 { grid-template-columns: repeat(3, 1fr); padding-left: 6vw; padding-right: 6vw; }
 .tuiles.n4 { grid-template-columns: repeat(4, 1fr); padding-left: 2vw; padding-right: 2vw; }
@@ -257,15 +265,19 @@ body > .fond { position: fixed; z-index: 0; }
   /* tuiles à l'horizontale : le dessin à gauche, les chiffres à droite */
   .tuiles { grid-template-columns: repeat(2, 1fr); grid-auto-rows: minmax(0, 1fr); gap: 1.2vh 1vw; }
   .tuiles.n3 { grid-template-columns: 1fr; padding-left: 12vw; padding-right: 12vw; }
-  .tuiles.n4 { padding-left: 0; padding-right: 0; }
+  .tuiles.n4 { grid-template-columns: repeat(2, 1fr); padding-left: 0; padding-right: 0; }
   .tuiles.n7 { grid-template-columns: repeat(2, 1fr); gap: 1vh 1vw; padding: 1vh 0 .6vh; }
   .tuiles.n7 .tuile { padding: .9vh 1.2vw; }
-  .tuiles.n7 .tuile svg { max-height: 11vh; }
+  .tuiles.n7 .tuile svg { max-height: 9vh; }
   .tuiles.n7 .tuile .tt { min-height: 0; font-size: 1.6vh; }
-  .tuiles.n7 .tuile .tb { margin-top: .3vh; font-size: 3.6vh; }
-  .tuiles.n7 .tuile .to { font-size: 1.4vh; }
-  .tuiles.n7 .tuile .tn { margin-top: .4vh; padding-top: .4vh; font-size: 1.8vh; }
-  .tuiles.n7 .tuile .tn div:nth-child(n+2) { display: none; }
+  .tuiles.n7 .tuile .tb { margin-top: .6vh; font-size: 3.3vh; }
+  .tuiles.n7 .tuile .to { min-height: 0; margin-top: .3vh; font-size: 1.4vh; }
+  /* 4 rangées et le bandeau des hole in one : le nom du gagnant passe à droite du chiffre */
+  .tuiles.n7 .tuile { grid-template-columns: 26% auto minmax(0, 1fr); grid-template-rows: auto auto auto; align-content: center; }
+  .tuiles.n7 .tuile .tt { grid-column: 2 / 4; }
+  .tuiles.n7 .tuile svg { grid-row: 1 / 4; }
+  .tuiles.n7 .tuile .tn { grid-column: 3; grid-row: 2 / 4; align-self: center; margin: 0 0 0 1.2vw; padding: 0 0 0 1.2vw; border-top: 0; border-left: 1px solid var(--trait); font-size: 1.9vh; }
+  .tuiles.n7 .tuile .tn div:nth-child(n+3) { display: none; }
   .tuile { display: grid; grid-template-columns: 32% minmax(0, 1fr); grid-template-rows: auto auto auto minmax(0, 1fr); column-gap: 1.4vw; align-items: start; padding: 1.4vh 1.4vw; text-align: left; overflow: hidden; }
   .tuile > * { grid-column: 2; }
   .tuile svg { grid-column: 1; grid-row: 1 / 5; align-self: center; height: 100%; max-height: 15vh; margin: 0; }

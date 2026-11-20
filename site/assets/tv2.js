@@ -200,19 +200,29 @@
 
   const above = (comp, s) => (comps.length > 1 ? comp.nom : "") + (comp.categories.length > 1 ? (comps.length > 1 ? " · " : "") + s.cat : "");
 
+  /* Hole in one de la saison dans la catégorie : un 1 sur la carte de score, la distance vient du coup par coup de SGT */
+  function acesOf(comp, cat) {
+    const out = [];
+    comp.semaines.forEach((w) => w.categories.forEach((c) => {
+      if (c.categorie === cat) (c.trous_en_un || []).forEach((a) => out.push(`<b>${esc(a.joueur)}</b> sur le trou ${a.trou} du ${esc(comp.prefixe)}${w.numero}` + (a.m != null ? ` à ${Math.round(a.m)} m` : "")));
+    }));
+    return `<div class="aces"><span class="aces-n">${out.length}</span><span class="aces-l">Hole in one de la saison</span>` +
+      `<span class="aces-d">${out.length ? out.join(" · ") : "Pas encore de trou en un cette saison"}</span></div>`;
+  }
+
   function drawStats(s, comp) {
     $("#tv-sur").textContent = above(comp, s);
     $("#tv-title").innerHTML = `Statistiques <em>${isWC(comp) ? "de la semaine" : "du mois"} · ${esc(comp.prefixe)}${s.week}</em>`;
     $("#tv-page").textContent = "";
     const defs = tilesOf(comp);
-    area.innerHTML = `<div class="tuiles n${defs.length}">${defs.map((def, i) => {
+    area.innerHTML = `<div class="stats-zone"><div class="tuiles n${defs.length}">${defs.map((def, i) => {
       const off = down(comp, def[0]);
       const t = s.tiles && !off ? s.tiles[def[0]] : null;
       if (off) return `<div class="tuile panne" style="--i:${i}"><div class="tt">${def[1]}</div><div class="th">${def[2]}</div>${WARN}<div class="tb">En maintenance</div><div class="to">Données SGT indisponibles</div><div class="tn"></div></div>`;
       const names = t && t.joueurs ? t.joueurs.slice(0, 3).map((n) => `<div>${esc(n)}</div>`).join("") + (t.joueurs.length > 3 ? `<div>+${t.joueurs.length - 3}</div>` : "") : "";
       return `<div class="tuile" style="--i:${i}"><div class="tt">${def[1]}</div><div class="th">${def[2]}</div>${t ? def[6](t) : '<svg viewBox="0 0 120 100"></svg>'}
         <div class="tb" data-i="${i}">${t ? "" : "–"}</div><div class="to">${t ? def[5](t) || "&nbsp;" : "Pas de donnée"}</div><div class="tn">${names}</div></div>`;
-    }).join("")}</div>`;
+    }).join("")}</div>${acesOf(comp, s.cat)}</div>`;
     defs.forEach((def, i) => {
       const t = s.tiles && !down(comp, def[0]) ? s.tiles[def[0]] : null;
       if (t) countUp(area.querySelector('.tb[data-i="' + i + '"]'), Number(t.valeur), (v) => dec(v, def[3]) + "<small>" + def[4] + "</small>", 1500);
