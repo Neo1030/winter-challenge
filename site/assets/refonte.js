@@ -352,11 +352,9 @@
     return { construire: () => { cancelAnimationFrame(raf); construire(); }, avancer, annoncer, changer, estArrivee: () => arrivee, depart: () => ({ x: geo.xb, y: geo.y }), partir(v) { svg.classList.toggle("parti", v); } };
   }
 
-  /* Le record du haut de page. Winter Challenge : le plus long drive de la saison, où que la balle s'arrête (dit
-     avec l'endroit, « dans le semi-rough »…), et en dessous le plus long drive de la saison sur le fairway. Short Game
+  /* Le record du haut de page. Winter Challenge : le plus long drive de la saison, où que la balle s'arrête ; s'il est
+     hors fairway, le plus long drive de la saison sur le fairway en dessous (textes de Mike, 20.11.2026). Short Game
      (petit jeu, sans drive) : le closest to the pin de la saison ; à défaut, le plus long total de putts rentrés. */
-  const LIEUX = { FAIRWAY: "sur le fairway", SEMIROUGH: "dans le semi-rough", ROUGH: "dans le rough", DEEPROUGH: "dans le rough épais",
-    SAND: "dans un bunker", GREEN: "sur le green", HOLECUP: "dans le trou" };
   function recordPour(c) {
     let m = null;
     const chercher = (cle, mieux) => c.categories.forEach((cat) => Object.keys(cat.stats || {}).forEach((w) => {
@@ -377,10 +375,11 @@
     chercher("drive_tout", (a, b) => a > b);
     if (!m) m = fairway;                                       // pas encore de drive toutes zones lu : le record sur le fairway
     if (!m) return { vide: true, m: 250, mode: "drive", dec: 0 };
-    const tout = m !== fairway, lieu = tout && LIEUX[m.lie] ? " " + LIEUX[m.lie] : (tout ? "" : " sur le fairway");
-    let texte = `${noms()} · plus long drive de la saison${lieu} · ${esc(c.prefixe)}${m.semaine}, ${esc(m.cat)}`;
-    if (tout && fairway && m.lie !== "FAIRWAY") {
-      texte += `<br><span class="record-f">Sur le fairway : <b>${nb(fairway.m, 1)} m</b> · <b>${fairway.joueurs.map(esc).join(", ")}</b> · ${esc(c.prefixe)}${fairway.semaine}, ${esc(fairway.cat)}</span>`;
+    // hors fairway : SGT le dit (« lie ») ; sans cette indication, un drive plus long que le record sur le fairway
+    const hors = m !== fairway && (m.lie ? m.lie !== "FAIRWAY" : !fairway || m.m > fairway.m);
+    let texte = `${noms()} : plus long drive de la saison ${hors ? "hors fairway" : "sur le fairway"} · ${esc(c.prefixe)}${m.semaine}, ${esc(m.cat)}`;
+    if (hors && fairway) {
+      texte += `<br><span class="record-f"><b>${fairway.joueurs.map(esc).join(", ")}</b> : plus long drive de la saison sur le fairway · <b>${nb(fairway.m, 1)} m</b> · ${esc(c.prefixe)}${fairway.semaine}, ${esc(fairway.cat)}</span>`;
     }
     return Object.assign(m, { mode: "drive", dec: 1, texte });
   }
