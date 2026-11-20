@@ -19,7 +19,7 @@
   const params = new URLSearchParams(location.search);
   const DURATION = Math.max(2, Number(params.get("duree")) || 4) * 1000;                                    // une page de classement
   const DURATION_STATS = Math.max(2, Number(params.get("stats")) || (params.get("duree") ? DURATION / 500 : 8)) * 1000;   // une page de statistiques
-  const durationOf = (s) => (s && s.kind === "stats" ? DURATION_STATS : DURATION);
+  const durationOf = (s) => (s && (s.kind === "stats" || s.kind === "hio") ? DURATION_STATS : DURATION);
   const MAX_ROWS = Number(params.get("lignes")) || 0;
   const START_STATS = params.get("debut") === "stats";
   const REFRESH = 60 * 1000;
@@ -229,9 +229,48 @@
     });
   }
 
+  /* Hole in one en vedette : ceux que la mise à jour a vus depuis moins de « exploit_vedette_jours » jours (14, décision de
+     Mike du 20.11.2026) ont chacun une page en tête du tour, au plus 3. Ensuite, ils restent sous les tuiles de statistiques. */
+  function vedettes() {
+    const jours = data.exploit_vedette_jours || 14, n = new Date(), today = Date.UTC(n.getFullYear(), n.getMonth(), n.getDate());
+    return (data.exploits || []).filter((e) => {
+      const d = String(e.vu_le || "").split("-");
+      return d.length === 3 && (today - Date.UTC(+d[0], +d[1] - 1, +d[2])) / 864e5 < jours;
+    }).slice(0, 3);
+  }
+
+  function drawHio(s) {
+    const e = s.e;
+    $("#tv-sur").textContent = e.competition + " · " + e.prefixe + e.semaine;
+    $("#tv-title").innerHTML = "Hole <em>in one</em>";
+    $("#tv-page").textContent = "";
+    area.innerHTML = `<div class="hio-tv">
+      <div class="hio-haut">
+        <div class="hio-qui"><span class="hio-bravo">Bravo à</span><span class="hio-nom">${esc(e.joueur)}</span>
+          <span class="hio-det"><b class="hio-un">1</b>Trou ${e.trou} · par ${e.par} · ${esc(e.parcours)}</span></div>
+        ${e.m != null ? `<div class="hio-m"><span class="hio-n"><b id="hio-n">${Math.round(e.m)}</b><small> m</small></span><span class="hio-l">du départ, en un coup</span></div>` : ""}
+      </div>
+      <svg class="hio-coup" viewBox="0 0 1000 220" aria-hidden="true">
+        <path class="hio-sol" d="M0 200H1000"/>
+        <path class="hio-arc" pathLength="1" d="M40 196C330 -40 640 -40 880 196"/>
+        <circle class="hio-eclat" cx="880" cy="198" r="60"/>
+        <ellipse class="hio-trou" cx="880" cy="199" rx="20" ry="7"/>
+        <circle class="hio-balle" cx="880" cy="197" r="8"/>
+        <path class="hio-mat" d="M906 200V112"/><path class="hio-fanion" d="M906 112l36 13-36 13Z"/>
+        <rect class="hio-tee" x="33" y="193" width="14" height="14" rx="3"/>
+      </svg>
+    </div>`;
+    const n = document.getElementById("hio-n");
+    if (n) countUp(n, Math.round(e.m), (v) => num(Math.round(v)), 1600);
+  }
+
   function buildSlides() {
     const cap = rowsFit();
     const out = [];
+    vedettes().forEach((e) => {
+      const ci = Math.max(0, comps.findIndex((c) => c.prefixe === e.prefixe));
+      out.push({ ci, comp: comps[ci].nom, cat: "", kind: "hio", page: 1, pages: 1, e });
+    });
     comps.forEach((comp, ci) => {
       if (down(comp, "classement")) out.push({ ci, comp: comp.nom, cat: "", kind: "maintenance", page: 1, pages: 1 });
       for (const c of (down(comp, "classement") ? [] : comp.categories)) {
@@ -252,10 +291,11 @@
     /* un point par page ; un trait sépare les compétitions */
     $("#tv-points").innerHTML = out.length > 1 && out.length <= 30 ? out.map((s, i) => (i && s.ci !== out[i - 1].ci ? '<i class="sep"></i>' : "") + '<i data-p="' + i + '"></i>').join("") : "";
     /* Durée d'un tour complet (toutes les pages), à reporter dans Zebrix : visible avec ?debug=1 et dans window.TV_CYCLE */
-    const nStats = out.filter((s) => s.kind === "stats").length;
+    const nStats = out.filter((s) => s.kind === "stats" || s.kind === "hio").length;
+    const nHio = out.filter((s) => s.kind === "hio").length;   // le hole in one dure comme une page de statistiques
     window.TV_CYCLE = { pages: out.length, secondes: Math.round(((out.length - nStats) * DURATION + nStats * DURATION_STATS) / 1000), lignes_par_page: cap };
     const box = document.getElementById("tv-debug");
-    if (box) box.setAttribute("data-cycle", (out.length - nStats) + " pages de classement × " + DURATION / 1000 + " s + " + nStats + " de statistiques × " + DURATION_STATS / 1000 + " s = " + window.TV_CYCLE.secondes + " s pour un tour complet (" + cap + " joueurs par page)");
+    if (box) box.setAttribute("data-cycle", (out.length - nStats) + " pages de classement × " + DURATION / 1000 + " s + " + nStats + " de statistiques" + (nHio ? " (dont " + nHio + " hole in one)" : "") + " × " + DURATION_STATS / 1000 + " s = " + window.TV_CYCLE.secondes + " s pour un tour complet (" + cap + " joueurs par page)");
   }
 
   const evo = (e) => {
@@ -269,10 +309,11 @@
   function drawSlide(s) {
     const comp = comps[s.ci];
     if (shown !== comp) renderPanel(comp);                       // le panneau suit la compétition du classement affiché
-    card.className = "carte" + (s.kind === "stats" ? " stats" : "") + (comp.brut_seul ? " sans-remplacer" : "");
+    card.className = "carte" + (s.kind === "stats" || s.kind === "hio" ? " stats" : "") + (s.kind === "hio" ? " hio" : "") + (comp.brut_seul ? " sans-remplacer" : "");
     const dots = document.querySelectorAll("#tv-points i[data-p]");
     for (let i = 0; i < dots.length; i++) dots[i].className = Number(dots[i].getAttribute("data-p")) === index ? "ici" : "";
     if (s.kind === "stats") { drawStats(s, comp); return; }
+    if (s.kind === "hio") { drawHio(s); return; }
     if (s.kind === "maintenance") {
       $("#tv-sur").textContent = comps.length > 1 ? comp.nom : "";
       $("#tv-title").innerHTML = "Classement <em>en maintenance</em>";
@@ -345,7 +386,7 @@
       renderPanel(comps[0]);
       if (!comps.some((c) => c.semaines.length)) { slides = []; show(0); return; }
       buildSlides();
-      const same = here ? slides.findIndex((s) => s.ci === here.ci && s.cat === here.cat && s.kind === here.kind && s.page === here.page) : -1;
+      const same = here ? slides.findIndex((s) => s.ci === here.ci && s.cat === here.cat && s.kind === here.kind && s.page === here.page && (s.e && s.e.joueur) === (here.e && here.e.joueur)) : -1;
       if (first) { const at = START_STATS ? slides.findIndex((s) => s.kind === "stats") : 0; show(Math.max(0, at)); loop(); } else { index = same >= 0 ? same : Math.min(index, slides.length - 1); drawSlide(slides[index]); }
     } catch (e) {
       if (first) area.innerHTML = '<div class="vide">Résultats momentanément indisponibles…</div>';  // sinon, on garde l'affichage actuel

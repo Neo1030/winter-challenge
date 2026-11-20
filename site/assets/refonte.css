@@ -191,6 +191,25 @@ body.pret .ligne:nth-child(2) > span { animation-delay: .38s; }
 .record-l b { color: var(--glace); font-weight: 700; }
 .record-f { display: inline-block; margin-top: 4px; }   /* le plus long drive de la saison sur le fairway, sous le record */
 .record.pose .record-l { opacity: 1; transform: none; }
+/* hole in one en vedette (14 jours) : le coup d'ouverture passe en or, un bandeau doré mène au coup */
+.record.hio .record-n b { color: var(--or); }
+.hio-mot { font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--or); }
+#coup.hio .fanion, #coup.hio .balle { fill: var(--or); }
+.hio-pill { display: inline-flex; align-items: center; gap: 12px; max-width: 100%; margin: 0 0 22px; padding: 9px 18px 9px 10px; border: 1px solid var(--or);
+  border-radius: 999px; background: rgba(var(--fond-1), .7); color: var(--glace); font: inherit; font-size: 14px; line-height: 1.35; text-align: left; cursor: pointer;
+  animation: hio-pouls 2.6s ease-out 1.2s 3; transition: background .25s ease; }
+.hio-pill[hidden] { display: none; }
+.hio-pill:hover, .hio-pill:focus-visible { background: rgba(var(--fond-2), .95); }
+.hio-pill b { color: var(--or); font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.hio-balle { position: relative; flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--or); overflow: hidden; }
+.hio-balle::after { content: ""; position: absolute; left: 8px; top: 8px; width: 10px; height: 10px; border-radius: 50%; background: var(--nuit); animation: hio-trou 2.4s var(--e) .8s infinite; }
+.hio-voir { flex: none; font-weight: 700; color: var(--ciel-vif); white-space: nowrap; }
+@keyframes hio-pouls { 0% { box-shadow: 0 0 0 0 rgba(255, 200, 61, .55); } 100% { box-shadow: 0 0 0 16px rgba(255, 200, 61, 0); } }
+@keyframes hio-trou { 0%, 15% { transform: translate(-16px, -14px) scale(.8); opacity: 0; } 45% { transform: none; opacity: 1; } 70%, 100% { transform: scale(.2); opacity: 0; } }
+.bandeau .or { color: var(--or); }
+.cp-trou.hio { box-shadow: 0 0 0 2px var(--or), 0 0 34px rgba(255, 200, 61, .25); }
+@media (prefers-reduced-motion: reduce) { .hio-pill, .hio-balle::after { animation: none; } }
+@media (max-width: 640px) { .hio-pill { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; border-radius: 18px; } .hio-voir { grid-column: 2; } }
 
 /* ───────── Bandeau défilant ───────── */
 .bandeau { overflow: hidden; border-block: 1px solid var(--trait); background: var(--navy); }

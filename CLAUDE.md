@@ -91,6 +91,16 @@ conversation. **S'il manque une information, demande-la avant d'écrire quoi que
   semaine suivante : jamais plus loin. Fin affichée d'une semaine = veille du début du tournoi suivant (chez SGT, les tournois
   restent ouverts jusqu'en fin de saison).
 
+## Hole in one en vedette (décision de Mike, 20.11.2026)
+
+- La mise à jour des résultats repère chaque trou joué en 1 coup sur une carte finie (score par trou de l'API) et l'écrit dans
+  `exploits` de saison.json (`hole_in_ones` dans site_export.py, `exploits` dans scripts/export_site_data.py), avec la distance
+  du coup si le coup par coup la donne. SGT ne date pas les cartes : `vu_le` est le jour où la mise à jour l'a vu, gardé ensuite.
+- Pendant **14 jours** après `vu_le` (`EXPLOIT_VEDETTE_JOURS`) : en haut du site, le coup d'ouverture devient le hole in one
+  (en or) et un bandeau doré ouvre la fiche du joueur sur le trou ; la télé montre une page « Hole in one » en tête du tour
+  (8 s, comme une page de statistiques : **le tour complet dure 8 s de plus par hole in one en vedette**, au plus 3). Ensuite, ils
+  restent dans les chiffres de la saison (Statistiques) et sous les tuiles de la télé.
+
 ## Coup par coup (fiche joueur)
 
 - La fiche d'un joueur montre son tour **coup par coup** (un arc par coup, coloré selon l'endroit où la balle s'arrête, putts,

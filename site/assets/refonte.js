@@ -338,6 +338,7 @@
     function etiquette() {
       $("#record-l").innerHTML = rec.texte || "";
       bloc.hidden = !!rec.vide;
+      bloc.classList.toggle("hio", !!rec.hio); svg.classList.toggle("hio", !!rec.hio);   // hole in one en vedette : en or
     }
     /* changement de compétition : un autre record, donc un autre coup */
     function changer(nouveau) {
@@ -384,6 +385,54 @@
     return Object.assign(m, { mode: "drive", dec: 1, texte });
   }
 
+  /* ───────── Hole in one en vedette ─────────
+     La mise à jour des résultats liste les trous en un de la saison dans « exploits », avec le jour où elle les a vus
+     (« vu_le » : SGT ne date pas les cartes). Pendant « exploit_vedette_jours » jours (14, décision de Mike du 20.11.2026),
+     ils passent en tête du site, quelle que soit la compétition affichée : le coup d'ouverture devient le hole in one (la
+     balle finit dans le trou), un bandeau doré mène au coup dans la fiche du joueur, et le bandeau défilant le cite.
+     Ensuite, ils restent dans les chiffres de la saison (Statistiques). */
+  function exploitsVedette() {
+    const jours = brutes.exploit_vedette_jours || 14, n = new Date(), auj = Date.UTC(n.getFullYear(), n.getMonth(), n.getDate());
+    return (brutes.exploits || []).filter((e) => {
+      const d = String(e.vu_le || "").split("-");
+      return d.length === 3 && (auj - Date.UTC(+d[0], +d[1] - 1, +d[2])) / 864e5 < jours;
+    });
+  }
+  const exploitCourt = (e) => `${esc(e.competition)} ${esc(e.prefixe)}${e.semaine}, trou ${e.trou} (par ${e.par})${e.m != null ? " · " + nb(Math.round(e.m)) + " m" : ""}`;
+  /* le coup d'ouverture : le hole in one en vedette (s'il a une distance), sinon le record de la compétition affichée */
+  function recordHaut(c) {
+    const e = exploitsVedette().filter((x) => x.m != null)[0], normal = recordPour(c);
+    if (!e) return normal;
+    const rappel = normal.vide ? "" : `<br><span class="record-f">Record ${esc(c.nom)} : <b>${nb(normal.m, normal.dec)} m</b> · ${normal.texte.split("<br>")[0]}</span>`;
+    return { m: e.m, mode: "drive", dec: 0, hio: true, texte: `<span class="hio-mot">Hole in one</span> <b>${esc(e.joueur)}</b> · ${exploitCourt(e)}${rappel}` };
+  }
+  /* le bandeau doré du haut de page : un clic ouvre la fiche du joueur sur le trou */
+  function vedetteHaut() {
+    const liste = exploitsVedette(), b = $("#hio");
+    b.hidden = !liste.length;
+    if (!liste.length) return;
+    const e = liste[0], autres = liste.length - 1;
+    b.innerHTML = `<span class="hio-balle" aria-hidden="true"></span><span class="hio-txt"><b>Hole in one</b> · ${esc(e.joueur)} · ${exploitCourt(e)}` +
+      `${autres ? ` · et ${autres} autre${autres > 1 ? "s" : ""}` : ""}</span><span class="hio-voir">Voir le coup <span aria-hidden="true">→</span></span>`;
+    b.onclick = () => ouvrirExploit(e);
+  }
+  /* ouvre la fiche du joueur dans sa compétition, puis le coup par coup de la semaine, sur la carte du trou */
+  function ouvrirExploit(e) {
+    const id = String(e.prefixe).toLowerCase();
+    if (id !== etat.comp && comps.some((c) => c.id === id)) { choisirComp(id); dessinerTout(); ecrireAdresse(); }
+    ouvrirFiche(e.joueur);
+    let essais = 0;
+    const viser = setInterval(() => {                       // le coup par coup est lu à la première fiche ouverte
+      const fiche = $("#fiche");
+      if (!fiche.open || ++essais > 60) { clearInterval(viser); return; }
+      if (!coupsVoir) return;
+      clearInterval(viser);
+      coupsVoir(e.semaine);
+      const carte = $$(".cp-trou", fiche).filter((c) => $("header b", c) && $("header b", c).textContent === "Trou " + e.trou)[0];
+      if (carte) { carte.classList.add("hio"); setTimeout(() => carte.scrollIntoView({ behavior: CALME ? "auto" : "smooth", block: "center" }), 300); }
+    }, 100);
+  }
+
   /* ───────── Bandeau défilant ───────── */
   function bandeau(sem) {
     if (!sem) { $("#bandeau").innerHTML = ""; return; }
@@ -394,6 +443,7 @@
       if (m && m.joueurs && m.joueurs.length) morceaux.push(`${esc(c.categorie)} · meilleur ${brutSeul() ? "brut" : "net"} ${meilleurs(m, sem.numero, brutSeul() ? "coups_brut" : "coups_net")}`);
     });
     morceaux.push(`<b>${somme("birdies")}</b> birdies`, `<b>${somme("eagles")}</b> eagles`);
+    exploitsVedette().forEach((e) => morceaux.unshift(`<b class="or">Hole in one</b> ${esc(e.joueur)} · ${exploitCourt(e)}`));
     const html = morceaux.map((m) => `<span>${m}</span>`).join("");
     $("#bandeau").innerHTML = html + html + html + html;
   }
@@ -1900,7 +1950,7 @@
       ? `Le petit jeu du Let's Golf : ${meilleursN()} parcours, un par mois, en score brut. Tes ${meilleursN()} résultats comptent tous.`
       : "Les championnats du Let's Golf : classements, parcours de la semaine et résultats, à consulter quand tu veux.";
     $("#lien-parcours").textContent = "Le parcours " + u.fin;
-    if (coupHaut) { coupHaut.changer(recordPour(comps.find((c) => c.id === etat.comp) || comps[0])); majDefilement(); }
+    if (coupHaut) { coupHaut.changer(recordHaut(comps.find((c) => c.id === etat.comp) || comps[0])); majDefilement(); }
     bandeau(sem); parcoursVue(sem); enBref(sem); outils(); dessinerClassement(false); dessinerCourse(false);
     stats(); chiffres(); semainesVue(); joueursVue(); reglesVue(); maintenance();
     $$(".rv").forEach((el) => { if (!el.dataset.vu) voir(el); });
@@ -1925,13 +1975,14 @@
 
     const ciel = initCiel();
     apresTheme = () => { ciel.taille(); dessinerCourse(false); reglesVue(); };
-    const coup = initCoup(recordPour(comps.find((c) => c.id === etat.comp) || wc), ciel);
+    const coup = initCoup(recordHaut(comps.find((c) => c.id === etat.comp) || wc), ciel);
     coupHaut = coup;
 
     const choix = $("#comp");
     choix.hidden = comps.length < 2;
     choix.innerHTML = comps.map((c) => `<button type="button" data-comp="${esc(c.id)}" aria-pressed="false">${esc(c.nom)}</button>`).join("");
     $$(".titre").forEach((t) => titre(t, t.textContent));
+    vedetteHaut();
     dessinerTout();
     voir($("#podium"));
     voir($("#course"), lancerCourse);
