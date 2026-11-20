@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from build_workbook import read_players_file  # noqa: E402
 from winter_challenge import parcours, surveillance  # noqa: E402
 from winter_challenge.season import build_season  # noqa: E402
-from winter_challenge.site_export import build_site_data  # noqa: E402
+from winter_challenge.site_export import build_site_data, hole_in_ones  # noqa: E402
 from winter_challenge.sgt_api import SgtApiError, SgtClient  # noqa: E402
 
 DEMO_COURSE = {
@@ -140,6 +140,25 @@ def published_settings(site_url=None, path="site/donnees/saison.json", published
             if e.get("statut") == "terminee" and e.get("reglages") and e.get("tournoi_id")}
 
 
+EXPLOIT_VEDETTE_JOURS = 14   # un hole in one reste en tête du site et de la télé 14 jours, puis au tableau d'honneur (Mike, 20.11.2026)
+
+
+def exploits(seasons, tours, published, today):
+    """Les holes in one de la saison, toutes compétitions. SGT ne date pas les cartes : « vu_le » est le jour où la mise à
+    jour les a vus la première fois, gardé d'une mise à jour à l'autre (lu dans le fichier publié). Le site et la télé
+    mettent en vedette ceux vus depuis moins de EXPLOIT_VEDETTE_JOURS jours."""
+    shots = {t["tournamentId"]: t["coups"] for tour in tours for t in tour["tournaments"] if t.get("coups")}
+    deja = {(e.get("prefixe"), e.get("semaine"), e.get("joueur"), e.get("trou")): e.get("vu_le")
+            for e in (published or {}).get("exploits") or [] if isinstance(e, dict)}
+    out = []
+    for nom, season in seasons:
+        for e in hole_in_ones(season, nom, prefix_of(nom), shots):
+            e["vu_le"] = deja.get((e["prefixe"], e["semaine"], e["joueur"], e["trou"])) or today.isoformat()
+            out.append(e)
+    out.sort(key=lambda e: (e["vu_le"], e["prefixe"], e["semaine"]), reverse=True)
+    return out
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--tour", action="append", metavar="ID:CATEGORIE")
@@ -155,6 +174,7 @@ def main():
     args = parser.parse_args()
 
     try:
+        published = {}
         if args.depuis_fichier:
             with open(args.depuis_fichier, encoding="utf-8") as f:
                 tours = json.load(f)
@@ -194,10 +214,13 @@ def main():
     next_course = dict(DEMO_COURSE) if args.demo else next_course_from_config()
     if args.demo and next_course:
         next_course["semaine"] = max(w.number for w in season.weeks) + 1  # le parcours choisi est celui de la prochaine semaine
+    tous = [("Winter Challenge", season)] + list(seasons.items())
     data = build_site_data(season, args.saison, next_course, demo=args.demo,
                            history=[] if args.demo else parcours.read_history(),
                            autres=[(name, prefix_of(name), other) for name, other in seasons.items()])
     # Plus longs drives lus sur le site SGT, gardés tels quels : la prochaine mise à jour ne relit que les tournois qui ont bougé
+    data["exploits"] = exploits(tous, tours, published, today)
+    data["exploit_vedette_jours"] = EXPLOIT_VEDETTE_JOURS
     data["drives_sgt"] = {str(t["tournamentId"]): t["drives"] for tour in tours for t in tour["tournaments"] if t.get("drives")}
 
     # Surveillance : ce que l'API SGT donnait et ne donne plus met la zone du site en maintenance et avertit Mike

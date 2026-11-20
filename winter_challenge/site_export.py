@@ -10,7 +10,7 @@ from datetime import datetime
 
 from .parcours import CARD_URL, normalize, site_course
 from .scoring import COUNT_LABELS
-from .season import Season
+from .season import STATUS_INCOMPLETE, Season
 from .stats import FOOT_M, rank_of
 
 STATS_KEYS = {"Albatross": "albatros", "Eagles": "eagles", "Birdies": "birdies", "Pars": "pars", "Bogeys": "bogeys",
@@ -52,6 +52,12 @@ def _week_summaries(season: Season) -> list:
                 who = sorted(a.player for a in retained if getattr(a.result, field) == best) if retained else []
                 entry[f"meilleur_{kind}"] = {"stableford": best, "joueurs": who}
             entry["stats"] = {STATS_KEYS[label]: sum(a.counts[label] for a in retained) for label in COUNT_LABELS}
+            # trous en un : un 1 sur la carte de score (API) ; la distance du coup vient du coup par coup, si on l'a lu
+            distances = (season.stats.get((w.category, number)) or {}).get("trous_en_un") or {}
+            aces = [{"joueur": a.player, "trou": i + 1, "m": distances.get(a.player, {}).get(i + 1)}
+                    for a in sorted(retained, key=lambda a: a.player.lower()) for i, s in enumerate(a.scores) if s == 1]
+            if aces:
+                entry["trous_en_un"] = aces
             categories.append(entry)
         out.append({
             "numero": number, "parcours": first.course, "debut": first.start, "fin": first.end,
@@ -232,6 +238,35 @@ def _competition(season: Season, nom: str, prefixe: str, next_course: dict | Non
         "parcours_semaine": next_course,
         "parcours": _courses(season, history or [], next_course),
     }
+
+
+def hole_in_ones(season: Season, nom: str, prefixe: str, shots: dict | None = None) -> list:
+    """Les trous en un coup (hole in one) d'une compétition, sur les cartes finies (9 ou 18 trous) : le score par trou
+    vient de l'API SGT. La distance du coup vient du coup par coup (shots = {id de tournoi: {pseudo: {"trous"}}}),
+    seulement si SGT la donne : sinon elle reste vide."""
+    shots = shots or {}
+    out, vus = [], set()
+    for a in season.attempts:
+        if a.status == STATUS_INCOMPLETE or a.holes_played not in (9, 18):
+            continue                                     # carte pas finie : rien n'en sort (règle de Mike, 15.11.2026)
+        for i, (score, par) in enumerate(zip(a.scores, a.pars), start=1):
+            if score != 1 or (prefixe, a.week, a.player, i) in vus:
+                continue
+            vus.add((prefixe, a.week, a.player, i))
+            semaine = [w for w in season.weeks if w.number == a.week]
+            semaine.sort(key=lambda w: w.category != a.category)       # le tournoi de sa catégorie d'abord
+            metres, tournoi = None, semaine[0].tournament_id if semaine else None
+            for w in semaine:
+                trous = ((shots.get(w.tournament_id) or shots.get(str(w.tournament_id)) or {}).get(a.player) or {}).get("trous") or []
+                trou = next((t for t in trous if t.get("t") == i), None)
+                coup = next((c for c in (trou or {}).get("c") or [] if c[1] == "c"), None)
+                if coup and coup[3] == "holecup" and isinstance(coup[2], (int, float)):
+                    metres, tournoi = round(coup[2], 1), w.tournament_id
+                    break
+            out.append({"competition": nom, "prefixe": prefixe, "semaine": a.week, "joueur": a.player,
+                        "categorie": a.category, "parcours": a.course, "trou": i, "par": par, "m": metres,
+                        "tournoi_id": tournoi})
+    return out
 
 
 def build_site_data(season: Season, season_label: str, next_course: dict | None = None, demo: bool = False,

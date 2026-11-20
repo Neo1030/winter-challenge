@@ -891,9 +891,16 @@
       SCORES.forEach((k) => { tot[k] += (c.stats && c.stats[k]) || 0; });
     }));
     const trous = SCORES.reduce((n, k) => n + tot[k], 0), lourds = tot.doubles + tot.triples + tot.plus;
+    /* trous en un de la saison : un 1 sur la carte de score ; la distance du coup vient du coup par coup de SGT */
+    const aces = [], plusieurs = data.categories.length > 1;
+    data.semaines.forEach((s) => s.categories.forEach((c) => (c.trous_en_un || []).forEach((a) => aces.push({ a, s: s.numero, cat: c.categorie }))));
+    const detail = aces.length ? '<ul class="aces">' + aces.map((x) => `<li><b>${esc(x.a.joueur)}</b> sur le trou ${x.a.trou} du ${P()}${x.s}` +
+      (x.a.m != null ? ` à ${nb(Math.round(x.a.m))} m` : "") + (plusieurs ? ` · ${esc(x.cat)}` : "") + "</li>").join("") + "</ul>"
+      : '<p class="aces-rien">Pas encore de trou en un cette saison.</p>';
     $("#chiffres").innerHTML = [[data.semaines.length, unite().caps], [tot.cartes, "Tours joués"], [trous, "Trous joués"], [tot.eagles, "Eagles"],
-      [tot.birdies, "Birdies"], [tot.pars, "Pars"], [tot.bogeys, "Bogeys"], [lourds, "Doubles bogeys ou plus"]]
-      .map((c, i) => `<div class="rv" style="--i:${i % 4}"><b data-n="${c[0]}">${CALME ? nb(c[0]) : "0"}</b><span>${c[1]}</span></div>`).join("");
+      [tot.birdies, "Birdies"], [tot.pars, "Pars"], [tot.bogeys, "Bogeys"], [lourds, "Doubles bogeys ou plus"], [aces.length, "Hole in one"]]
+      .map((c, i) => `<div class="rv" style="--i:${i % 4}"><b data-n="${c[0]}">${CALME ? nb(c[0]) : "0"}</b><span>${c[1]}</span></div>`).join("") +
+      `<div class="rv aces-detail" style="--i:1">${detail}</div>`;
   }
 
   /* ───────── 05 · Semaines (ou mois) : les meilleurs scores de chacune ───────── */

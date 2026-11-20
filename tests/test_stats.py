@@ -71,7 +71,7 @@ class ParseTest(unittest.TestCase):
 
     def test_reponses_absentes_ou_vides(self):
         for raw in (None, {}, [], {"closestToPin": []}):
-            self.assertEqual(parse_tournament_stats(raw), {"joueurs": {}, "ctp": {}})
+            self.assertEqual(parse_tournament_stats(raw), {"joueurs": {}, "ctp": {}, "trous_en_un": {}})
 
     def test_rang_a_la_francaise(self):
         self.assertEqual(rank_of(5, [5, 5, 3]), 1)
@@ -114,6 +114,15 @@ class TuilesTest(unittest.TestCase):
         ctp = data["categories"][0]["stats"]["1"]["ctp"]
         self.assertEqual((ctp["joueurs"], ctp["trou"], ctp["orig"]), (["Bob"], 2, 11.89))
         self.assertAlmostEqual(ctp["valeur"], 3.63, places=2)   # 11.89 pieds = 3.63 m : un seul coup, pas une moyenne
+
+    def test_trous_en_un(self):
+        """Un 1 sur la carte de score ; la distance du coup vient du coup par coup (Pinder, trou 5 du SG1 : 32,6 m)."""
+        t1 = tournament(1, 1, [card("Ana", [1] + [4] * 8), card("Bob", [4] * 4 + [1] + [4] * 4)])
+        t1["coups"] = {"Bob": {"cle": "x", "trous": [{"t": 5, "c": [[1, "c", 32.6, "holecup", 0]]},
+                                                    {"t": 6, "c": [[1, "c", 30.0, "green", 2.0], [2, "p", 2.0, "holecup", 0]]}]}}
+        data = build_site_data(build_season(tour([t1]), today=TODAY), "2026-2027")
+        aces = data["semaines"][0]["categories"][0]["trous_en_un"]
+        self.assertEqual(aces, [{"joueur": "Ana", "trou": 1, "m": None}, {"joueur": "Bob", "trou": 5, "m": 32.6}])
 
 
 class CompetitionsTest(unittest.TestCase):

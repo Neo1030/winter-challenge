@@ -118,3 +118,28 @@ class ReglagesParCategorieTest(unittest.TestCase):
         per = data["parcours"][0]["par_categorie"]
         self.assertEqual([(p["categorie"], p["depart"], p["gimmies"], p["stimp"]) for p in per],
                          [("Hommes", "Blue", "10 Feet", 10), ("Femmes", "Red", "6 Feet", 9)])
+
+
+class HoleInOneTest(unittest.TestCase):
+    """Les trous en un coup : cartes finies seulement, distance lue dans le coup par coup quand SGT la donne."""
+
+    def test_detection_et_distance(self):
+        from winter_challenge.site_export import hole_in_ones
+        cartes = [card("Ana", [1] + [4] * 8), card("Bob", [4] * 9), card("Cid", [1, 4, 4])]   # Cid : carte pas finie
+        season = build_season(tour([tournament(7, 1, cartes)], members=("Ana", "Bob", "Cid")), today=TODAY, gross_only=True)
+        coups = {7: {"Ana": {"trous": [{"t": 1, "p": 4, "s": 1, "c": [[1, "c", 32.94, "holecup", 0]]}]}}}
+        out = hole_in_ones(season, "Short Game", "SG", coups)
+        self.assertEqual(len(out), 1)
+        e = out[0]
+        self.assertEqual((e["joueur"], e["prefixe"], e["semaine"], e["trou"], e["m"], e["tournoi_id"]), ("Ana", "SG", 1, 1, 32.9, 7))
+        self.assertIsNone(hole_in_ones(season, "Short Game", "SG")[0]["m"])   # sans coup par coup : pas de distance inventée
+
+    def test_date_gardee_d_une_mise_a_jour_a_l_autre(self):
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
+        from export_site_data import exploits
+        season = build_season(tour([tournament(7, 1, [card("Ana", [1] + [4] * 8)])]), today=TODAY)
+        tours = tour([tournament(7, 1, [])])
+        neuf = exploits([("Winter Challenge", season)], tours, {}, TODAY)
+        self.assertEqual(neuf[0]["vu_le"], "2026-11-10")
+        garde = exploits([("Winter Challenge", season)], tours, {"exploits": neuf}, date(2026, 11, 30))
+        self.assertEqual(garde[0]["vu_le"], "2026-11-10")

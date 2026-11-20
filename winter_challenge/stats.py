@@ -49,6 +49,16 @@ def longest_putt(holes) -> float | None:
     return max(made) if made else None
 
 
+def hole_in_one_distances(holes) -> dict:
+    """Trous en un d'une carte (coup par coup) : {trou: mètres du coup de départ}, ou None si SGT n'écrit pas la distance."""
+    out = {}
+    for hole in holes or []:
+        shots = hole.get("c") or []
+        if len(shots) == 1 and len(shots[0]) >= 4 and shots[0][3] == "holecup" and hole.get("t"):
+            out[int(hole["t"])] = shots[0][2] if isinstance(shots[0][2], (int, float)) else None
+    return out
+
+
 def parse_tournament_stats(raw: dict | None, drives: dict | None = None, complete: set | None = None,
                            shots: dict | None = None) -> dict:
     """Statistiques d'un tournoi, par joueur : {"joueurs": {pseudo: {...}}, "ctp": {trou: [(pseudo, mètres)]}}.
@@ -68,10 +78,14 @@ def parse_tournament_stats(raw: dict | None, drives: dict | None = None, complet
     for name, lie in ((drives or {}).get("lie_tout") or {}).items():   # où s'arrête le plus long drive toutes zones
         if lie and "drive_tout_m" in players.get(name, {}):
             players[name]["drive_tout_lie"] = lie
+    aces: dict = {}                                  # distance des trous en un, lue dans le coup par coup
     for name, card in (shots or {}).items():
         metres = longest_putt((card or {}).get("trous")) if isinstance(card, dict) else None
         if metres is not None:
             players.setdefault(name, {})["putt_long_m"] = metres
+        found = hole_in_one_distances(card.get("trous")) if isinstance(card, dict) else {}
+        if found:
+            aces[name] = found
 
     def put(rows, field, key, factor=1.0, digits=1):
         for name, value in _by_player(rows, field).items():
@@ -109,7 +123,8 @@ def parse_tournament_stats(raw: dict | None, drives: dict | None = None, complet
     if complete is not None:              # carte pas finie : pas de statistiques (ni tuile, ni fiche, ni closest to the pin)
         players = {name: v for name, v in players.items() if name in complete}
         ctp = {hole: kept for hole, kept in ((h, [e for e in entries if e[0] in complete]) for h, entries in ctp.items()) if kept}
-    return {"joueurs": players, "ctp": ctp}
+        aces = {name: v for name, v in aces.items() if name in complete}
+    return {"joueurs": players, "ctp": ctp, "trous_en_un": aces}
 
 
 def rank_of(value, values, higher_is_better=True) -> int:
