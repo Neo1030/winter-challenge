@@ -111,9 +111,12 @@ def _player_stats(season: Season, name: str) -> dict | None:
 def _players(season: Season) -> list:
     out = []
     for p in sorted(season.players, key=lambda p: (p.category, p.name.lower())):
-        weeks, history = [], [{"semaine": 0, "hdc": p.start_hcp}]
+        weeks, history, aces = [], [{"semaine": 0, "hdc": p.start_hcp}], []
         for number in sorted({w for (cat, name, w) in season.best if name == p.name and cat == p.category}):
             a = season.best[(p.category, p.name, number)]
+            # trous en un : un 1 sur la carte retenue ; la distance du coup vient du coup par coup, si on l'a lu
+            distances = ((season.stats.get((p.category, number)) or {}).get("trous_en_un") or {}).get(p.name, {})
+            aces += [{"semaine": number, "trou": i + 1, "m": distances.get(i + 1)} for i, s in enumerate(a.scores) if s == 1]
             r = a.result
             par = sum(par for score, par in zip(a.scores, a.pars) if score)  # par des trous réellement joués
             week = {"semaine": number, "parcours": a.course, "trous": a.holes_played, "par": par,
@@ -132,6 +135,8 @@ def _players(season: Season) -> list:
         if not season.gross_only:
             entry.update({"hdc_depart": p.start_hcp, "hdc_actuel": p.current_hcp, "hdc_historique": history})
         entry.update({"semaines": weeks, "stats": _player_stats(season, p.name)})
+        if aces:
+            entry["trous_en_un"] = aces
         out.append(entry)
     return out
 

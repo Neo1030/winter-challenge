@@ -477,6 +477,10 @@ button.rangee:hover .fixe::before { transform: scaleY(1); }
 .trio div { padding: 16px 12px 16px 0; }
 .trio div + div { padding-left: 16px; border-left: 1px solid var(--trait); }
 .trio dt, .fiche h4 { margin: 0; font-size: 11.5px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--gris); }
+/* fiche joueur : ses hole in one, sous les rangs */
+.fiche-ace { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin: 16px 0 0; padding: 12px 16px; border: 1px solid var(--ciel); border-radius: 12px; font-size: 15px; color: var(--glace); }
+.fiche-ace b { font-size: 11.5px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--ciel-vif); }
+.fiche-ace span + span::before { content: "·"; margin-right: 14px; color: var(--gris); }
 .trio dd { margin: 4px 0 0; font-size: clamp(22px, 4vw, 30px); font-weight: 800; white-space: nowrap; }
 .trio dd small { font-size: .5em; color: var(--gris); font-weight: 600; margin-left: 4px; }
 .fiche h4 { margin-top: 34px; color: var(--ciel-vif); }

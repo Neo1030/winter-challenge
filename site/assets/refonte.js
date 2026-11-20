@@ -353,7 +353,7 @@
   }
 
   /* Le record du haut de page. Winter Challenge : le plus long drive de la saison, où que la balle s'arrête ; s'il est
-     hors fairway, le plus long drive de la saison sur le fairway en dessous (textes de Mike, 20.11.2026). Short Game
+     hors fairway, le plus long drive de la saison sur le fairway en dessous (textes de Mike, 20.11.2026, sans « hors fairway »). Short Game
      (petit jeu, sans drive) : le closest to the pin de la saison ; à défaut, le plus long total de putts rentrés. */
   function recordPour(c) {
     let m = null;
@@ -377,7 +377,7 @@
     if (!m) return { vide: true, m: 250, mode: "drive", dec: 0 };
     // hors fairway : SGT le dit (« lie ») ; sans cette indication, un drive plus long que le record sur le fairway
     const hors = m !== fairway && (m.lie ? m.lie !== "FAIRWAY" : !fairway || m.m > fairway.m);
-    let texte = `${noms()} : plus long drive de la saison ${hors ? "hors fairway" : "sur le fairway"} · ${esc(c.prefixe)}${m.semaine}, ${esc(m.cat)}`;
+    let texte = `${noms()} : plus long drive de la saison · ${esc(c.prefixe)}${m.semaine}, ${esc(m.cat)}`;
     if (hors && fairway) {
       texte += `<br><span class="record-f"><b>${fairway.joueurs.map(esc).join(", ")}</b> : plus long drive de la saison sur le fairway · <b>${nb(fairway.m, 1)} m</b> · ${esc(c.prefixe)}${fairway.semaine}, ${esc(fairway.cat)}</span>`;
     }
@@ -1150,6 +1150,8 @@
         ? fait("Rang brut", rang(p.rang_brut), `${monte(p.total_brut)} pts sur ${taille("brut")} classés`)
         : fait("Rang net", rang(p.rang_net), `${monte(p.total_net)} pts sur ${taille("net")} classés`) + fait("Rang brut", rang(p.rang_brut), `${monte(p.total_brut)} pts`) +
           fait("Handicap de jeu", nb(p.hdc_actuel), `au départ : ${nb(p.hdc_depart)}`)}</dl>
+      ${(p.trous_en_un || []).length ? `<p class="fiche-ace"><b>Hole in one${p.trous_en_un.length > 1 ? " × " + p.trous_en_un.length : ""}</b>${p.trous_en_un.map((a) =>
+        `<span>trou ${a.trou} du ${P()}${a.semaine}${a.m != null ? ` à ${nb(Math.round(a.m))} m` : ""}</span>`).join("")}</p>` : ""}
       ${parties.length ? `
       <h4>Points par partie</h4>
       <div class="partie-trou">

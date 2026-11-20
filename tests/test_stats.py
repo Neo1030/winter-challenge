@@ -123,6 +123,8 @@ class TuilesTest(unittest.TestCase):
         data = build_site_data(build_season(tour([t1]), today=TODAY), "2026-2027")
         aces = data["semaines"][0]["categories"][0]["trous_en_un"]
         self.assertEqual(aces, [{"joueur": "Ana", "trou": 1, "m": None}, {"joueur": "Bob", "trou": 5, "m": 32.6}])
+        bob = next(j for j in data["joueurs"] if j["joueur"] == "Bob")              # dans la fiche du joueur
+        self.assertEqual(bob["trous_en_un"], [{"semaine": 1, "trou": 5, "m": 32.6}])
 
 
 class CompetitionsTest(unittest.TestCase):
