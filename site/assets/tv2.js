@@ -166,13 +166,15 @@
     return Math.max(0, Math.floor((innerW() - fixed) / (W.week * h)));
   };
 
-  /* ---------- Statistiques de la semaine : les tuiles du site (FIR, GIR, drive, closest to the pin, putts rentrés) ---------- */
+  /* ---------- Statistiques de la semaine : les tuiles du site (FIR, GIR, drives, closest to the pin, putts rentrés, plus long putt) ---------- */
   const ring = (t) => `<svg viewBox="0 0 120 100"><circle class="dz f" cx="60" cy="50" r="40"/><circle class="dt" pathLength="100" style="--off:${(100 - Math.max(0, Math.min(100, t.valeur))).toFixed(1)}" cx="60" cy="50" r="40" transform="rotate(-90 60 50)"/></svg>`;
+  const yds = (t) => (t.orig == null ? "" : dec(t.orig, 2) + " yds");
+  const DRIVE_SVG = () => '<svg viewBox="0 0 120 100"><path class="dz" d="M4 88H116"/><path class="dm" d="M12 88V80"/><path class="dt fin" pathLength="100" d="M12 80Q62 -30 108 86"/><circle class="db" cx="108" cy="84" r="4.5"/></svg>';
   const TILES = [
     ["fir", "FIR", "Fairways touchés", 1, "%", () => "", ring],
     ["gir", "GIR", "Greens en régulation", 1, "%", () => "", ring],
-    ["drive", "Longest drive", "Plus long drive sur le fairway", 1, "m", (t) => (t.orig == null ? "" : dec(t.orig, 2) + " yds"),
-      () => '<svg viewBox="0 0 120 100"><path class="dz" d="M4 88H116"/><path class="dm" d="M12 88V80"/><path class="dt fin" pathLength="100" d="M12 80Q62 -30 108 86"/><circle class="db" cx="108" cy="84" r="4.5"/></svg>'],
+    ["drive_tout", "Longest drive", "Plus long drive, où que la balle s'arrête", 1, "m", yds, DRIVE_SVG],
+    ["drive", "Longest drive fairway", "Plus long drive sur le fairway", 1, "m", yds, DRIVE_SVG],
     ["ctp", "Closest to the pin", "Coup de départ le plus près du drapeau, par 3", 2, "m", (t) => (t.orig == null ? "" : dec(t.orig, 2) + " ft") + (t.trou ? " · trou " + t.trou : ""),
       (t) => {                                                   // la cible : l'anneau extérieur vaut 10 m, la balle est posée à sa distance du drapeau
         const d = 6 + Math.min(1, Math.max(0, t.valeur) / 10) * 34;
@@ -181,9 +183,11 @@
       }],
     ["putts_faits", "Total putt length", "Longueur totale des putts rentrés", 2, "m", (t) => (t.orig == null ? "" : dec(t.orig, 2) + " ft"),
       () => '<svg viewBox="0 0 120 100"><path class="dz" d="M6 62H114"/><path class="dt fin" pathLength="100" d="M10 62H100"/><ellipse cx="104" cy="62" rx="8" ry="3.2" fill="#000a14" stroke="rgba(234,246,253,.3)"/><path class="dm" d="M104 62V30"/><path class="dd" d="M105 30l13 5-13 5z"/><circle class="roule" cx="98" cy="58" r="4.5" fill="#fff"/></svg>'],
+    ["putt_long", "Longest putt", "Plus long putt rentré", 1, "m", () => "",
+      () => '<svg viewBox="0 0 120 100"><path class="dz" d="M6 70H114"/><path class="dt fin" pathLength="100" d="M10 70Q58 48 98 68"/><ellipse cx="104" cy="70" rx="8" ry="3.2" fill="#000a14" stroke="rgba(234,246,253,.3)"/><path class="dm" d="M104 70V38"/><path class="dd" d="M105 38l13 5-13 5z"/><circle class="roule" cx="98" cy="66" r="4.5" fill="#fff"/></svg>'],
   ];
   /* Short Game (petit jeu, sans drive) : ni fairways touchés ni distance des drives */
-  const SHORT_GAME_TILES = ["gir", "ctp", "putts_faits"];
+  const SHORT_GAME_TILES = ["gir", "ctp", "putts_faits", "putt_long"];
   const tilesOf = (comp) => (comp.prefixe === "SG" ? TILES.filter((t) => SHORT_GAME_TILES.indexOf(t[0]) >= 0) : TILES);
 
   /* Semaine (ou mois) dont on montre les statistiques : le plus récent, ou à défaut la dernière qui en a */
@@ -201,7 +205,7 @@
     $("#tv-title").innerHTML = `Statistiques <em>${isWC(comp) ? "de la semaine" : "du mois"} · ${esc(comp.prefixe)}${s.week}</em>`;
     $("#tv-page").textContent = "";
     const defs = tilesOf(comp);
-    area.innerHTML = `<div class="tuiles${defs.length === 3 ? " n3" : ""}">${defs.map((def, i) => {
+    area.innerHTML = `<div class="tuiles n${defs.length}">${defs.map((def, i) => {
       const off = down(comp, def[0]);
       const t = s.tiles && !off ? s.tiles[def[0]] : null;
       if (off) return `<div class="tuile panne" style="--i:${i}"><div class="tt">${def[1]}</div><div class="th">${def[2]}</div>${WARN}<div class="tb">En maintenance</div><div class="to">Données SGT indisponibles</div><div class="tn"></div></div>`;

@@ -164,6 +164,16 @@ body > .fond { position: fixed; z-index: 0; }
 /* ---------- Statistiques : une tuile par record, avec son petit dessin animé ---------- */
 .tuiles { height: 100%; display: grid; grid-template-columns: repeat(5, 1fr); gap: 1vw; padding: 2vh 0 1.2vh; }
 .tuiles.n3 { grid-template-columns: repeat(3, 1fr); padding-left: 6vw; padding-right: 6vw; }
+.tuiles.n4 { grid-template-columns: repeat(4, 1fr); padding-left: 2vw; padding-right: 2vw; }
+/* 7 tuiles (Winter Challenge) : deux rangées, 4 + 3, chaque tuile un peu plus ramassée */
+.tuiles.n7 { grid-template-columns: repeat(4, 1fr); grid-auto-rows: minmax(0, 1fr); gap: 1.4vh 1vw; padding: 1vh 0 .6vh; }
+.tuiles.n7 .tuile { padding: 1.4vh .8vw 1.2vh; }
+.tuiles.n7 .tuile .tt { min-height: 3vh; }
+.tuiles.n7 .tuile .th { min-height: 0; }
+.tuiles.n7 .tuile svg { margin: .6vh 0; }
+.tuiles.n7 .tuile .tb { font-size: 5vh; }
+.tuiles.n7 .tuile .tn { margin-top: .9vh; padding-top: .8vh; min-height: 0; font-size: 2vh; }
+.tuiles.n7 .tuile .tn div:nth-child(n+3) { display: none; }
 .tuile { display: flex; flex-direction: column; align-items: center; min-width: 0; padding: 2.4vh .8vw 2vh; text-align: center; border-radius: 1.8vh; background: rgba(234, 246, 253, .05); border: 1px solid var(--trait); animation: monte .9s var(--e) both; animation-delay: calc(var(--i, 0) * 110ms); }
 .tuile .tt { display: flex; align-items: center; min-height: 5.2vh; font-size: 2.1vh; line-height: 1.2; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--ciel-vif); }
 .tuile .th { margin-top: .6vh; min-height: 3.6vh; font-size: 1.5vh; line-height: 1.2; color: var(--gris); }
@@ -247,6 +257,15 @@ body > .fond { position: fixed; z-index: 0; }
   /* tuiles à l'horizontale : le dessin à gauche, les chiffres à droite */
   .tuiles { grid-template-columns: repeat(2, 1fr); grid-auto-rows: minmax(0, 1fr); gap: 1.2vh 1vw; }
   .tuiles.n3 { grid-template-columns: 1fr; padding-left: 12vw; padding-right: 12vw; }
+  .tuiles.n4 { padding-left: 0; padding-right: 0; }
+  .tuiles.n7 { grid-template-columns: repeat(2, 1fr); gap: 1vh 1vw; padding: 1vh 0 .6vh; }
+  .tuiles.n7 .tuile { padding: .9vh 1.2vw; }
+  .tuiles.n7 .tuile svg { max-height: 11vh; }
+  .tuiles.n7 .tuile .tt { min-height: 0; font-size: 1.6vh; }
+  .tuiles.n7 .tuile .tb { margin-top: .3vh; font-size: 3.6vh; }
+  .tuiles.n7 .tuile .to { font-size: 1.4vh; }
+  .tuiles.n7 .tuile .tn { margin-top: .4vh; padding-top: .4vh; font-size: 1.8vh; }
+  .tuiles.n7 .tuile .tn div:nth-child(n+2) { display: none; }
   .tuile { display: grid; grid-template-columns: 32% minmax(0, 1fr); grid-template-rows: auto auto auto minmax(0, 1fr); column-gap: 1.4vw; align-items: start; padding: 1.4vh 1.4vw; text-align: left; overflow: hidden; }
   .tuile > * { grid-column: 2; }
   .tuile svg { grid-column: 1; grid-row: 1 / 5; align-self: center; height: 100%; max-height: 15vh; margin: 0; }

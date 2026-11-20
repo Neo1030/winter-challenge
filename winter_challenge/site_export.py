@@ -203,6 +203,9 @@ def _leaders(season: Season, category: str) -> dict:
             who = sorted(n for n, v in values.items() if v == best)
             tiles[key] = {"valeur": best, "joueurs": who,
                           "orig": st["joueurs"][who[0]].get(orig) if orig else None}
+            lie = st["joueurs"][who[0]].get(key + "_lie")       # Longest drive toutes zones : où la balle s'est arrêtée
+            if lie:
+                tiles[key]["lie"] = lie
         # Closest to the pin : le coup de départ le plus près du drapeau sur un par 3, tous joueurs et trous de la semaine
         shots = [(metres, who, hole) for hole, entries in st["ctp"].items() for who, metres in entries]
         if shots:

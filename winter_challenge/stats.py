@@ -65,6 +65,9 @@ def parse_tournament_stats(raw: dict | None, drives: dict | None = None, complet
             value = _num(yards)
             if value is not None:
                 players.setdefault(name, {}).update({key + "_m": round(value * YARD_M, 1), key + "_yd": round(value, 2)})
+    for name, lie in ((drives or {}).get("lie_tout") or {}).items():   # où s'arrête le plus long drive toutes zones
+        if lie and "drive_tout_m" in players.get(name, {}):
+            players[name]["drive_tout_lie"] = lie
     for name, card in (shots or {}).items():
         metres = longest_putt((card or {}).get("trous")) if isinstance(card, dict) else None
         if metres is not None:

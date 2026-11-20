@@ -189,6 +189,7 @@ body.pret .ligne:nth-child(2) > span { animation-delay: .38s; }
 .record-n span { font-size: .42em; font-weight: 700; color: var(--gris); letter-spacing: 0; }
 .record-l { margin-top: 6px; font-size: 13px; color: var(--gris); opacity: 0; transform: translateY(8px); transition: opacity .8s ease, transform .8s var(--e); }
 .record-l b { color: var(--glace); font-weight: 700; }
+.record-f { display: inline-block; margin-top: 4px; }   /* le plus long drive de la saison sur le fairway, sous le record */
 .record.pose .record-l { opacity: 1; transform: none; }
 
 /* ───────── Bandeau défilant ───────── */

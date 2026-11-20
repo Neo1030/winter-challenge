@@ -103,6 +103,9 @@ class LongDriveTest(unittest.TestCase):
     def test_drives_d_un_trou_ou_que_la_balle_s_arrete(self):
         """Le Longest drive toutes zones (demande de Mike, 20.11.2026) garde aussi les drives au rough, au sable…"""
         self.assertEqual(parse_drives(HOLE_11, every=True), {"Ana": 316.4, "Bob": 254.96, "Cyd": 330.0})
+        lies = {}
+        parse_drives(HOLE_11, True, lies)
+        self.assertEqual(lies, {"Ana": "FAIRWAY", "Bob": "FAIRWAY", "Cyd": "ROUGH"})   # où s'arrête le drive gardé
 
     def test_trous_ou_le_drive_compte(self):
         self.assertEqual(drive_holes(self.tournoi()["scorecards"]), [(1, h) for h in (11, 12, 13, 15, 16, 17, 18)])

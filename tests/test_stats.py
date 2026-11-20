@@ -41,10 +41,11 @@ class ParseTest(unittest.TestCase):
         trous = [{"t": 1, "c": [[1, "c", 200.0, "fairway", 10.0], [2, "p", 10.7, "holecup", 0]]},
                  {"t": 2, "c": [[1, "c", 210.0, "rough", 30.0], [2, "c", 30.0, "holecup", 0]]},      # rentré hors du green : pas un putt
                  {"t": 3, "c": [[1, "c", 150.0, "green", 4.0], [2, "p", 12.0, "green", 0.5], [3, "g", None, "holecup", 0]]}]
-        st = parse_tournament_stats(RAW, {"yd": {"Ana": 316.4}, "yd_tout": {"Ana": 330.0, "Bob": 260.0}},
+        st = parse_tournament_stats(RAW, {"yd": {"Ana": 316.4}, "yd_tout": {"Ana": 330.0, "Bob": 260.0}, "lie_tout": {"Ana": "SEMIROUGH"}},
                                     shots={"Ana": {"cle": "x", "trous": trous}, "Bob": {"cle": "y", "trous": trous[2:]}})
         self.assertEqual((st["joueurs"]["Ana"]["drive_tout_m"], st["joueurs"]["Ana"]["drive_tout_yd"]), (301.8, 330.0))
         self.assertEqual(st["joueurs"]["Ana"]["drive_m"], 289.3)
+        self.assertEqual(st["joueurs"]["Ana"]["drive_tout_lie"], "SEMIROUGH")
         self.assertNotIn("drive_m", st["joueurs"]["Bob"])
         self.assertEqual(st["joueurs"]["Ana"]["putt_long_m"], 10.7)
         self.assertNotIn("putt_long_m", st["joueurs"]["Bob"])    # un putt manqué et un putt donné : aucun putt rentré
