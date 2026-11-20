@@ -93,6 +93,23 @@ class TestCheck(unittest.TestCase):
         self.assertEqual(new["competitions_autres"][0]["maintenance"], [])
         self.assertEqual(new["surveillance"], {})
 
+    def test_a_tile_removed_from_the_code_is_no_longer_expected(self):
+        """Le Longest drive toutes zones (drive_tout) retiré le 20.11.2026 avait mis le classement en maintenance."""
+        published = sample()
+        published["categories"][0]["stats"]["1"]["drive_tout"] = {"valeur": 250.0, "joueurs": ["Alpha"]}
+        fact = "WC|tuile|Hommes|2026-10-26|drive_tout"
+        published["surveillance"] = {"manquants": {fact: {"zone": "classement", "depuis": "2026-11-20T13:16", "vu": 22}},
+                                     "signales": [fact]}
+        new = sample()
+        result = surveillance.check(new, published, now=NOW)
+        self.assertEqual(result["manquants"], {})
+        self.assertEqual(new["maintenance"], [])
+        self.assertEqual(result["alerte"], "resolue")
+
+    def test_watched_tiles_match_the_tiles_the_site_produces(self):
+        from winter_challenge.site_export import LEADER_TILES
+        self.assertEqual(surveillance.TUILES, {t[0] for t in LEADER_TILES} | {"ctp"})
+
     def test_new_data_is_never_a_problem(self):
         new = sample()
         new["joueurs"].append({"joueur": "Gamma", "semaines": [{"semaine": 2, "coups_brut": 39}]})

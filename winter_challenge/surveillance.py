@@ -42,6 +42,9 @@ ZONES = {
 # statistiques d'un joueur (fiche) -> zone ; « ctp » est une liste de trous, traitée à part
 PLAYER_STATS = {"fairways": "fir", "greens": "gir", "drive_m": "drive", "gir_prox_m": "gir_prox",
                 "putts_faits_m": "putts_faits", "putts": "putts"}
+# tuiles que le site produit encore (site_export.LEADER_TILES et le closest to the pin) : une tuile retirée du code (comme le
+# Longest drive toutes zones, 20.11.2026) n'est plus attendue, sinon sa disparition mettrait le classement en maintenance
+TUILES = {"fir", "gir", "drive", "gir_prox", "putts_faits", "putt_long", "ctp"}
 COURSE_FIELDS = ("depart", "par", "neuf")
 SEP = "|"
 
@@ -108,7 +111,7 @@ def facts(data: dict) -> dict:
         for cat in comp.get("categories") or []:
             for number, tiles in (cat.get("stats") or {}).items():
                 for key, tile in (tiles or {}).items():
-                    if isinstance(tile, dict) and tile.get("valeur") is not None:
+                    if key in TUILES and isinstance(tile, dict) and tile.get("valeur") is not None:
                         put(key if key in ZONES else "classement", "tuile", cat.get("nom"), week(number), key)
 
         for j in comp.get("joueurs") or []:
@@ -165,6 +168,8 @@ def _still_watched(fact: str, *fact_sets: dict) -> bool:
     fichier publié ou le nouveau). Sinon elle n'est plus attendue : un joueur qui n'a pas fini sa carte n'a pas de
     statistiques (règle de Mike, 15.11.2026)."""
     parts = fact.split(SEP)
+    if len(parts) >= 5 and parts[1] == "tuile" and parts[4] not in TUILES:
+        return False   # tuile retirée du code : plus attendue
     if len(parts) < 4 or parts[1] != "stat":
         return True
     score = SEP.join([parts[0], "score", parts[2], parts[3]])
